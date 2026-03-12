@@ -1,4 +1,0 @@
-{
-  "status": "error",
-  "message": "Solver crashed: cannot align objects on coordinate 'period' because of conflicting indexes"
-}

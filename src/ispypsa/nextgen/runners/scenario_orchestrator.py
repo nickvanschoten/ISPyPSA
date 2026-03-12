@@ -351,43 +351,48 @@ def main():
         sys.exit(1)
 
     # 2. Apply Temporal Clustering (representative weeks + extremes)
-    # NOTE: If the network from build_network already has a multi-period
-    # MultiIndex (from PyPSA's investment horizon setup), skip re-clustering
-    # to avoid xarray coordinate alignment errors. Clustering is only applied
-    # to single-period flat-index networks.
-    is_multi_index = isinstance(network.snapshots, pd.MultiIndex)
-    if (
-        not is_multi_index
-        and hasattr(network, "loads_t")
-        and not network.loads_t.p_set.empty
-    ):
+    # Applied to both single-period and multi-period networks if resolution is high.
+    if hasattr(network, "loads_t") and not network.loads_t.p_set.empty:
         n_weeks = payload.get("representative_weeks", 3)
-        try:
-            vre_t = None
-            if hasattr(network, "generators_t") and hasattr(network.generators_t, "p_max_pu"):
-                if not network.generators_t.p_max_pu.empty:
-                    vre_t = network.generators_t.p_max_pu
+        snapshots_per_period = len(network.snapshots)
+        if isinstance(network.snapshots, pd.MultiIndex):
+            periods = network.snapshots.get_level_values(0).unique()
+            snapshots_per_period = len(network.snapshots) // len(periods)
+        
+        # Only cluster if snapshots per period > 1 week * 24h * 2 (e.g. 336h)
+        if snapshots_per_period > (n_weeks * 7 * 24):
+            try:
+                vre_t = None
+                if hasattr(network, "generators_t") and hasattr(network.generators_t, "p_max_pu"):
+                    if not network.generators_t.p_max_pu.empty:
+                        vre_t = network.generators_t.p_max_pu
 
-            selected_hours, snapshot_weightings = cluster_to_representative_weeks(
-                network.loads_t.p_set, n_weeks=n_weeks, vre_t=vre_t
-            )
+                selected_hours, snapshot_weightings = cluster_to_representative_weeks(
+                    network.loads_t.p_set, n_weeks=n_weeks, vre_t=vre_t
+                )
 
-            original_index = network.loads_t.p_set.index
-            if len(selected_hours) < len(original_index):
+                original_index = network.snapshots
                 selected_idx = original_index[selected_hours]
                 network.set_snapshots(selected_idx)
 
+                # Reset weightings to 1.0 first
+                network.snapshot_weightings.loc[:, :] = 1.0
+
                 for i, hour_idx in enumerate(selected_hours):
                     weight = snapshot_weightings.get(hour_idx, 1.0)
-                    network.snapshot_weightings.at[selected_idx[i], "objective"] = weight
-                    network.snapshot_weightings.at[selected_idx[i], "stores"] = weight
-                    network.snapshot_weightings.at[selected_idx[i], "generators"] = weight
+                    snap = selected_idx[i]
+                    network.snapshot_weightings.at[snap, "objective"] = weight
+                    network.snapshot_weightings.at[snap, "stores"] = weight
+                    network.snapshot_weightings.at[snap, "generators"] = weight
 
-                logger.info(f"Applied temporal clustering: {len(selected_hours)} snapshots")
-        except Exception as e:
-            logger.warning(f"Temporal clustering failed, using full resolution: {e}")
-    elif is_multi_index:
-        logger.info("Network already has multi-period snapshots; skipping temporal clustering.")
+                logger.info(
+                    f"Applied temporal clustering: {len(selected_idx)} snapshots selected "
+                    f"from {len(original_index)}."
+                )
+            except Exception as e:
+                logger.warning(f"Temporal clustering failed, using full resolution: {e}")
+        else:
+            logger.info(f"Snapshots per period ({snapshots_per_period}) is already low; skipping clustering.")
 
     # 3. Demand Scaling (multi-period, regional, profile shaping)
     network = apply_macroeconomic_scaling(network, payload)
@@ -450,30 +455,21 @@ def main():
         _write_solver_error(f"Solver crashed: {error_str}")
         sys.exit(1)
 
-    # 9. Export
+    # 10. MGA (placeholder)
+    if run_mga:
+        logger.info("MGA Toggle ON: Spatial exploration logic placeholder.")
+
+    # 11. Export
     logger.info("Exporting high-frequency Parquet results...")
     try:
         export_results(network, scenario_name)
-        logger.info(f"--- Scenario {scenario_name} Complete ---")
     except Exception as e:
         import traceback
         traceback.print_exc()
         _write_solver_error(f"Export failed: {e}")
         sys.exit(1)
 
-
-if __name__ == "__main__":
-    import traceback
-    try:
-        main()
-    except Exception as e:
-        traceback.print_exc()
-        _write_solver_error(f"Fatal Orchestrator Error: {e}")
-    if run_mga:
-        logger.info("MGA Toggle ON: Spatial exploration logic placeholder.")
-    else:
-        logger.info("MGA Toggle OFF: Standard optimization complete.")
-    logger.info("--- Orchestrator completed successfully ---")
+    logger.info(f"--- Scenario {scenario_name} Complete ---")
 
 
 if __name__ == "__main__":

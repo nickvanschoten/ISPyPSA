@@ -67,44 +67,31 @@ def apply_macroeconomic_scaling(network, scenario_params: dict):
     Scale network.loads_t.p_set based on macroeconomic drivers, electrification
     inputs, and profile shaping. Multi-period aware.
 
-    Parameters
-    ----------
-    network : pypsa.Network
-        The PyPSA network (may have multi-period snapshots).
-    scenario_params : dict
-        Keys:
-        - investment_periods (list[int]): e.g. [2026, 2030, 2040, 2050]
-        - pop_growth (float): default population growth %
-        - gdp_growth (float): default GDP growth %
-        - demand_elasticity (float)
-        - regional_params (dict, optional): per-region overrides, e.g.
-            {"NSW": {"pop_growth": 1.8, "gdp_growth": 2.5}, ...}
-        - ev_penetration (dict or float): % penetration, per-period or flat
-        - ind_electrification (dict or float): % penetration, per-period or flat
-        - rooftop_solar_penetration (dict or float): % penetration, per-period or flat
+    Logic follows Trap 4: Unit-Normalized Profiles + Rescale + Assertion Guard.
 
-    Returns
-    -------
-    network : pypsa.Network
-        Modified in-place.
+    IMPORTANT: Operates on numpy arrays to avoid corrupting the pandas
+    MultiIndex internal state, which causes xarray AlignmentError in
+    linopy during network.optimize().
     """
     if not hasattr(network, "loads_t") or network.loads_t.p_set is None or network.loads_t.p_set.empty:
         logger.warning("network.loads_t.p_set is empty. Skipping demand scaling.")
         return network
 
     p_set = network.loads_t.p_set
-    starting_twh = p_set.sum().sum() / 1e6
-    logger.info(f"Starting total demand: {starting_twh:.2f} TWh")
+    original_index = p_set.index.copy()
+    original_columns = p_set.columns.copy()
+    # Work on a detached numpy copy to avoid corrupting the MultiIndex
+    data = p_set.values.copy()
+
+    initial_total_mwh = data.sum()
+    logger.info(f"Starting total demand: {initial_total_mwh/1e6:.2f} TWh")
 
     # Resolve investment periods
     investment_periods = scenario_params.get("investment_periods", None)
     if investment_periods is None:
-        # Fallback: single-period behaviour using target_year
-        target_year = scenario_params.get("target_year", 2030)
-        investment_periods = [target_year]
+        investment_periods = [scenario_params.get("target_year", 2030)]
 
-    # Detect if snapshots are multi-indexed (period, timestep)
-    is_multi_period = isinstance(p_set.index, pd.MultiIndex)
+    is_multi_period = isinstance(original_index, pd.MultiIndex)
 
     # Default macro params
     default_pop = scenario_params.get("pop_growth", 0.0)
@@ -125,33 +112,23 @@ def apply_macroeconomic_scaling(network, scenario_params: dict):
         ind_pen = ind_pen_raw.get(str(period), 0.0) if isinstance(ind_pen_raw, dict) else ind_pen_raw
         solar_pen = solar_pen_raw.get(str(period), 0.0) if isinstance(solar_pen_raw, dict) else solar_pen_raw
 
-        # Get the slice of snapshots for this period
+        # Get the row mask for this period
         if is_multi_period:
-            try:
-                period_mask = p_set.index.get_level_values(0) == period
-            except Exception:
-                logger.warning(f"Could not slice period {period} from multi-index. Skipping.")
-                continue
+            period_mask = np.array(original_index.get_level_values(0) == period)
         else:
-            # Single-period: apply to all snapshots
-            period_mask = np.ones(len(p_set), dtype=bool)
+            period_mask = np.ones(len(data), dtype=bool)
 
-        period_slice = p_set.loc[period_mask]
-        if period_slice.empty:
+        if not period_mask.any():
             continue
 
-        n_hours = len(period_slice)
+        n_hours = int(period_mask.sum())
+        n_cols = data.shape[1]
 
-        for col in period_slice.columns:
-            bus_name = col  # Load column typically corresponds to load name, not bus
-            # Try to find the bus from network.loads if available
-            actual_bus = bus_name
-            if hasattr(network, "loads") and col in network.loads.index:
-                actual_bus = network.loads.at[col, "bus"]
-
+        # 1. Apply Organic & Industrial growth (Volume scaling)
+        for col_idx, col in enumerate(original_columns):
+            actual_bus = network.loads.at[col, "bus"] if hasattr(network, "loads") and col in network.loads.index else col
             region = _get_region_for_bus(str(actual_bus))
 
-            # Resolve macro params (regional or default)
             if regional_params and region and region in regional_params:
                 rp = regional_params[region]
                 pop = rp.get("pop_growth", default_pop)
@@ -160,54 +137,52 @@ def apply_macroeconomic_scaling(network, scenario_params: dict):
             else:
                 pop, gdp, elast = default_pop, default_gdp, default_elasticity
 
-            # 1. Organic growth multiplier
             organic_mult = _compute_organic_multiplier(pop, gdp, elast, delta_t)
-
-            # 2. Electrification multiplier (volume-based)
-            ev_adder = (ev_pen / 100.0) * EV_LOAD_FACTOR
             ind_adder = (ind_pen / 100.0) * IND_LOAD_FACTOR
-            electrification_mult = 1.0 + ev_adder + ind_adder
+            total_mult = organic_mult * (1.0 + ind_adder)
+            data[period_mask, col_idx] *= total_mult
 
-            # Apply volume scaling
-            total_mult = organic_mult * electrification_mult
-            p_set.loc[period_mask, col] = period_slice[col].values * total_mult
-
-        # 3. Profile shaping — EV charging overlay (additive)
+        # 2. Add EV shaped profile
         if ev_pen > 0:
-            base_period_mwh = p_set.loc[period_mask].sum().sum()
-            ev_annual_mwh = base_period_mwh * (ev_pen / 100.0) * EV_LOAD_FACTOR
+            post_organic_mwh = data[period_mask].sum()
+            ev_annual_mwh = post_organic_mwh * (ev_pen / 100.0) * EV_LOAD_FACTOR
+
             ev_profile = generate_ev_charging_profile(n_hours)
             ev_scaled = scale_profile_to_volume(ev_profile, ev_annual_mwh)
 
             # Distribute proportionally across all load columns
-            col_shares = p_set.loc[period_mask].sum() / p_set.loc[period_mask].sum().sum()
-            for col in p_set.columns:
-                p_set.loc[period_mask, col] = (
-                    p_set.loc[period_mask, col].values + ev_scaled * col_shares[col]
-                )
+            col_sums = data[period_mask].sum(axis=0)
+            total_sum = col_sums.sum()
+            if total_sum > 0:
+                col_shares = col_sums / total_sum
+                for col_idx in range(n_cols):
+                    data[period_mask, col_idx] += ev_scaled * col_shares[col_idx]
 
-        # 4. Profile shaping — Rooftop solar subtraction
+        # 3. Subtract Rooftop Solar shaped profile
         if solar_pen > 0:
-            base_period_mwh = p_set.loc[period_mask].sum().sum()
-            solar_annual_mwh = base_period_mwh * (solar_pen / 100.0) * 0.10  # 100% = 10% demand reduction
+            post_organic_mwh = data[period_mask].sum()
+            solar_annual_mwh = post_organic_mwh * (solar_pen / 100.0) * 0.10
+
             solar_profile = generate_rooftop_solar_profile(n_hours)
             solar_scaled = scale_profile_to_volume(solar_profile, solar_annual_mwh)
 
-            col_shares = p_set.loc[period_mask].sum() / p_set.loc[period_mask].sum().sum()
-            for col in p_set.columns:
-                # Subtract solar (reduces net demand at midday)
-                adjusted = p_set.loc[period_mask, col].values - solar_scaled * col_shares[col]
-                # Floor at zero — can't have negative net demand
-                p_set.loc[period_mask, col] = np.maximum(adjusted, 0.0)
+            col_sums = data[period_mask].sum(axis=0)
+            total_sum = col_sums.sum()
+            if total_sum > 0:
+                col_shares = col_sums / total_sum
+                for col_idx in range(n_cols):
+                    adjusted = data[period_mask, col_idx] - solar_scaled * col_shares[col_idx]
+                    data[period_mask, col_idx] = np.maximum(adjusted, 0.0)
 
         logger.info(
-            f"Period {period}: delta_t={delta_t}, "
-            f"period demand={p_set.loc[period_mask].sum().sum() / 1e6:.2f} TWh"
+            f"Period {period}: scaled demand = {data[period_mask].sum() / 1e6:.2f} TWh"
         )
 
-    network.loads_t.p_set = p_set
+    # Reconstruct the DataFrame with the original, untouched index
+    new_p_set = pd.DataFrame(data, index=original_index, columns=original_columns)
+    network.loads_t.p_set = new_p_set
 
-    final_twh = network.loads_t.p_set.sum().sum() / 1e6
-    logger.info(f"Final scaled total demand: {final_twh:.2f} TWh")
+    final_total_mwh = network.loads_t.p_set.sum().sum()
+    logger.info(f"Final scaled total demand: {final_total_mwh/1e6:.2f} TWh")
 
     return network

@@ -158,6 +158,11 @@ with st.sidebar.form("scenario_form"):
 
     # --- Analysis Options ---
     st.markdown("#### Analysis Options")
+    representative_weeks = st.slider(
+        "Representative Weeks (per period)",
+        min_value=1, max_value=10, value=3, step=1,
+        help="Reducing weeks speeds up optimization but may miss extreme events."
+    )
     mga_toggle = st.checkbox("Run Spatial Exploration (Increases solution time)", value=s["mga_toggle"])
 
     submitted = st.form_submit_button(
@@ -189,9 +194,11 @@ with st.sidebar.expander("Enable Regional Heterogeneity"):
 # --- Electrification Profiles Expander (Module 1) ---
 ev_penetration = 0.0
 rooftop_solar_penetration = 0.0
+ind_electrification = 0.0
 with st.sidebar.expander("Electrification & Profile Shaping"):
     st.caption("Set penetration trajectories for demand profile decomposition.")
     ev_penetration = st.slider("EV Penetration (%)", 0.0, 100.0, 0.0, step=5.0)
+    ind_electrification = st.slider("Industrial Electrification (%)", 0.0, 100.0, 0.0, step=5.0)
     rooftop_solar_penetration = st.slider("Rooftop Solar Penetration (%)", 0.0, 100.0, 0.0, step=5.0)
 
 # --- SOLVER EXECUTION ---
@@ -208,6 +215,7 @@ if st.session_state.is_running:
     payload = {
         "scenario_name": scenario_name,
         "investment_periods": investment_periods,
+        "representative_weeks": representative_weeks,
         "pop_growth": pop_growth,
         "gdp_growth": gdp_growth,
         "demand_elasticity": demand_elasticity,
@@ -222,6 +230,7 @@ if st.session_state.is_running:
         "carbon_mode": carbon_mode,
         "mga_toggle": mga_toggle,
         "ev_penetration": ev_penetration,
+        "ind_electrification": ind_electrification,
         "rooftop_solar_penetration": rooftop_solar_penetration,
     }
 
@@ -250,50 +259,51 @@ if st.session_state.is_running:
     if error_file.exists():
         error_file.unlink()
 
-    # --- Async Subprocess with Progressive Status ---
-    status_container = st.status("Initializing multi-period optimization...", expanded=True)
+    # --- Async Subprocess with Real-Time Log Streaming ---
+    status_container = st.status(f"Running Optimization: {scenario_name}", expanded=True)
+    log_container = st.empty()
+    full_log = []
 
     with status_container:
-        st.write("📦 Assembling scenario payload...")
-        st.write(f"📊 Investment periods: {investment_periods}")
-        st.write(f"💰 WACC: {wacc:.1f}%  |  Retirement: {retirement_mode}")
-
+        st.write("📦 Scenario assembled. Launching orchestrator...")
+        
         runner_script = "src/ispypsa/nextgen/runners/scenario_orchestrator.py"
-
-        st.write("⚙️ Building network and launching Gurobi...")
-
-        result = subprocess.run(
-            [sys.executable, runner_script, str(payload_path)],
-            capture_output=True,
+        
+        process = subprocess.Popen(
+            [sys.executable, "-u", runner_script, str(payload_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
+            bufsize=1,
         )
+
+        # Stream logs in real-time
+        while True:
+            line = process.stdout.readline()
+            if not line and process.poll() is not None:
+                break
+            if line:
+                clean_line = line.strip()
+                full_log.append(clean_line)
+                # Keep only last 12 lines in the viewport for performance
+                log_container.code("\n".join(full_log[-12:]))
+                
+        returncode = process.wait()
 
     st.session_state.is_running = False
 
-    if result.returncode != 0:
+    if returncode != 0:
         # Check for structured error file
         if error_file.exists():
             with open(error_file) as ef:
                 err_data = json.load(ef)
             error_msg = err_data.get("message", "Unknown error")
-
-            if "infeasible" in error_msg.lower():
-                st.error(
-                    "⚠️ **Scenario Infeasible** — The model could not find a feasible solution. "
-                    "This typically means the carbon budget is too restrictive, demand exceeds "
-                    "available generation capacity, or retirement assumptions leave insufficient supply."
-                )
-            else:
-                st.error(f"Optimization failed: {error_msg}")
+            st.error(f"Optimization failed: {error_msg}")
         else:
-            st.error("Optimization failed to find a solution or crashed.")
-
-        if result.stderr:
-            with st.expander("Solver Log (stderr)"):
-                st.code(result.stderr, language="log")
-        if result.stdout:
-            with st.expander("Solver Log (stdout)"):
-                st.code(result.stdout, language="log")
+            st.error(f"Solver exited with code {returncode}. Check logs below.")
+        
+        with st.expander("Full Execution Log"):
+            st.code("\n".join(full_log))
         st.stop()
     else:
         status_container.update(label="Optimization complete!", state="complete")

@@ -75,6 +75,11 @@ def apply_retirement_logic(
     """
     Apply brownfield retirement logic to thermal generators.
 
+    IMPORTANT: In PyPSA multi-period mode, we must NOT toggle p_nom_extendable
+    to False. Doing so changes the set returned by n.get_extendable_i(), which
+    creates mismatched xarray dimensions during linopy model construction,
+    causing an AlignmentError. Instead, we cap capacity using p_nom_max.
+
     Parameters
     ----------
     network : pypsa.Network
@@ -82,8 +87,7 @@ def apply_retirement_logic(
     mode : str
         Either "aemo_schedule" or "economic".
     investment_periods : list[int] or None
-        The investment periods being modelled (e.g. [2026, 2030, 2040, 2050]).
-        Required for AEMO schedule mode.
+        The investment periods being modelled (e.g. [2030, 2040, 2050]).
 
     Returns
     -------
@@ -96,7 +100,6 @@ def apply_retirement_logic(
 
     thermal_carriers = {"coal", "black_coal", "brown_coal", "gas", "ocgt", "ccgt"}
 
-    # Safely create thermal mask, handling NaN/None carriers
     def is_thermal(c):
         if not isinstance(c, str):
             return False
@@ -118,7 +121,6 @@ def apply_retirement_logic(
                 closure_year = AEMO_RETIREMENT_SCHEDULE[schedule_key]
                 commission_year = COMMISSIONING_YEARS.get(schedule_key, 1980)
 
-                # Set build_year and lifetime so asset auto-retires at closure
                 network.generators.at[idx, "build_year"] = commission_year
                 network.generators.at[idx, "lifetime"] = closure_year - commission_year
 
@@ -127,19 +129,19 @@ def apply_retirement_logic(
                     f"lifetime={closure_year - commission_year}, retires {closure_year}"
                 )
 
-            # CRITICAL: Never allow building new thermal capacity
-            network.generators.at[idx, "p_nom_extendable"] = False
+            # Cap capacity at existing p_nom (prevent new builds)
+            # Keep p_nom_extendable=True to avoid linopy dimension mismatch
+            existing = network.generators.at[idx, "p_nom"]
+            network.generators.at[idx, "p_nom_max"] = existing
 
     elif mode == "economic":
-        # Economic retirement: assets are available in all periods but
-        # will only be dispatched if economically rational.
-        # Fixed capacity — solver cannot build more.
         for idx in thermal_gens.index:
-            network.generators.at[idx, "p_nom_extendable"] = False
-
-            # Set build_year to before horizon start, lifetime to cover full horizon
             network.generators.at[idx, "build_year"] = 1970
-            network.generators.at[idx, "lifetime"] = 100  # Available through 2070
+            network.generators.at[idx, "lifetime"] = 100
+
+            # Cap at existing capacity
+            existing = network.generators.at[idx, "p_nom"]
+            network.generators.at[idx, "p_nom_max"] = existing
 
             logger.info(f"  Economic mode: {idx} available all periods (dispatch-based retirement)")
 
