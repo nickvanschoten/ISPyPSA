@@ -1,0 +1,15 @@
+{
+    "scenario_name": "NZ2050_Workshop",
+    "target_year": 2050,
+    "pop_growth": 1.0,
+    "gdp_growth": 2.5,
+    "demand_elasticity": -0.4,
+    "wind_capex": 0.5,
+    "solar_capex": 0.4,
+    "battery_capex": 0.4,
+    "gas_price": 15.0,
+    "black_coal_price": 15.0,
+    "brown_coal_price": 10.0,
+    "carbon_price": 100.0,
+    "mga_toggle": true
+}

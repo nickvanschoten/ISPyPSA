@@ -146,8 +146,46 @@ temporal:
 # ===== Solver =======================================================================
 
 # External solver to use
-solver: highs
+solver_name: gurobi
+solver_options:
+  threads: 0
+  gurobi_options:
+    Method: 2
+    Crossover: 0
+    NumericFocus: 1
+  highs_options:
+    solver: "ipm"
 
 
 # ===== Plotting =====================================================================
 create_plots: True
+
+
+# ===== Testbed ======================================================================
+testbed:
+  scenario_name: 'Coupled_MGA_Sweep'
+  enable_sector_coupling: True
+  nodes:
+    - name: 'NSW'
+      type: 'Urban'
+      spatial_penalty_cost: 30000.0
+    - name: 'VIC'
+      type: 'Urban'
+  links:
+    - bus0: 'NSW'
+      bus1: 'VIC'
+      carrier: 'AC'
+      p_nom_extendable: True
+      length: 800
+    - bus0: 'NSW'
+      bus1: 'VIC'
+      carrier: 'H2'
+      p_nom_extendable: True
+      electrical_bus: 'NSW_AC'
+      efficiency2: -0.02
+  mga_options:
+    cost_source: 'gencost_2024_step_change'
+    slack_epsilon: 0.05
+    target_component: 'Generator'
+    target_carrier: 'gas'
+    target_action: 'minimize'

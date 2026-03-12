@@ -1,0 +1,9 @@
+Starting linopy import...
+Timeout (0:00:15)!
+Thread 0x000050f4 (most recent call first):
+  File "<frozen importlib._bootstrap_external>"Windows fatal exception: access violation
+
+Thread 0x000050f4 (most recent call first):
+  File "<frozen importlib._bootstrap_external>", line 564 in _path_stat
+  File Windows fatal exception: access violation
+

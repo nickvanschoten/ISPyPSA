@@ -1,0 +1,84 @@
+Traceback (most recent call last):
+  File "<string>", line 13, in <module>
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\pypsa\optimization\optimize.py", line 637, in create_model
+    return create_model(self.n, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\pypsa\optimization\optimize.py", line 285, in create_model
+    define_operational_constraints_for_extendables(
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\pypsa\optimization\constraints.py", line 124, in define_operational_constraints_for_extendables
+    n.model.add_constraints(
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\linopy\model.py", line 709, in add_constraints
+    data = self.linexpr(*lhs).to_constraint(sign, rhs).data
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\linopy\model.py", line 1123, in linexpr
+    return LinearExpression.from_tuples(*tuples, model=self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\linopy\expressions.py", line 1759, in from_tuples
+    return merge(exprs, cls=cls) if len(exprs) > 1 else exprs[0]
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\linopy\expressions.py", line 2148, in merge
+    ds = xr.concat([d[["coeffs", "vars"]] for d in data], dim, **kwargs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\xarray\structure\concat.py", line 325, in concat
+    return _dataset_concat(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\xarray\structure\concat.py", line 645, in _dataset_concat
+    align(
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\xarray\structure\alignment.py", line 967, in align
+    aligner.align()
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\xarray\structure\alignment.py", line 659, in align
+    self.align_indexes()
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\xarray\structure\alignment.py", line 496, in align_indexes
+    update_dicts(key, joined_index, joined_index_vars, need_reindex)
+  File "C:\Users\nvan0027\AppData\Local\miniforge3\Lib\site-packages\xarray\structure\alignment.py", line 418, in update_dicts
+    raise AlignmentError(
+xarray.structure.alignment.AlignmentError: cannot align objects on coordinate 'period' because of conflicting indexes
+first index: PandasIndex(MultiIndex([(2030, '2030-01-01 00:00:00'),
+            (2030, '2030-01-01 01:00:00'),
+            (2030, '2030-01-01 02:00:00'),
+            (2030, '2030-01-01 03:00:00'),
+            (2030, '2030-01-01 04:00:00'),
+            (2030, '2030-01-01 05:00:00'),
+            (2030, '2030-01-01 06:00:00'),
+            (2030, '2030-01-01 07:00:00'),
+            (2030, '2030-01-01 08:00:00'),
+            (2030, '2030-01-01 09:00:00'),
+            ...
+            (2050, '2050-01-07 14:00:00'),
+            (2050, '2050-01-07 15:00:00'),
+            (2050, '2050-01-07 16:00:00'),
+            (2050, '2050-01-07 17:00:00'),
+            (2050, '2050-01-07 18:00:00'),
+            (2050, '2050-01-07 19:00:00'),
+            (2050, '2050-01-07 20:00:00'),
+            (2050, '2050-01-07 21:00:00'),
+            (2050, '2050-01-07 22:00:00'),
+            (2050, '2050-01-07 23:00:00')],
+           name='dim_0', length=504))
+second index: PandasIndex(MultiIndex([(2030, '2030-01-01 00:00:00'),
+            (2030, '2030-01-01 01:00:00'),
+            (2030, '2030-01-01 02:00:00'),
+            (2030, '2030-01-01 03:00:00'),
+            (2030, '2030-01-01 04:00:00'),
+            (2030, '2030-01-01 05:00:00'),
+            (2030, '2030-01-01 06:00:00'),
+            (2030, '2030-01-01 07:00:00'),
+            (2030, '2030-01-01 08:00:00'),
+            (2030, '2030-01-01 09:00:00'),
+            ...
+            (2050, '2050-01-07 14:00:00'),
+            (2050, '2050-01-07 15:00:00'),
+            (2050, '2050-01-07 16:00:00'),
+            (2050, '2050-01-07 17:00:00'),
+            (2050, '2050-01-07 18:00:00'),
+            (2050, '2050-01-07 19:00:00'),
+            (2050, '2050-01-07 20:00:00'),
+            (2050, '2050-01-07 21:00:00'),
+            (2050, '2050-01-07 22:00:00'),
+            (2050, '2050-01-07 23:00:00')],
+           name='snapshot', length=504))
+first variable: <xarray.IndexVariable 'dim_0' (dim_0: 504)> Size: 4kB
+[504 values with dtype=int64]
+second variable: <xarray.IndexVariable 'snapshot' (snapshot: 504)> Size: 4kB
+[504 values with dtype=int64]
+

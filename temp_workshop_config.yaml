@@ -1,0 +1,102 @@
+create_plots: true
+discount_rate: 0.05
+filter_by_nem_regions:
+- NSW
+iasr_workbook_version: '6.0'
+network:
+  annuitisation_lifetime: 30
+  nodes:
+    regional_granularity: sub_regions
+    rezs: discrete_nodes
+  rez_to_sub_region_transmission_default_limit: 1e5
+  rez_transmission_expansion: true
+  transmission_expansion: true
+paths:
+  ispypsa_run_name: example_model_run
+  parsed_traces_directory: data/trace_data
+  parsed_workbook_cache: data/workbook_table_cache
+  run_directory: ispypsa_runs
+  workbook_path: data/2024-isp-inputs-and-assumptions-workbook.xlsx
+scenario: Step Change
+solver_name: gurobi
+solver_options:
+  gurobi_options:
+    Crossover: 0
+    Method: 2
+    NumericFocus: 1
+  highs_options:
+    solver: ipm
+  threads: 0
+temporal:
+  capacity_expansion:
+    aggregation:
+      named_representative_weeks:
+      - residual-peak-demand
+      representative_weeks: null
+    investment_periods:
+    - 2050
+    reference_year_cycle:
+    - 2018
+    resolution_min: 30
+  operational:
+    aggregation:
+      named_representative_weeks:
+      - residual-peak-demand
+      - peak-consumption
+      - residual-minimum-demand
+      representative_weeks: null
+    horizon: 336
+    overlap: 48
+    reference_year_cycle:
+    - 2018
+    resolution_min: 30
+  range:
+    end_year: 2050
+    start_year: 2050
+  year_type: fy
+testbed:
+  enable_sector_coupling: true
+  links:
+  - bus0: NSW
+    bus1: VIC
+    carrier: AC
+    length: 800
+    p_nom_extendable: true
+  - bus0: NSW
+    bus1: VIC
+    carrier: H2
+    efficiency2: -0.02
+    electrical_bus: NSW_AC
+    p_nom_extendable: true
+  mga_options:
+    cost_source: gencost_2024_step_change
+    slack_epsilon: 0.05
+    target_action: minimize
+    target_carrier: gas
+    target_component: Generator
+  nodes:
+  - name: NSW
+    spatial_penalty_cost: 0.0
+    type: Urban
+  - name: VIC
+    type: Urban
+  scenario_name: WorkshopBeta
+  sensitivities:
+    capacity_factor_modifier: 1.0
+    capex_modifiers:
+      offwind: 1.2
+      onwind: 0.9
+      solar: 0.9
+      wind: 0.9
+    iam_alpha_damping: 0.5
+    opex_modifiers:
+      OCGT: 1.0
+      gas: 1.0
+    transmission_cost_modifier: 1.0
+trace_data:
+  dataset_type: example
+  dataset_year: 2024
+unserved_energy:
+  cost: 10000.0
+  max_per_node: 100000.0
+wacc: 0.07

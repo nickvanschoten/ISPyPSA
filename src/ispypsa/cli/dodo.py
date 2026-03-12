@@ -841,7 +841,7 @@ def check_results_files_exist():
     """Check if all dependencies exist"""
     dependencies = get_capacity_expansion_tabular_results_files()
     for dep in dependencies:
-        if not os.path.exists(dep):
+        if not Path(dep).exists():
             raise FileNotFoundError(
                 f"Results file {dep} not found. Please run the capacity expansion model first."
             )
@@ -851,7 +851,7 @@ def check_operational_results_files_exist():
     """Check if all operational results dependencies exist"""
     dependencies = get_operational_tabular_results_files()
     for dep in dependencies:
-        if not os.path.exists(dep):
+        if not Path(dep).exists():
             raise FileNotFoundError(
                 f"Results file {dep} not found. Please run the operational model first."
             )

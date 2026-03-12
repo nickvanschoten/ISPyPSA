@@ -1,0 +1,33 @@
+scenario_name: "Phase 1.5 Validation Toy Model"
+enable_sector_coupling: true
+
+nodes:
+  - name: "Urban"
+    type: "DemandCenter"
+  - name: "Renewable"
+    type: "GenerationZone"
+  - name: "Port"
+    type: "IndustrialHub"
+
+links:
+  # AC Transmission Lines
+  - bus0: "Renewable"
+    bus1: "Urban"
+    carrier: "AC"
+    p_nom_extendable: true
+    efficiency: 0.98
+    capital_cost: 400.0  # per MW
+  - bus0: "Urban"
+    bus1: "Port"
+    carrier: "AC"
+    p_nom_extendable: true
+    efficiency: 0.98
+    capital_cost: 300.0  # per MW
+  
+  # Hydrogen Pipeline (will only be used if H2 buses exist via sector coupling)
+  - bus0: "Urban"
+    bus1: "Port"
+    carrier: "H2"
+    p_nom_extendable: true
+    efficiency: 0.99
+    capital_cost: 150.0  # per MW H2 equivalent

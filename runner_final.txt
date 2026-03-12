@@ -1,0 +1,10 @@
+DEBUG: Script started
+DEBUG: Importing DeepMergeConfigManager...
+DEBUG: Importing models...
+DEBUG: Importing builders...
+linopy: loading options
+linopy: loading constants
+linopy: loading constraints
+linopy: loading expressions
+linopy: loading io
+linopy: loading model

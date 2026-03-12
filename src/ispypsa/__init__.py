@@ -1,7 +1,10 @@
 import pandas as pd
 
 # pandas options
-pd.set_option("future.no_silent_downcasting", True)
+try:
+    pd.set_option("future.no_silent_downcasting", True)
+except pd.errors.OptionError:
+    pass
 
 
 __all__ = []
