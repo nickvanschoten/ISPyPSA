@@ -27,31 +27,42 @@ class MGAExportManager:
         """
         capacities = []
         
+        # Helper to get relevant columns
+        def get_base_cols(df):
+            cols = ["bus", "carrier"]
+            for extra in ["build_year", "lifetime"]:
+                if extra in df.columns:
+                    cols.append(extra)
+            return cols
+
         # Generators
         if not network.generators.empty:
-            df = network.generators[["bus", "carrier"]].copy()
+            df = network.generators[get_base_cols(network.generators)].copy()
             df["p_nom_opt"] = self._extract_p_nom_opt(network.generators)
             df["component_type"] = "Generator"
             capacities.append(df)
             
         # Storage Units
         if not network.storage_units.empty:
-            df = network.storage_units[["bus", "carrier"]].copy()
+            df = network.storage_units[get_base_cols(network.storage_units)].copy()
             df["p_nom_opt"] = self._extract_p_nom_opt(network.storage_units)
             df["component_type"] = "StorageUnit"
             capacities.append(df)
             
         # Stores
         if not network.stores.empty:
-            df = network.stores[["bus", "carrier"]].copy()
+            df = network.stores[get_base_cols(network.stores)].copy()
             df["p_nom_opt"] = self._extract_p_nom_opt(network.stores, is_store=True)
             df["component_type"] = "Store"
             capacities.append(df)
             
         # Links
         if not network.links.empty:
-            # Uses bus0 as primary location footprint
-            df = network.links[["bus0", "bus1", "carrier"]].copy()
+            cols = ["bus0", "bus1", "carrier"]
+            for extra in ["build_year", "lifetime"]:
+                if extra in network.links.columns:
+                    cols.append(extra)
+            df = network.links[cols].copy()
             df = df.rename(columns={"bus0": "bus"}) 
             df["p_nom_opt"] = self._extract_p_nom_opt(network.links)
             df["component_type"] = "Link"
@@ -118,15 +129,23 @@ class MGAExportManager:
             df_smp_long.to_parquet(self.output_dir / f"nodal_prices_{scenario_id}.parquet", engine="pyarrow")
             
     def _melt_timeseries(self, df: pd.DataFrame, var_name: str, value_name: str) -> pd.DataFrame:
-        df = df.reset_index()
-        if "timestep" in df.columns:
-            df = df.rename(columns={"timestep": "timestamp"})
-        elif "snapshot" in df.columns:
-            df = df.rename(columns={"snapshot": "timestamp"})
-        elif "index" in df.columns:
-            df = df.rename(columns={"index": "timestamp"})
+        df = df.copy()
+        
+        # Robustly handle MultiIndex (period, snapshot)
+        if isinstance(df.index, pd.MultiIndex):
+            df = df.reset_index()
+            # Levels might be named "period", "snapshot", "timestep", etc.
+            # We want to ensure "period" survives if it exists
+            rename_map = {}
+            for col in df.columns:
+                if col in ["timestep", "snapshot", "index"]:
+                    rename_map[col] = "timestamp"
+            df = df.rename(columns=rename_map)
+        else:
+            df = df.reset_index()
+            df = df.rename(columns={"index": "timestamp", "snapshot": "timestamp", "timestep": "timestamp"})
             
-        id_vars = ["period", "timestamp"] if "period" in df.columns else ["timestamp"]
+        id_vars = [c for c in ["period", "timestamp"] if c in df.columns]
         return df.melt(id_vars=id_vars, var_name=var_name, value_name=value_name)
 
     def export_dispatch_profiles(self, network: pypsa.Network, scenario_id: str):
@@ -137,17 +156,17 @@ class MGAExportManager:
         dispatch_frames = []
         
         if hasattr(network, "generators_t") and not network.generators_t.p.empty:
-            df_gen_long = self._melt_timeseries(network.generators_t.p.copy(), "component_id", "active_power")
+            df_gen_long = self._melt_timeseries(network.generators_t.p, "component_id", "active_power")
             df_gen_long["component_type"] = "Generator"
             dispatch_frames.append(df_gen_long)
             
         if hasattr(network, "links_t") and not network.links_t.p0.empty:
-            df_link_long = self._melt_timeseries(network.links_t.p0.copy(), "component_id", "active_power")
+            df_link_long = self._melt_timeseries(network.links_t.p0, "component_id", "active_power")
             df_link_long["component_type"] = "Link"
             dispatch_frames.append(df_link_long)
             
         if hasattr(network, "loads_t") and not network.loads_t.p_set.empty:
-             df_load_long = self._melt_timeseries(network.loads_t.p_set.copy(), "component_id", "active_power")
+             df_load_long = self._melt_timeseries(network.loads_t.p_set, "component_id", "active_power")
              df_load_long["component_type"] = "Load"
              dispatch_frames.append(df_load_long)
              
@@ -155,16 +174,31 @@ class MGAExportManager:
             df_dispatch = pd.concat(dispatch_frames)
             df_dispatch["scenario_id"] = scenario_id
             
-            # Sub-mapping to map component_id to corresponding bus. Very useful downstream.
+            # Map component_id to bus and carrier
             comp_bus_map = {}
+            comp_carrier_map = {}
+            
             if not network.generators.empty:
                 comp_bus_map.update(network.generators["bus"].to_dict())
+                comp_carrier_map.update(network.generators["carrier"].to_dict())
             if not network.links.empty:
                 comp_bus_map.update(network.links["bus0"].to_dict())
+                comp_carrier_map.update(network.links["carrier"].to_dict())
             if not network.loads.empty:
                 comp_bus_map.update(network.loads["bus"].to_dict())
+                # Loads don't always have carriers, default to "load"
+                if "carrier" in network.loads.columns:
+                    comp_carrier_map.update(network.loads["carrier"].to_dict())
+                else:
+                    comp_carrier_map.update({idx: "load" for idx in network.loads.index})
                 
             df_dispatch["bus"] = df_dispatch["component_id"].map(comp_bus_map)
+            df_dispatch["carrier"] = df_dispatch["component_id"].map(comp_carrier_map)
+            
+            # Ensure period exists even if single-period (for dashboard consistency)
+            if "period" not in df_dispatch.columns:
+                df_dispatch["period"] = 2026 # Default base year
+
             df_dispatch.to_parquet(self.output_dir / f"dispatch_profiles_{scenario_id}.parquet", engine="pyarrow")
 
     def export_all(self, network: pypsa.Network, scenario_id: str):

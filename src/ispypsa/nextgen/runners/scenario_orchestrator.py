@@ -142,6 +142,45 @@ def apply_capex_shocks(network: pypsa.Network, payload: dict):
 
 
 # ---------------------------------------------------------------------------
+# Emissions Intensities (Carbon Physics Patch)
+# ---------------------------------------------------------------------------
+
+def apply_emissions_intensities(network: pypsa.Network):
+    """
+    Set default CO2 emission intensities (tCO2/MWh_elec) for thermal carriers.
+    Mapping: brown_coal:1.2, black_coal:0.9, ocgt:0.6, ccgt:0.4, gas:0.55
+    """
+    intensities = {
+        "brown_coal": 1.2,
+        "black_coal": 0.9,
+        "ocgt": 0.6,
+        "ccgt": 0.4,
+        "gas": 0.55,
+    }
+    logger.info("Applying emissions intensities patch...")
+
+    # Ensure co2_emissions exists in carriers
+    if "co2_emissions" not in network.carriers.columns:
+        network.carriers["co2_emissions"] = 0.0
+
+    # Ensure carrier_co2_emissions exists in generators
+    if "carrier_co2_emissions" not in network.generators.columns:
+        network.generators["carrier_co2_emissions"] = 0.0
+
+    for carrier, intensity in intensities.items():
+        # Update carrier-level attribute
+        if carrier in network.carriers.index:
+            network.carriers.at[carrier, "co2_emissions"] = intensity
+        
+        # Update generator-level attribute for all matching carriers
+        mask = network.generators.carrier == carrier
+        if mask.any():
+            network.generators.loc[mask, "carrier_co2_emissions"] = intensity
+
+    return network
+
+
+# ---------------------------------------------------------------------------
 # Dual Carbon Mechanism (Module 4)
 # ---------------------------------------------------------------------------
 
@@ -197,21 +236,7 @@ def apply_carbon_mechanism(network: pypsa.Network, payload: dict):
         budget_mt = payload.get("carbon_budget_mt", 1000.0)
         budget_t = budget_mt * 1e6  # Convert MtCO2 to tCO2
 
-        # Ensure carriers have co2_emissions attribute
-        if "co2_emissions" not in network.carriers.columns:
-            network.carriers["co2_emissions"] = 0.0
-
-        # Set carrier emissions for thermal carriers
-        thermal_emissions = {
-            "gas": 0.37,        # tCO2/MWh_elec (CCGT ~55% eff)
-            "ocgt": 0.50,       # tCO2/MWh_elec (OCGT ~35% eff)
-            "ccgt": 0.37,       # tCO2/MWh_elec
-            "black_coal": 0.90, # tCO2/MWh_elec
-            "brown_coal": 1.20, # tCO2/MWh_elec
-        }
-        for carrier_name, co2 in thermal_emissions.items():
-            if carrier_name in network.carriers.index:
-                network.carriers.at[carrier_name, "co2_emissions"] = co2
+        # Emissions intensities are now set by apply_emissions_intensities()
 
         # Add the global CO2 constraint
         network.add(
@@ -406,10 +431,13 @@ def main():
     # 6. CAPEX Shocks
     network = apply_capex_shocks(network, payload)
 
-    # 7. Carbon Mechanism (price trajectory or cumulative budget)
+    # 7. Emissions Intensities (Carbon Physics Patch)
+    network = apply_emissions_intensities(network)
+
+    # 8. Carbon Mechanism (price trajectory or cumulative budget)
     network = apply_carbon_mechanism(network, payload)
 
-    # 8. Re-align snapshot index naming (Fixes PyPSA dim_0 AlignmentError)
+    # 9. Re-align snapshot index naming (Fixes PyPSA dim_0 AlignmentError)
     # Our pipeline steps (demand_scaler, retirement_logic, etc.) may modify
     # time-series DataFrames in ways that reset the MultiIndex name from
     # "snapshot" to something else. PyPSA's linopy model construction

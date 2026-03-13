@@ -5,8 +5,198 @@ from pathlib import Path
 import json
 import subprocess
 import sys
+import plotly.graph_objects as go
+import plotly.express as px
+
+# --- COLOR PALETTE ---
+CARRIER_COLORS = {
+    "solar": "#FFD700",
+    "rooftop_solar": "#FFFACD",
+    "wind": "#87CEEB",
+    "battery": "#FF69B4",
+    "gas": "#D3D3D3",
+    "ocgt": "#A9A9A9",
+    "ccgt": "#808080",
+    "black_coal": "#000000",
+    "brown_coal": "#8B4513",
+    "hydro": "#1E90FF",
+    "load": "#FF4500",
+}
+
+def get_color(carrier):
+    c = str(carrier).lower()
+    for k, v in CARRIER_COLORS.items():
+        if k in c:
+            return v
+    return "#333333"
+
+# --- VISUALIZATION PILLARS ---
+
+def plot_macro_transition(caps_df, periods):
+    """Pillar 1: Macro Transition (capacity mix stacked bar by period)."""
+    if caps_df is None or caps_df.empty or "carrier" not in caps_df.columns:
+        return None
+    
+    data = []
+    # ...
+    for p in periods:
+        # Asset is active if: build_year <= period < build_year + lifetime
+        # If build_year or lifetime is missing, assume it's an existing asset active in all periods
+        mask = pd.Series(True, index=caps_df.index)
+        if "build_year" in caps_df.columns:
+            mask &= (caps_df["build_year"] <= p)
+        if "lifetime" in caps_df.columns:
+            mask &= (caps_df["build_year"] + caps_df["lifetime"] > p)
+            
+        active = caps_df[mask].groupby("carrier")["p_nom_opt"].sum().reset_index()
+        active["period"] = str(p)
+        data.append(active)
+        
+    if not data:
+        return None
+        
+    df = pd.concat(data)
+    fig = px.bar(
+        df, x="period", y="p_nom_opt", color="carrier",
+        title="Pillar 1: Macro Transition (Capacity Mix)",
+        labels={"p_nom_opt": "Installed Capacity (MW)", "period": "Investment Period"},
+        color_discrete_map={c: get_color(c) for c in df["carrier"].unique()},
+        barmode="stack",
+    )
+    fig.update_layout(legend_title_text="Carrier")
+    return fig
+
+def plot_duck_curve(disp_df):
+    """Pillar 2: Duck Curve evolution (intra-day average load shape per period)."""
+    if disp_df is None or disp_df.empty:
+        return None
+        
+    # Filter for loads
+    df = disp_df[disp_df["component_type"] == "Load"].copy()
+    if df.empty:
+        return None
+        
+    # Extract hour from timestamp
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["hour"] = df["timestamp"].dt.hour
+    
+    # Group by period and hour, average active_power
+    df_grouped = df.groupby(["period", "hour"])["active_power"].mean().reset_index()
+    df_grouped["period"] = df_grouped["period"].astype(str)
+    
+    fig = px.line(
+        df_grouped, x="hour", y="active_power", color="period",
+        title="Pillar 2: Duck Curve Evolution (Avg Daily Load)",
+        labels={"active_power": "Average Demand (MW)", "hour": "Hour of Day"},
+        line_shape="spline",
+    )
+    fig.update_layout(xaxis=dict(tickmode="linear", tick0=0, dtick=2))
+    return fig
+
+def plot_operational_reality(disp_df, target_period=None):
+    """Pillar 3: Operational Reality (dispatch area chart for a representative week)."""
+    if disp_df is None or disp_df.empty or "carrier" not in disp_df.columns:
+        return None
+
+    # ...
+
+        target_period = disp_df["period"].unique()[-1]
+        
+    df = disp_df[(disp_df["period"] == target_period) & (disp_df["component_type"] == "Generator")].copy()
+    if df.empty:
+        return None
+        
+    # Group by timestamp and carrier
+    df_grouped = df.groupby(["timestamp", "carrier"])["active_power"].sum().reset_index()
+    
+    # Take only the first 168 hours (one week) for clarity
+    unique_ts = sorted(df_grouped["timestamp"].unique())
+    if len(unique_ts) > 168:
+        df_grouped = df_grouped[df_grouped["timestamp"].isin(unique_ts[:168])]
+        
+    fig = px.area(
+        df_grouped, x="timestamp", y="active_power", color="carrier",
+        title=f"Pillar 3: Operational Reality ({target_period} Representative Week)",
+        labels={"active_power": "Generation (MW)", "timestamp": "Time"},
+        color_discrete_map={c: get_color(c) for c in df_grouped["carrier"].unique()},
+    )
+    return fig
+
+def plot_policy_outcomes(econ_df, disp_df):
+    """Pillar 4: Policy Outcomes (emissions + system cost trajectory)."""
+    if disp_df is None or disp_df.empty:
+        return None
+        
+    intensities = {
+        "brown_coal": 1.2,
+        "black_coal": 0.9,
+        "ocgt": 0.6,
+        "ccgt": 0.4,
+        "gas": 0.55,
+    }
+    
+    # Calculate Emissions
+    df_gen = disp_df[disp_df["component_type"] == "Generator"].copy()
+    if "carrier" in df_gen.columns:
+        df_gen["emissions"] = df_gen.apply(
+            lambda x: x["active_power"] * intensities.get(str(x["carrier"]).lower(), 0.0), axis=1
+        )
+        emissions = df_gen.groupby("period")["emissions"].sum() / 1e6 # MtCO2
+    else:
+        emissions = pd.Series(0.0, index=disp_df["period"].unique())
+    
+    # Calculate Costs
+    # System cost = Total Annualized CAPEX + Total Marginal Cost
+    costs = {}
+    periods = sorted(disp_df["period"].unique())
+    
+    for p in periods:
+        p_cost = 0
+        if econ_df is not None and not econ_df.empty:
+            # Active CAPEX in this period
+            mask = pd.Series(True, index=econ_df.index)
+            if "build_year" in econ_df.columns:
+                mask &= (econ_df["build_year"] <= p)
+            if "lifetime" in econ_df.columns:
+                mask &= (econ_df["build_year"] + econ_df["lifetime"] > p)
+            p_cost += econ_df.loc[mask, "total_annualized_capex"].sum()
+            
+        # Marginal cost for this period
+        # We need to join with marginal_cost from econ_df
+        if econ_df is not None and not econ_df.empty:
+            mc_map = econ_df.set_index("component_id")["marginal_cost"].to_dict()
+            df_gen_p = df_gen[df_gen["period"] == p].copy()
+            df_gen_p["mc"] = df_gen_p["component_id"].map(mc_map).fillna(0.0)
+            p_cost += (df_gen_p["active_power"] * df_gen_p["mc"]).sum()
+            
+        costs[p] = p_cost / 1e9 # B$
+        
+    df_policy = pd.DataFrame({
+        "period": [str(p) for p in periods],
+        "Emissions (MtCO2)": [emissions.get(p, 0.0) for p in periods],
+        "System Cost (B$)": [costs.get(p, 0.0) for p in periods]
+    })
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=df_policy["period"], y=df_policy["Emissions (MtCO2)"],
+        name="Emissions (MtCO2)", marker_color="indianred"
+    ))
+    fig.add_trace(go.Scatter(
+        x=df_policy["period"], y=df_policy["System Cost (B$)"],
+        name="System Cost (B$)", yaxis="y2", line=dict(color="royalblue", width=4)
+    ))
+    
+    fig.update_layout(
+        title="Pillar 4: Policy Outcomes",
+        yaxis=dict(title="Emissions (MtCO2)"),
+        yaxis2=dict(title="System Cost (B$)", overlaying="y", side="right"),
+        legend=dict(x=1.1, y=1.1)
+    )
+    return fig
 
 # --- SESSION STATE INITIALIZATION ---
+# ... (rest of session state logic unchanged)
 if "is_running" not in st.session_state:
     st.session_state.is_running = False
 if "form_preset" not in st.session_state:
@@ -359,69 +549,93 @@ st.title("NEM Transition Pathway Command Center")
 
 available_scenarios = discover_scenarios()
 
-st.markdown("### Scenario Comparison")
-
 if not available_scenarios:
     st.warning("No scenario results found in `results_export/`. Run an optimization to generate data.")
+    st.stop()
 
 selected_scenarios = st.multiselect(
     "Select scenarios to evaluate:",
     options=available_scenarios,
-    default=available_scenarios[:2] if len(available_scenarios) >= 2 else available_scenarios,
+    default=available_scenarios[:1],
 )
-
-# --- KPI RIBBON ---
-st.markdown("### Strategic Performance Indicators")
 
 if not selected_scenarios:
     st.info("Select at least one scenario to display performance metrics.")
 else:
     for scen in selected_scenarios:
         data = load_data(scen)
-
-        st.markdown(f"**Scenario: {scen}**")
-
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-
         caps = data.get("capacities")
         disp = data.get("dispatch")
         econ = data.get("economics")
 
-        sys_lcoe = "N/A"
+        if disp is None or disp.empty:
+            st.error(f"No dispatch data found for scenario: {scen}")
+            continue
+
+        periods = sorted(disp["period"].unique())
+
+        st.header(f"🚀 Scenario Analysis: {scen}")
+
+        # --- KPI RIBBON ---
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+
         tot_capacity = "N/A"
         tot_capex = "N/A"
         emissions = "N/A"
-        peak_load = "N/A"
         ren_pen = "N/A"
 
         if caps is not None and not caps.empty:
-            if "p_nom_opt" in caps.columns:
-                total_mw = caps["p_nom_opt"].sum()
-                tot_capacity = f"{total_mw / 1000:,.1f} GW"
+            last_p = periods[-1]
+            mask = pd.Series(True, index=caps.index)
+            if "build_year" in caps.columns: mask &= (caps["build_year"] <= last_p)
+            if "lifetime" in caps.columns: mask &= (caps["build_year"] + caps["lifetime"] > last_p)
+            total_mw = caps.loc[mask, "p_nom_opt"].sum()
+            tot_capacity = f"{total_mw / 1000:,.1f} GW"
 
         if econ is not None and not econ.empty:
-            if "total_annualized_capex" in econ.columns:
-                total_capex_val = econ["total_annualized_capex"].sum()
-                tot_capex = f"${total_capex_val / 1e9:,.2f}B"
+            total_capex_val = econ["total_annualized_capex"].sum()
+            tot_capex = f"${total_capex_val / 1e9:,.2f}B"
 
         if disp is not None and not disp.empty:
-            total_gen = disp[disp["component_type"] == "Generator"]["active_power"].sum()
-            if "carrier" in disp.columns and total_gen > 0:
-                renewables = disp[disp["carrier"].str.lower().isin(["wind", "solar", "hydro"])]
-                ren_gen = renewables["active_power"].sum()
-                ren_pen = f"{(ren_gen / total_gen) * 100:.1f}%"
+            gen_mask = disp["component_type"] == "Generator"
+            total_gen = disp[gen_mask]["active_power"].sum()
+            if total_gen > 0:
+                # Add safety check for 'carrier' column
+                if "carrier" in disp.columns:
+                    renewables = disp[gen_mask & disp["carrier"].str.lower().isin(["wind", "solar", "hydro"])]
+                    ren_gen = renewables["active_power"].sum()
+                    ren_pen = f"{(ren_gen / total_gen) * 100:.1f}%"
+                    
+                    # Emissions for last period
+                    intensities = {"brown_coal": 1.2, "black_coal": 0.9, "ocgt": 0.6, "ccgt": 0.4, "gas": 0.55}
+                    df_last = disp[gen_mask & (disp["period"] == last_p)].copy()
+                    df_last["e"] = df_last.apply(lambda x: x["active_power"] * intensities.get(str(x["carrier"]).lower(), 0.0), axis=1)
+                    emissions = f"{df_last['e'].sum() / 1e6:.1f} Mt"
+                else:
+                    ren_pen = "N/A (Re-run Scenario)"
+                    emissions = "N/A (Re-run Scenario)"
 
-        with col1:
-            st.metric("System LCOE ($/MWh)", sys_lcoe)
-        with col2:
-            st.metric("Total Capacity", tot_capacity)
-        with col3:
-            st.metric("Total Annual CAPEX", tot_capex)
-        with col4:
-            st.metric("Emissions", emissions)
-        with col5:
-            st.metric("Peak Residual Load", peak_load)
-        with col6:
-            st.metric("Renewable Share", ren_pen)
+        with col1: st.metric("Final Period Emissions", emissions)
+        with col2: st.metric("Final System Capacity", tot_capacity)
+        with col3: st.metric("Total Annualized CAPEX", tot_capex)
+        with col4: st.metric("Avg Renewable Share", ren_pen)
+        with col5: st.metric("Investment Periods", len(periods))
+        with col6: st.metric("Target Year", periods[-1])
+
+        # --- 4-PILLAR DASHBOARD GRID ---
+        c1, c2 = st.columns(2)
+        with c1:
+            fig1 = plot_macro_transition(caps, periods)
+            if fig1: st.plotly_chart(fig1, use_container_width=True, key=f"macro_{scen}")
+
+            fig3 = plot_operational_reality(disp)
+            if fig3: st.plotly_chart(fig3, use_container_width=True, key=f"ops_{scen}")
+
+        with c2:
+            fig2 = plot_duck_curve(disp)
+            if fig2: st.plotly_chart(fig2, use_container_width=True, key=f"duck_{scen}")
+
+            fig4 = plot_policy_outcomes(econ, disp)
+            if fig4: st.plotly_chart(fig4, use_container_width=True, key=f"policy_{scen}")
 
         st.divider()
