@@ -39,8 +39,8 @@ IF "%REQUIRES_INSTALL%"=="1" (
         exit /b 1
     )
     
-    :: Explicit safety net for the UI and Data I/O packages
-    pip install pandas streamlit plotly pyarrow pydantic gurobipy >nul
+    :: Explicit safety net for the UI, Data I/O, and Asynchronous Task packages
+    pip install pandas streamlit plotly pyarrow pydantic gurobipy celery redis >nul
     echo [SUCCESS] Environment is fully prepped and ready.
 ) ELSE (
     echo [INFO] Environment already prepped. Skipping installation.

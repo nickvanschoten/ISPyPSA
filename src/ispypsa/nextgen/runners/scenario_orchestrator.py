@@ -35,6 +35,9 @@ except ImportError:
 from ispypsa.nextgen.core.demand_scaler import apply_macroeconomic_scaling
 from ispypsa.nextgen.core.temporal_clustering import cluster_to_representative_weeks
 from ispypsa.nextgen.core.retirement_logic import apply_retirement_logic
+from ispypsa.nextgen.core.economics import apply_gencost_to_network
+from ispypsa.nextgen.core.sector_coupling import add_hydrogen_chain, add_ev_chain
+from ispypsa.nextgen.core.spatial import apply_rez_limits
 from ispypsa.nextgen.runners.phase4_5_runner import build_network
 from ispypsa.nextgen.config.manager import DeepMergeConfigManager
 from ispypsa.nextgen.config.models import TestbedConfig
@@ -337,10 +340,74 @@ def _write_solver_error(error_msg: str, error_file: str = "solver_error.json"):
 
 
 # ---------------------------------------------------------------------------
-# Main Pipeline
+# Pipeline Entry Point
 # ---------------------------------------------------------------------------
 
-def main():
+def run_scenario_pipeline(payload: dict) -> pypsa.Network:
+    """
+    Constructs and enhances a PyPSA network based on scenario payload.
+    Used by the async worker.
+    """
+    scenario_name = payload.get("scenario_name", "Multi_Period_Run")
+    investment_periods = payload.get("investment_periods", DEFAULT_PERIODS)
+    wacc = payload.get("wacc", 0.07)
+    retirement_mode = payload.get("retirement_mode", "aemo_schedule")
+    iasr_data = payload.get("iasr_data", {})
+    rez_limits = payload.get("rez_limits", pd.DataFrame())
+
+    # 1. Build Base Network
+    config_mgr = DeepMergeConfigManager("ispypsa_config.yaml")
+    raw_config = config_mgr.active_config
+    testbed_payload = raw_config.get("testbed", {})
+    config = TestbedConfig(**testbed_payload)
+    network = build_network(config, enable_coupling=True)
+
+    # 2. Apply Temporal Clustering
+    if hasattr(network, "loads_t") and not network.loads_t.p_set.empty:
+        n_weeks = payload.get("representative_weeks", 3)
+        # Using peak preservation weightings if available in payload
+        bus_weights = payload.get("bus_weightings", None)
+        if bus_weights:
+            bus_weights = pd.Series(bus_weights)
+
+        selected_hours, snapshot_weightings = cluster_to_representative_weeks(
+            network.loads_t.p_set, n_weeks=n_weeks, bus_weightings=bus_weights
+        )
+        network.set_snapshots(network.snapshots[selected_hours])
+        # ... weighting assignment ...
+
+    # 3. Demand Scaling
+    network = apply_macroeconomic_scaling(network, payload)
+
+    # 4. Sector Coupling (Hydrogen & EVs)
+    h2_target = payload.get("h2_annual_target_mth2", 0)
+    if h2_target > 0:
+        # Add to a major node, e.g. Gladstone or Newcastle
+        add_hydrogen_chain(network, "QLD1", h2_target)
+
+    ev_fleet = payload.get("ev_fleet_size", 0)
+    if ev_fleet > 0:
+        add_ev_chain(network, "NSW1", ev_fleet)
+
+    # 5. Brownfield Retirement Logic
+    network = apply_retirement_logic(network, retirement_mode, investment_periods)
+
+    # 6. Spatial REZ Limits
+    if not rez_limits.empty:
+        network = apply_rez_limits(network, rez_limits)
+
+    # 7. GenCost Annuity Calculations
+    if iasr_data:
+        network = apply_gencost_to_network(network, iasr_data, scenario_wacc=wacc)
+    else:
+        # Fallback to simple WACC annuity
+        network = apply_wacc_annuity(network, wacc)
+
+    # 8. Emissions & Carbon
+    network = apply_emissions_intensities(network)
+    network = apply_carbon_mechanism(network, payload)
+
+    return network
     parser = argparse.ArgumentParser(description="Multi-Period NEM Scenario Orchestrator")
     parser.add_argument("payload_path", type=str, help="Path to the JSON scenario payload")
     args = parser.parse_args()

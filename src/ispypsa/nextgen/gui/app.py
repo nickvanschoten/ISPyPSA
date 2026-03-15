@@ -385,120 +385,112 @@ with st.sidebar.expander("Enable Regional Heterogeneity"):
 ev_penetration = 0.0
 rooftop_solar_penetration = 0.0
 ind_electrification = 0.0
-with st.sidebar.expander("Electrification & Profile Shaping"):
-    st.caption("Set penetration trajectories for demand profile decomposition.")
-    ev_penetration = st.slider("EV Penetration (%)", 0.0, 100.0, 0.0, step=5.0)
+h2_annual_target = 0.0
+ev_fleet_size = 0
+with st.sidebar.expander("Electrification & Sector Coupling"):
+    st.caption("Set penetration trajectories and endogenous conversion chains.")
+    ev_penetration = st.slider("EV Volume Penetration (%)", 0.0, 100.0, 0.0, step=5.0)
+    ev_fleet_size = st.number_input("EV Fleet Size (units)", value=0, step=100000)
     ind_electrification = st.slider("Industrial Electrification (%)", 0.0, 100.0, 0.0, step=5.0)
+    h2_annual_target = st.number_input("Annual Hydrogen Target (MtH2)", value=0.0, step=0.1)
     rooftop_solar_penetration = st.slider("Rooftop Solar Penetration (%)", 0.0, 100.0, 0.0, step=5.0)
 
 # --- SOLVER EXECUTION ---
 if st.session_state.is_running:
     # Build investment periods list
+    # Use locals().get() to safely check if the form variables are defined
+    # in the current execution context.
     investment_periods = [2026]
-    if periods_2030:
+    if locals().get("periods_2030", True):
         investment_periods.append(2030)
-    if periods_2040:
+    if locals().get("periods_2040", True):
         investment_periods.append(2040)
-    if periods_2050:
+    if locals().get("periods_2050", True):
         investment_periods.append(2050)
 
     payload = {
-        "scenario_name": scenario_name,
+        "scenario_name": locals().get("scenario_name", "Multi_Period_Run"),
         "investment_periods": investment_periods,
-        "representative_weeks": representative_weeks,
-        "pop_growth": pop_growth,
-        "gdp_growth": gdp_growth,
-        "demand_elasticity": demand_elasticity,
-        "wacc": wacc / 100.0,  # Convert % to decimal
-        "wind_capex": wind_capex,
-        "solar_capex": solar_capex,
-        "battery_capex": battery_capex,
-        "gas_price": gas_price,
-        "black_coal_price": black_coal_price,
-        "brown_coal_price": brown_coal_price,
-        "retirement_mode": retirement_mode,
-        "carbon_mode": carbon_mode,
-        "mga_toggle": mga_toggle,
-        "ev_penetration": ev_penetration,
-        "ind_electrification": ind_electrification,
-        "rooftop_solar_penetration": rooftop_solar_penetration,
+        "representative_weeks": locals().get("representative_weeks", 3),
+        "pop_growth": locals().get("pop_growth", 1.5),
+        "gdp_growth": locals().get("gdp_growth", 2.0),
+        "demand_elasticity": locals().get("demand_elasticity", -0.1),
+        "wacc": locals().get("wacc", 7.0) / 100.0,
+        "wind_capex": locals().get("wind_capex", 1.0),
+        "solar_capex": locals().get("solar_capex", 1.0),
+        "battery_capex": locals().get("battery_capex", 1.0),
+        "gas_price": locals().get("gas_price", 10.0),
+        "black_coal_price": locals().get("black_coal_price", 8.0),
+        "brown_coal_price": locals().get("brown_coal_price", 5.0),
+        "retirement_mode": locals().get("retirement_mode", "aemo_schedule"),
+        "carbon_mode": locals().get("carbon_mode", "price_trajectory"),
+        "mga_toggle": locals().get("mga_toggle", False),
+        "ev_penetration": locals().get("ev_penetration", 0.0),
+        "ind_electrification": locals().get("ind_electrification", 0.0),
+        "rooftop_solar_penetration": locals().get("rooftop_solar_penetration", 0.0),
+        "h2_annual_target_mth2": locals().get("h2_annual_target", 0.0),
+        "ev_fleet_size": locals().get("ev_fleet_size", 0),
     }
 
     # Add carbon-mode-specific params
-    if carbon_mode == "price_trajectory":
+    c_mode = payload["carbon_mode"]
+    if c_mode == "price_trajectory":
         payload["carbon_prices"] = {
-            "2030": carbon_price_2030,
-            "2040": carbon_price_2040,
-            "2050": carbon_price_2050,
+            "2030": locals().get("carbon_price_2030", 0.0),
+            "2040": locals().get("carbon_price_2040", 0.0),
+            "2050": locals().get("carbon_price_2050", 0.0),
         }
-        payload["carbon_price"] = carbon_price_2030  # Fallback flat price
+        payload["carbon_price"] = payload["carbon_prices"]["2030"]
     else:
-        payload["carbon_budget_mt"] = carbon_budget_mt
+        payload["carbon_budget_mt"] = locals().get("carbon_budget_mt", 800.0)
         payload["carbon_price"] = 0.0
 
-    # Add regional params if enabled
-    if regional_params:
+    if locals().get("regional_params"):
         payload["regional_params"] = regional_params
 
-    payload_path = Path("scenario_payload.json")
-    with open(payload_path, "w") as f:
-        json.dump(payload, f, indent=4)
-
-    # Remove any stale error file
-    error_file = Path("solver_error.json")
-    if error_file.exists():
-        error_file.unlink()
-
-    # --- Async Subprocess with Real-Time Log Streaming ---
-    status_container = st.status(f"Running Optimization: {scenario_name}", expanded=True)
-    log_container = st.empty()
-    full_log = []
-
-    with status_container:
-        st.write("📦 Scenario assembled. Launching orchestrator...")
+    from ispypsa.nextgen.runners.async_worker import run_optimization_task, run_local_async
+    
+    # Attempt to submit to Celery first, fallback to local thread if Redis is missing
+    try:
+        task = run_optimization_task.delay(payload)
+        st.session_state.task_id = task.id
+        st.session_state.is_celery = True
+    except Exception as e:
+        st.warning("⚠️ Redis not found. Running in local background thread instead.")
+        task_id = run_local_async(payload)
+        st.session_state.task_id = task_id
+        st.session_state.is_celery = False
         
-        runner_script = "src/ispypsa/nextgen/runners/scenario_orchestrator.py"
-        
-        process = subprocess.Popen(
-            [sys.executable, "-u", runner_script, str(payload_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-        )
-
-        # Stream logs in real-time
-        while True:
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
-                break
-            if line:
-                clean_line = line.strip()
-                full_log.append(clean_line)
-                # Keep only last 12 lines in the viewport for performance
-                log_container.code("\n".join(full_log[-12:]))
-                
-        returncode = process.wait()
-
     st.session_state.is_running = False
+    st.rerun()
 
-    if returncode != 0:
-        # Check for structured error file
-        if error_file.exists():
-            with open(error_file) as ef:
-                err_data = json.load(ef)
-            error_msg = err_data.get("message", "Unknown error")
-            st.error(f"Optimization failed: {error_msg}")
-        else:
-            st.error(f"Solver exited with code {returncode}. Check logs below.")
+# --- Async Status Fragment ---
+if hasattr(st.session_state, "task_id"):
+    @st.fragment(run_every="5s")
+    def poll_task_status():
+        from ispypsa.nextgen.runners.async_worker import app as celery_app, get_local_status
         
-        with st.expander("Full Execution Log"):
-            st.code("\n".join(full_log))
-        st.stop()
-    else:
-        status_container.update(label="Optimization complete!", state="complete")
-        st.success(f"✅ Multi-period optimization completed for '{scenario_name}'.")
-        st.rerun()
+        if st.session_state.get("is_celery", False):
+            res = celery_app.AsyncResult(st.session_state.task_id)
+            state, info = res.state, res.info
+        else:
+            status = get_local_status(st.session_state.task_id)
+            state, info = status["state"], status["info"]
+        
+        if state == 'PROGRESS':
+            st.info(f"⏳ Optimization in progress: {info.get('message', 'Working...')}")
+        elif state == 'SUCCESS':
+            st.success("✅ Optimization Complete!")
+            if st.button("Refresh Results"):
+                del st.session_state.task_id
+                st.rerun()
+        elif state == 'FAILURE':
+            st.error(f"❌ Optimization failed: {info}")
+            if st.button("Clear Error"):
+                del st.session_state.task_id
+                st.rerun()
+                
+    poll_task_status()
 
 
 # --- DATA LOADING & DISCOVERY ---

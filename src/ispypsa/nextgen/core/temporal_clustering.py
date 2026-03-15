@@ -16,13 +16,21 @@ logger = logging.getLogger(__name__)
 # 1. K-Medoids Representative Week Selection
 # ---------------------------------------------------------------------------
 
-def _daily_profiles(series: pd.DataFrame) -> np.ndarray:
+def _daily_profiles(series: pd.DataFrame, bus_weightings: pd.Series | None = None) -> np.ndarray:
     """
     Reshape an hourly time-series DataFrame into a (n_days, 24) matrix.
-    Each row is one day's 24-hour profile (summed across all columns).
-    Truncates any partial trailing day.
+    Each row is one day's 24-hour profile.
+    If bus_weightings is provided, calculates a weighted sum across buses
+    to ensure peak signals (10% POE) are prioritized in clustering.
     """
-    total_hourly = series.sum(axis=1).values
+    if bus_weightings is not None:
+        # Align indices and multiply
+        common = series.columns.intersection(bus_weightings.index)
+        weighted = series[common].multiply(bus_weightings[common], axis=1)
+        total_hourly = weighted.sum(axis=1).values
+    else:
+        total_hourly = series.sum(axis=1).values
+
     n_full_days = len(total_hourly) // 24
     return total_hourly[: n_full_days * 24].reshape(n_full_days, 24)
 
@@ -107,10 +115,12 @@ def cluster_to_representative_weeks(
     loads_t: pd.DataFrame,
     n_weeks: int = 3,
     vre_t: pd.DataFrame | None = None,
+    bus_weightings: pd.Series | None = None,
 ) -> tuple[list[int], dict[int, float]]:
     """
     Select representative days via K-Medoids + forced extreme-day append.
     Supports both single-period (flat index) and multi-period (MultiIndex).
+    Uses bus_weightings to ensure peak demand signals (10% POE) are preserved.
 
     Parameters
     ----------
@@ -120,6 +130,8 @@ def cluster_to_representative_weeks(
         Number of representative weeks to select per period.
     vre_t : pd.DataFrame or None
         Optional hourly VRE generation profiles for extreme-event detection.
+    bus_weightings : pd.Series or None
+        Optional weights per bus to prioritize peak signals in clustering.
 
     Returns
     -------
@@ -131,7 +143,7 @@ def cluster_to_representative_weeks(
     is_multi = isinstance(loads_t.index, pd.MultiIndex)
     
     if not is_multi:
-        return _cluster_single_period(loads_t, n_weeks, vre_t)
+        return _cluster_single_period(loads_t, n_weeks, vre_t, bus_weightings)
     
     # Multi-period: iterate through periods and aggregate
     periods = loads_t.index.get_level_values(0).unique()
@@ -149,7 +161,7 @@ def cluster_to_representative_weeks(
         
         # Cluster this period
         sel_hours_local, weightings_local = _cluster_single_period(
-            period_loads, n_weeks, period_vre
+            period_loads, n_weeks, period_vre, bus_weightings
         )
         
         # Map local integer hours back to global integer hours
@@ -169,9 +181,10 @@ def _cluster_single_period(
     loads_t: pd.DataFrame,
     n_weeks: int = 3,
     vre_t: pd.DataFrame | None = None,
+    bus_weightings: pd.Series | None = None,
 ) -> tuple[list[int], dict[int, float]]:
     """Internal helper to cluster a single contiguous block of hours."""
-    daily_matrix = _daily_profiles(loads_t)
+    daily_matrix = _daily_profiles(loads_t, bus_weightings)
     n_representative_days = n_weeks * 7
 
     # VRE daily profiles for extreme detection
