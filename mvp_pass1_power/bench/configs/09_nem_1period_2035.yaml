@@ -1,0 +1,54 @@
+# 09: Full NEM single-period 2035 — extended-budget rerun of the 2035 step
+# from the myopic NEM 6p sequence that was killed at 15 min.
+
+paths:
+  run_directory: "mvp_pass1_power/bench/runs"
+  ispypsa_run_name: bench_09_nem_1period_2035
+  parsed_traces_directory: "mvp_pass1_power/data/traces"
+  workbook_path: "mvp_pass1_power/data/iasr_2024_v6.0.xlsx"
+  parsed_workbook_cache: "mvp_pass1_power/data/workbook_cache"
+
+trace_data:
+  dataset_type: example
+  dataset_year: 2024
+
+iasr_workbook_version: "6.0"
+scenario: Step Change
+wacc: 0.07
+discount_rate: 0.05
+unserved_energy:
+  cost: 10000.0
+  max_per_node: 100000.0
+
+network:
+  transmission_expansion: True
+  rez_transmission_expansion: True
+  annuitisation_lifetime: 30
+  nodes:
+    regional_granularity: sub_regions
+    rezs: discrete_nodes
+  rez_to_sub_region_transmission_default_limit: 1e5
+
+temporal:
+  year_type: fy
+  range:
+    start_year: 2035
+    end_year: 2035
+  capacity_expansion:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    investment_periods: [2035]
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+  operational:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    horizon: 336
+    overlap: 48
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+
+solver: highs
+create_plots: False

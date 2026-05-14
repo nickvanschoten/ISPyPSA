@@ -1,0 +1,16 @@
+{
+  "run_id": "02_ipm_nsw_2period",
+  "status": "killed",
+  "kill_reason": "External kill after ~90 min. HiGHS IPM did 2 barrier iterations (10s, 58s) then went to crossover. Crossover progressed cleanly (167s for 'fixed variables' phase from 42109 down to 157 in 40s), then started 'factorization 7' at HiGHS time 174s. Stuck on that factorization for the remaining ~85 min of wall-clock \u2014 no further log output. IPM-with-crossover at default settings does not converge on this LP either.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 5400.0,
+  "peak_rss_gib": 4.9,
+  "lp_rows": 4877350,
+  "lp_cols": 2250776,
+  "lp_nonzeros": 8935253,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "objective_value": null,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

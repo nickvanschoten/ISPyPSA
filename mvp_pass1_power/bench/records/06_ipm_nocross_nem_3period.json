@@ -1,0 +1,9 @@
+{
+  "run_id": "06_ipm_nocross_nem_3period",
+  "status": "killed",
+  "kill_reason": "Not run. NSW 2-period (smallest multi-period config, simplest of the requested set) did not converge under crossover-off \u2014 same stall as crossover-on at 'Start factorization 7'. Per task instruction, if the diagnostic hypothesis fails on NSW 2p the larger configurations are not informative to attempt.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 0.0,
+  "peak_rss_gib": 0.0,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

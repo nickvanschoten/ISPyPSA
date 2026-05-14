@@ -1,0 +1,16 @@
+{
+  "run_id": "03_nsw_3period",
+  "status": "timed_out",
+  "wall_clock_s": 28666.577435016632,
+  "wall_clock_budget_s": 1800,
+  "peak_rss_bytes": 6229061632,
+  "peak_rss_gib": 5.801265716552734,
+  "lp_rows": null,
+  "lp_cols": null,
+  "lp_nonzeros": null,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "objective_value": null,
+  "note": "Killed after 30 min wall-clock budget. See last HiGHS Iteration line in logs for progress."
+}

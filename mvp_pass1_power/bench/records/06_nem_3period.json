@@ -1,0 +1,16 @@
+{
+  "run_id": "06_nem_3period",
+  "status": "killed",
+  "kill_reason": "External kill at ~30 min: LP build phase exceeded budget; subprocess reached HiGHS startup but no LP-size line printed before kill \u2014 i.e. HiGHS presolve was still running. Memory peak observed at 22 GB.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 1800.0,
+  "peak_rss_gib": 22.3,
+  "lp_rows": null,
+  "lp_cols": null,
+  "lp_nonzeros": null,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "objective_value": null,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

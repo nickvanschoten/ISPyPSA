@@ -1,0 +1,21 @@
+{
+  "run_id": "02_ipm_nocross_nsw_2period",
+  "status": "killed",
+  "kill_reason": "External kill ~20 min into solve. Same stall as IPM-with-crossover: 'Start factorization 7: nonzeros in basis = 2,092,804' at HiGHS time 151s, then no further output. CROSSOVER-OFF DOES NOT HELP HERE \u2014 the option is verified to work in principle (tested on small LP: IPM ran 15 iters, 'Status crossover: not run', no basis returned) but on this LP the stall occurs in IPX's internal basis identification during the BARRIER algorithm itself, not in the final crossover step.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 1200.0,
+  "peak_rss_gib": 5.0,
+  "lp_rows": 4877350,
+  "lp_cols": 2250776,
+  "lp_nonzeros": 8935253,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "ipm_iterations": null,
+  "ipm_final_pinf": 0.0793,
+  "ipm_final_dinf": 0.0377,
+  "ipm_final_gap": 2.0,
+  "objective_value": null,
+  "ipm_iterations_observed": 1,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

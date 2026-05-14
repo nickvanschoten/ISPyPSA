@@ -1,0 +1,16 @@
+{
+  "run_id": "05_ipm_nem_2period",
+  "status": "killed",
+  "kill_reason": "External kill after ~60 min wall-clock. HiGHS IPM completed LP build but stalled in presolve/setup phase \u2014 no LP-size line or IPM iteration line ever printed to stdout. Memory hovered 15-20 GB. Process was alive and consuming CPU but emitting no progress markers. The 16.2M-row LP exceeded what HiGHS IPM presolve/setup could complete in the budget.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 3600.0,
+  "peak_rss_gib": 20.8,
+  "lp_rows": null,
+  "lp_cols": null,
+  "lp_nonzeros": null,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "objective_value": null,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

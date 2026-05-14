@@ -1,0 +1,20 @@
+# Local data inputs (re-downloaded by reproducer)
+data/
+
+# Solved PyPSA networks + intermediate CSVs (regenerable from configs + data)
+runs/
+bench/runs/
+bench/runs_myopic/
+
+# Auto-generated myopic per-period configs (rebuilt by run_myopic.py)
+bench/configs_myopic/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Override parent .gitignore to keep simple-msm deliverables and solver logs.
+# These are the artefacts the team needs to inspect without re-running solves.
+!outputs/simple_msm/*.csv
+!bench/logs/*.log
+!bench/logs/*.txt

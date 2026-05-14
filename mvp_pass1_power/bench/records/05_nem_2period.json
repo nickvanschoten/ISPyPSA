@@ -1,0 +1,17 @@
+{
+  "run_id": "05_nem_2period",
+  "status": "killed",
+  "kill_reason": "External kill at ~25 min into solve; HiGHS reached Phase 2 with feasible primal but Pr-infeasibility oscillated 1e8-7e8 \u2014 degenerate primal simplex without converging at default settings",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 1800.0,
+  "peak_rss_gib": 20.8,
+  "lp_rows": 16234604,
+  "lp_cols": 7505085,
+  "lp_nonzeros": 30017864,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "objective_value": null,
+  "last_iter_line": "765436     1.6784882776e+10 Pr: 346971(3.68866e+08); Du: 0(1.39397e-05) 644s",
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

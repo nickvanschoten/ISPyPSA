@@ -1,0 +1,9 @@
+{
+  "run_id": "07_ipm_nem_6period",
+  "status": "killed",
+  "kill_reason": "Not run. Stretch goal condition was 'if 2p configs complete cleanly' \u2014 they did not.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 0.0,
+  "peak_rss_gib": 0.0,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

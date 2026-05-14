@@ -1,0 +1,9 @@
+{
+  "run_id": "07_nem_6period",
+  "status": "killed",
+  "kill_reason": "Did not run \u2014 predicted from prior data: HiGHS at default settings shows degenerate simplex on full-NEM 2- and 3-period (16M and >50M row LPs). NEM 6-period extrapolates to >100M rows; same convergence behavior expected; LP build alone would consume the entire 10-min budget.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 0.0,
+  "peak_rss_gib": 0.0,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

@@ -1,0 +1,9 @@
+{
+  "run_id": "06_ipm_nem_3period",
+  "status": "killed",
+  "kill_reason": "Not run. Predicted from NSW 2p (1.5h crossover stall) and NEM 2p (1h+ presolve stall): IPM at default settings does not progress on multi-period NEM LPs in practical time. NEM 3p is a strictly larger LP than NEM 2p; same failure mode expected; running it would consume hours of compute for no additional signal.",
+  "started_at_iso": "(unknown; chain log was overwritten)",
+  "wall_clock_s": 0.0,
+  "peak_rss_gib": 0.0,
+  "note": "Record reconstructed from log file after external kill. Per-stage timings are not available; HiGHS markers are from the captured log if any were emitted before the kill."
+}

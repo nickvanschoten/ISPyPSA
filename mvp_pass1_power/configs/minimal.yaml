@@ -1,0 +1,63 @@
+# Minimal ISPyPSA config — matches the shape of the example config that ships
+# with ISPyPSA (NSW only, single 2050 period, one representative week).
+#
+# Use only when the larger configs cannot solve in the available time budget.
+# This config is acknowledged as smoke-test scale — it is here so that the
+# end-to-end pipeline can be demonstrated even when full-NEM solves are
+# infeasible. The README is honest about which config produced the artefacts.
+
+paths:
+  run_directory: "mvp_pass1_power/runs"
+  ispypsa_run_name: minimal_step_change
+  parsed_traces_directory: "mvp_pass1_power/data/traces"
+  workbook_path: "mvp_pass1_power/data/iasr_2024_v6.0.xlsx"
+  parsed_workbook_cache: "mvp_pass1_power/data/workbook_cache"
+
+trace_data:
+  dataset_type: example
+  dataset_year: 2024
+
+iasr_workbook_version: "6.0"
+scenario: Step Change
+
+wacc: 0.07
+discount_rate: 0.05
+
+unserved_energy:
+  cost: 10000.0
+  max_per_node: 100000.0
+
+filter_by_nem_regions: [NSW]
+
+network:
+  transmission_expansion: True
+  rez_transmission_expansion: True
+  annuitisation_lifetime: 30
+  nodes:
+    regional_granularity: sub_regions
+    rezs: discrete_nodes
+  rez_to_sub_region_transmission_default_limit: 1e5
+
+temporal:
+  year_type: fy
+  range:
+    start_year: 2050
+    end_year: 2050
+  capacity_expansion:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    investment_periods: [2050]
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+  operational:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    horizon: 336
+    overlap: 48
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+
+solver: highs
+create_plots: False

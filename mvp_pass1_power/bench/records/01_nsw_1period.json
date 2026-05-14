@@ -1,0 +1,29 @@
+{
+  "run_id": "01_nsw_1period",
+  "config": "C:\\Users\\van538\\Documents\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs\\01_nsw_1period.yaml",
+  "archetype": "cost_optimal",
+  "started_at": 1778628982.1087291,
+  "started_at_iso": "2026-05-13T09:36:22",
+  "iasr_load_s": 0.27148600001237355,
+  "templating_s": 1.3167923000000883,
+  "translation_s": 6.690529599989532,
+  "pypsa_build_s": 11.166510400013067,
+  "solve_s": 79.17542069999035,
+  "solve_ok": true,
+  "save_network_s": 0.4829866000218317,
+  "extract_results_s": 0.41578260000096634,
+  "annual_generation_mwh_by_period": {
+    "2050": 106387219.23424089
+  },
+  "wall_clock_s": 109.48147229998722,
+  "status": "completed",
+  "peak_rss_bytes": 881209344,
+  "peak_rss_gib": 0.8206901550292969,
+  "lp_rows": 167850,
+  "lp_cols": 77404,
+  "lp_nonzeros": 319253,
+  "model_status": "Optimal",
+  "highs_run_time_s": 74.71,
+  "simplex_iterations": 67834,
+  "objective_value": 18856497629.0
+}

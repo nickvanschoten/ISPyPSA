@@ -1,0 +1,71 @@
+# Pass-1 MVP baseline ISPyPSA config (cost-optimal Step Change).
+#
+# Choices and reasoning:
+#  - sub_regions + discrete_nodes is ISPyPSA's only fully-implemented spatial config.
+#  - 30-min is ISPyPSA's only supported resolution.
+#  - investment_periods=[2030, 2040, 2050]: three periods is enough to demonstrate the
+#    simple-msm milestone-year contract (six periods is ~2x more LP vars; we chose to
+#    invest the runtime budget into NEM-wide solve quality rather than more periods).
+#  - 3 named representative weeks (residual-peak-demand, peak-consumption,
+#    residual-minimum-demand) covers the dispatch envelope that drives capacity build
+#    decisions. Production should run a full 8760 with all 30 reference years.
+#  - reference_year_cycle=[2018] is forced by the example trace dataset only carrying
+#    2018. Production should cycle through all reference years per AEMO methodology.
+#  - WACC 0.07, discount 0.05 match ISPyPSA's shipped defaults; consistent with
+#    AEMO ISP financial assumptions.
+
+paths:
+  run_directory: "mvp_pass1_power/runs"
+  ispypsa_run_name: baseline_step_change
+  parsed_traces_directory: "mvp_pass1_power/data/traces"
+  workbook_path: "mvp_pass1_power/data/iasr_2024_v6.0.xlsx"
+  parsed_workbook_cache: "mvp_pass1_power/data/workbook_cache"
+
+trace_data:
+  dataset_type: example
+  dataset_year: 2024
+
+iasr_workbook_version: "6.0"
+scenario: Step Change
+
+wacc: 0.07
+discount_rate: 0.05
+
+unserved_energy:
+  cost: 10000.0
+  max_per_node: 100000.0
+
+# Full NEM — no filter.
+
+network:
+  transmission_expansion: True
+  rez_transmission_expansion: True
+  annuitisation_lifetime: 30
+  nodes:
+    regional_granularity: sub_regions
+    rezs: discrete_nodes
+  rez_to_sub_region_transmission_default_limit: 1e5
+
+temporal:
+  year_type: fy
+  range:
+    start_year: 2030
+    end_year: 2050
+  capacity_expansion:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    investment_periods: [2030, 2040, 2050]
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand, peak-consumption, residual-minimum-demand]
+  operational:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    horizon: 336
+    overlap: 48
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+
+solver: highs
+create_plots: False

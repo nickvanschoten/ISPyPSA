@@ -1,0 +1,5 @@
+method_id,short_name,description,role,representation
+electricity__grid_supply__cost_optimal_baseline,Cost-optimal Step Change,Unconstrained least-cost expansion under AEMO 2024 IASR Step Change.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__renewables_led,Renewables-led,"≥80% renewable share by 2040, ≥95% by 2050; no new coal.",supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__fossil_incumbent,Fossil-incumbent,Capped wind+solar build; existing thermal lifetime-extended where allowed.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__deep_clean_firmed,Deep-clean firmed,All coal retired by 2040; ≥90% low-carbon by 2050; no new unabated thermal.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
