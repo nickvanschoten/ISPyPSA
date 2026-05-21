@@ -1,0 +1,21 @@
+{
+  "run_id": "07_gurobi_barconvtol3_nem_6period",
+  "status": "timed_out",
+  "wall_clock_s": 28803.175019025803,
+  "wall_clock_budget_s": 28800.0,
+  "peak_rss_bytes": 125238280192,
+  "peak_rss_gib": 116.63723754882812,
+  "lp_rows": 38123031,
+  "lp_cols": 17963800,
+  "lp_nonzeros": 76069533,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "ipm_iterations": null,
+  "ipm_final_pinf": 0.000176,
+  "ipm_final_dinf": 0.00304,
+  "ipm_final_gap": 170.0,
+  "objective_value": null,
+  "ipm_iterations_observed": 108,
+  "last_solver_line": "Objective                Residual"
+}

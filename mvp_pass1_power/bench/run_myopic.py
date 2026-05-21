@@ -16,6 +16,7 @@ Usage:
         --run-id nsw_6p_myopic \\
         --filter NSW \\
         --periods 2025 2030 2035 2040 2045 2050 \\
+        --archetype cost_optimal \\
         --budget-min 600
 """
 
@@ -95,7 +96,7 @@ create_plots: False
     return cfg_path
 
 
-def _run_one_period(cfg: Path, run_id: str, budget_min: float) -> dict:
+def _run_one_period(cfg: Path, run_id: str, budget_min: float, archetype: str) -> dict:
     """Run a single period via the instrumented runner and return its record."""
     log_path = LOGS / f"{run_id}.log"
     record_path = RECORDS / f"{run_id}.json"
@@ -106,7 +107,7 @@ def _run_one_period(cfg: Path, run_id: str, budget_min: float) -> dict:
 
     cmd_str = (
         f'"{sys.executable}" -u "{BENCH / "instrumented_runner.py"}" '
-        f'--config "{cfg}" --run-id "{run_id}" --archetype cost_optimal '
+        f'--config "{cfg}" --run-id "{run_id}" --archetype {archetype} '
         f'> "{log_path}" 2>&1'
     )
     env = {**os.environ, "PYTHONUNBUFFERED": "1"}
@@ -149,10 +150,10 @@ def _run_one_period(cfg: Path, run_id: str, budget_min: float) -> dict:
             "peak_rss_gib": peak_rss / (1024**3)}
 
 
-def _extract_built_capacities(run_id: str, year: int) -> pd.DataFrame:
+def _extract_built_capacities(run_id: str, year: int, archetype: str) -> pd.DataFrame:
     """Extract capacity built in this period — generators with build_year=year."""
     import pypsa
-    nc_path = Path("mvp_pass1_power/bench/runs_myopic") / f"{run_id}_{year}__cost_optimal" \
+    nc_path = Path("mvp_pass1_power/bench/runs_myopic") / f"{run_id}_{year}__{archetype}" \
               / "outputs" / "capacity_expansion.nc"
     if not nc_path.exists():
         return pd.DataFrame()
@@ -171,6 +172,8 @@ def main():
                     help="NEM region filter (e.g. 'NSW'); omit for full NEM")
     ap.add_argument("--periods", type=int, nargs="+",
                     default=[2025, 2030, 2035, 2040, 2045, 2050])
+    ap.add_argument("--archetype", default="cost_optimal",
+                    help="Archetype id to apply (default: cost_optimal)")
     ap.add_argument("--budget-min", type=float, default=720,
                     help="Per-period wall-clock budget (default 12h)")
     args = ap.parse_args()
@@ -179,6 +182,7 @@ def main():
     seq_record = {
         "run_id": args.run_id,
         "kind": "myopic_sequential",
+        "archetype": args.archetype,
         "regions_filter": regions,
         "periods": args.periods,
         "started_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -190,16 +194,16 @@ def main():
     seq_started = time.time()
     for year in args.periods:
         sub_run_id = f"{args.run_id}_{year}"
-        print(f"\n=== Myopic period {year} ({sub_run_id}) ===")
+        print(f"\n=== Myopic period {year} ({sub_run_id}) archetype={args.archetype} ===")
         cfg = _write_period_config(sub_run_id, year, regions)
         per_started = time.time()
-        rec = _run_one_period(cfg, sub_run_id, args.budget_min)
+        rec = _run_one_period(cfg, sub_run_id, args.budget_min, args.archetype)
         per_wall = time.time() - per_started
         rec["per_period_wall_s"] = per_wall
         rec["per_period_peak_gib"] = rec.get("peak_rss_gib", 0)
         # capacity_built per fuel_type
         try:
-            built = _extract_built_capacities(args.run_id, year)
+            built = _extract_built_capacities(args.run_id, year, args.archetype)
             by_fuel_gw = (built.groupby("carrier")["p_nom_opt"].sum() / 1000.0).to_dict()
             rec["capacity_built_gw_by_fuel"] = by_fuel_gw
             rec["total_capacity_built_gw"] = float(built["p_nom_opt"].sum() / 1000.0)

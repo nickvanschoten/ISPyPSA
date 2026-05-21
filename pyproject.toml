@@ -25,6 +25,7 @@ dependencies = [
     "mkdocs-material>=9.6.18",
     "numpy>=2.0.0",
     "shapely>=2.1.0",
+    "gurobipy>=11,<12",
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
@@ -35,6 +36,9 @@ ispypsa = "ispypsa.cli.cli:main"
 [project.optional-dependencies]
 solvers = [
     "linopy>=0.4.4",
+]
+dashboard = [
+    "streamlit>=1.30.0",
 ]
 
 [build-system]
@@ -69,6 +73,7 @@ allow-direct-references = true
 [tool.pytest.ini_options]
 # path to tests for pytest
 testpaths = ["src", "tests"]
+pythonpath = ["."]
 # addopts = add options
 # --cov points pytest-cov to the src/ dir
 # --cov-branch runs branch coverage

@@ -1,0 +1,195 @@
+D:\van538\ISPyPSA\.venv\Lib\site-packages\openpyxl\reader\drawings.py:67: UserWarning:
+
+wmf image format is not supported so the image is being dropped
+
+
+=== SOLVE START ===
+Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/88 [00:00<?, ?it/s]Writing constraints.:   5%|[38;2;128;191;255m4         [0m| 4/88 [00:01<00:21,  3.84it/s]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 5/88 [00:01<00:36,  2.27it/s]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 6/88 [00:03<01:01,  1.33it/s]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 7/88 [00:05<01:27,  1.08s/it]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 8/88 [00:05<01:06,  1.21it/s]Writing constraints.:  10%|[38;2;128;191;255m#         [0m| 9/88 [00:05<00:50,  1.56it/s]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 10/88 [00:06<00:40,  1.91it/s]Writing constraints.:  12%|[38;2;128;191;255m#2        [0m| 11/88 [00:06<00:33,  2.28it/s]Writing constraints.:  14%|[38;2;128;191;255m#3        [0m| 12/88 [00:06<00:29,  2.61it/s]Writing constraints.:  15%|[38;2;128;191;255m#4        [0m| 13/88 [00:06<00:25,  2.92it/s]Writing constraints.:  16%|[38;2;128;191;255m#5        [0m| 14/88 [00:07<00:23,  3.15it/s]Writing constraints.:  17%|[38;2;128;191;255m#7        [0m| 15/88 [00:07<00:24,  3.03it/s]Writing constraints.:  18%|[38;2;128;191;255m#8        [0m| 16/88 [00:07<00:22,  3.25it/s]Writing constraints.:  19%|[38;2;128;191;255m#9        [0m| 17/88 [00:07<00:20,  3.47it/s]Writing constraints.:  20%|[38;2;128;191;255m##        [0m| 18/88 [00:08<00:19,  3.60it/s]Writing constraints.:  22%|[38;2;128;191;255m##1       [0m| 19/88 [00:08<00:20,  3.45it/s]Writing constraints.:  23%|[38;2;128;191;255m##2       [0m| 20/88 [00:08<00:18,  3.58it/s]Writing constraints.:  24%|[38;2;128;191;255m##3       [0m| 21/88 [00:09<00:18,  3.71it/s]Writing constraints.:  25%|[38;2;128;191;255m##5       [0m| 22/88 [00:09<00:17,  3.70it/s]Writing constraints.:  26%|[38;2;128;191;255m##6       [0m| 23/88 [00:09<00:18,  3.54it/s]Writing constraints.:  27%|[38;2;128;191;255m##7       [0m| 24/88 [00:10<00:32,  1.97it/s]Writing constraints.:  28%|[38;2;128;191;255m##8       [0m| 25/88 [00:11<00:34,  1.83it/s]Writing constraints.:  30%|[38;2;128;191;255m##9       [0m| 26/88 [00:12<00:41,  1.50it/s]Writing constraints.:  43%|[38;2;128;191;255m####3     [0m| 38/88 [00:12<00:05,  8.63it/s]Writing constraints.:  58%|[38;2;128;191;255m#####7    [0m| 51/88 [00:12<00:02, 18.17it/s]Writing constraints.:  74%|[38;2;128;191;255m#######3  [0m| 65/88 [00:12<00:00, 30.45it/s]Writing constraints.:  90%|[38;2;128;191;255m########9 [0m| 79/88 [00:12<00:00, 44.03it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 88/88 [00:12<00:00,  6.92it/s]
+Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.:  50%|[38;2;128;191;255m#####     [0m| 4/8 [00:00<00:00, 13.81it/s]Writing continuous variables.:  75%|[38;2;128;191;255m#######5  [0m| 6/8 [00:00<00:00, 14.96it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 15.40it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 15.06it/s]
+Set parameter TokenServer to value "license2-d61-cdc.it.csiro.au"
+Read LP format model from file C:\Users\van538\AppData\Local\Temp\41\linopy-problem-k0dhnhaw.lp
+Reading time = 15.62 seconds
+obj: 4877350 rows, 2250776 columns, 8935253 nonzeros
+Gurobi Optimizer version 11.0.3 build v11.0.3rc0 (win64 - Windows Server 2019.0 (17763.2))
+
+CPU model: Intel(R) Xeon(R) Platinum 8260 CPU @ 2.40GHz, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 48 physical cores, 96 logical processors, using up to 32 threads
+
+Optimize a model with 4877350 rows, 2250776 columns and 8935253 nonzeros
+Model fingerprint: 0x73f463b6
+Coefficient statistics:
+  Matrix range     [5e-06, 8e+00]
+  Objective range  [8e+01, 7e+07]
+  Bounds range     [0e+00, 0e+00]
+  RHS range        [7e-04, 1e+05]
+Presolve removed 3618129 rows and 827756 columns (presolve time = 6s) ...
+Presolve removed 3625522 rows and 842248 columns (presolve time = 10s) ...
+Presolve removed 3625522 rows and 842248 columns
+Presolve time: 12.39s
+Presolved: 1251828 rows, 1408528 columns, 4375299 nonzeros
+
+Concurrent LP optimizer: primal simplex, dual simplex, and barrier
+Showing barrier log only...
+
+Elapsed ordering time = 5s
+Elapsed ordering time = 10s
+Ordering time: 10.68s
+
+Barrier statistics:
+ Dense cols : 154
+ AA' NZ     : 3.383e+06
+ Factor NZ  : 1.713e+07 (roughly 1.2 GB of memory)
+ Factor Ops : 1.220e+09 (less than 1 second per iteration)
+ Threads    : 30
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0   7.42872388e+14 -2.58669180e+16  1.37e+06 5.02e+06  4.90e+11    28s
+   1   6.45845857e+14 -1.84804791e+16  1.13e+06 3.19e+06  3.71e+11    29s
+   2   6.17644704e+14 -1.29704179e+16  1.06e+06 1.95e+06  3.10e+11    30s
+   3   5.31711483e+14 -7.41719622e+15  8.54e+05 5.40e+05  2.09e+11    32s
+   4   3.80305964e+14 -6.38585407e+15  4.80e+05 3.31e+05  1.22e+11    33s
+   5   3.38562811e+14 -5.47907445e+15  2.92e+05 1.89e+05  7.59e+10    35s
+   6   3.43904632e+14 -4.31036754e+15  1.39e+05 6.26e+04  3.53e+10    36s
+   7   3.30720330e+14 -2.95988219e+15  6.09e+04 1.17e+04  1.38e+10    37s
+   8   2.44588700e+14 -2.10379939e+15  1.44e+04 2.39e+03  3.60e+09    38s
+   9   1.46954161e+14 -1.34155858e+15  4.87e+03 6.51e+02  1.32e+09    39s
+  10   8.95678350e+13 -9.03072641e+14  2.07e+03 3.06e+02  6.34e+08    40s
+  11   5.38796564e+13 -6.70057829e+14  8.30e+02 2.10e+02  3.55e+08    41s
+  12   3.46167011e+13 -3.52041260e+14  3.96e+02 9.42e+01  1.69e+08    42s
+  13   1.91223664e+13 -1.52557778e+14  1.44e+02 3.62e+01  6.72e+07    43s
+  14   3.78899000e+12 -5.52230575e+13  4.75e+00 1.14e+01  2.07e+07    44s
+  15   1.61396026e+12 -2.72710176e+13  2.82e-02 5.54e+00  1.00e+07    46s
+  16   7.63628341e+11 -4.24726746e+12  7.91e-03 8.51e-01  1.74e+06    47s
+  17   4.51307115e+11 -1.60477131e+12  3.31e-03 3.12e-01  7.12e+05    48s
+  18   2.63889465e+11 -6.14642448e+11  1.25e-03 1.22e-01  3.04e+05    49s
+  19   1.96421176e+11 -3.76795904e+11  7.43e-04 7.75e-02  1.98e+05    50s
+  20   1.83434172e+11 -2.29651787e+11  6.59e-04 5.12e-02  1.43e+05    51s
+  21   1.44710026e+11 -1.91759495e+11  4.23e-04 4.49e-02  1.16e+05    52s
+  22   1.14796192e+11 -1.35418034e+11  2.48e-04 3.50e-02  8.66e+04    54s
+  23   9.94364755e+10 -3.31419558e+10  1.70e-04 1.72e-02  4.59e+04    56s
+  24   8.81231916e+10 -3.30141172e+09  1.22e-04 1.17e-02  3.16e+04    58s
+  25   8.10205079e+10  1.61585885e+09  9.13e-05 1.08e-02  2.75e+04    60s
+  26   7.40406701e+10  7.19882549e+09  6.20e-05 9.75e-03  2.31e+04    62s
+  27   7.13723507e+10  1.61798658e+10  5.07e-05 8.00e-03  1.91e+04    64s
+  28   6.92730356e+10  2.00223940e+10  4.23e-05 7.30e-03  1.70e+04    66s
+  29   6.68588250e+10  3.50990876e+10  3.33e-05 4.37e-03  1.10e+04    68s
+  30   6.41442784e+10  3.93154440e+10  2.32e-05 3.54e-03  8.59e+03    70s
+  31   6.23548384e+10  4.47312806e+10  1.71e-05 2.44e-03  6.10e+03    73s
+  32   6.17247933e+10  4.72247024e+10  1.51e-05 1.94e-03  5.02e+03    74s
+  33   6.03652535e+10  4.96199654e+10  1.09e-05 1.44e-03  3.72e+03    76s
+  34   5.89508285e+10  5.11457836e+10  6.79e-06 1.12e-03  2.70e+03    79s
+  35   5.81725553e+10  5.26244696e+10  4.59e-06 8.02e-04  1.92e+03    81s
+  36   5.77832750e+10  5.36318771e+10  3.54e-06 5.86e-04  1.44e+03    83s
+  37   5.74287216e+10  5.42047925e+10  2.63e-06 4.61e-04  1.12e+03    86s
+  38   5.71733435e+10  5.47085107e+10  2.00e-06 3.55e-04  8.53e+02    88s
+  39   5.69317719e+10  5.49688156e+10  1.40e-06 2.99e-04  6.79e+02    90s
+  40   5.68198754e+10  5.52329358e+10  1.14e-06 2.42e-04  5.49e+02    92s
+  41   5.66629708e+10  5.54556164e+10  7.73e-07 1.91e-04  4.18e+02    94s
+  42   5.65667234e+10  5.56080527e+10  5.56e-07 1.58e-04  3.32e+02    96s
+  43   5.64843532e+10  5.57285525e+10  4.79e-07 1.31e-04  2.61e+02    98s
+  44   5.64442277e+10  5.58913943e+10  3.25e-07 9.66e-05  1.91e+02   101s
+  45   5.64003325e+10  5.60106562e+10  4.61e-07 6.95e-05  1.35e+02   103s
+  46   5.63679511e+10  5.60584488e+10  4.75e-07 5.78e-05  1.07e+02   105s
+  47   5.63587639e+10  5.61576755e+10  3.57e-07 3.58e-05  6.96e+01   107s
+  48   5.63468273e+10  5.61674481e+10  3.09e-07 3.33e-05  6.21e+01   109s
+  49   5.63396465e+10  5.61858193e+10  3.31e-07 2.84e-05  5.32e+01   112s
+  50   5.63296380e+10  5.62221644e+10  4.91e-07 1.87e-05  3.72e+01   114s
+  51   5.63190422e+10  5.62347121e+10  3.22e-07 1.53e-05  2.92e+01   116s
+  52   5.63121439e+10  5.62468693e+10  1.94e-07 1.22e-05  2.26e+01   118s
+  53   5.63067584e+10  5.62518032e+10  1.34e-06 1.10e-05  1.90e+01   121s
+  54   5.63043382e+10  5.62632961e+10  1.10e-06 7.87e-06  1.42e+01   123s
+  55   5.62995644e+10  5.62711312e+10  6.45e-07 6.03e-06  9.84e+00   125s
+  56   5.62982232e+10  5.62753629e+10  1.12e-06 4.91e-06  7.91e+00   127s
+  57   5.62962793e+10  5.62826056e+10  6.45e-05 2.88e-06  4.73e+00   129s
+  58   5.62945700e+10  5.62872880e+10  2.17e-04 1.59e-06  2.52e+00   131s
+  59   5.62944063e+10  5.62877654e+10  1.93e-04 1.46e-06  2.30e+00   133s
+  60   5.62943745e+10  5.62883703e+10  1.89e-04 1.31e-06  2.08e+00   136s
+  61   5.62942636e+10  5.62892790e+10  1.69e-04 1.06e-06  1.72e+00   137s
+  62   5.62939610e+10  5.62893584e+10  1.24e-04 1.03e-06  1.59e+00   140s
+  63   5.62937851e+10  5.62900418e+10  9.86e-05 8.41e-07  1.30e+00   142s
+  64   5.62937242e+10  5.62901998e+10  8.98e-05 7.98e-07  1.22e+00   144s
+  65   5.62937098e+10  5.62903532e+10  8.72e-05 7.56e-07  1.16e+00   146s
+  66   5.62935967e+10  5.62913666e+10  6.79e-05 4.71e-07  7.72e-01   148s
+  67   5.62935409e+10  5.62915675e+10  5.90e-05 4.16e-07  6.83e-01   150s
+  68   5.62934947e+10  5.62917616e+10  5.27e-05 3.64e-07  6.00e-01   153s
+  69   5.62934259e+10  5.62920770e+10  4.34e-05 2.76e-07  4.67e-01   155s
+  70   5.62933407e+10  5.62923875e+10  3.06e-05 1.91e-07  3.30e-01   157s
+  71   5.62933070e+10  5.62925346e+10  2.56e-05 1.50e-07  2.67e-01   159s
+  72   5.62932544e+10  5.62926902e+10  1.78e-05 1.09e-07  1.95e-01   161s
+  73   5.62931730e+10  5.62928052e+10  7.42e-06 7.79e-08  1.27e-01   164s
+  74   5.62931499e+10  5.62929538e+10  4.82e-06 1.75e-07  6.78e-02   166s
+  75   5.62931124e+10  5.62930367e+10  8.41e-07 1.61e-07  2.62e-02   170s
+  76   5.62931062e+10  5.62930954e+10  3.68e-07 1.14e-07  3.71e-03   173s
+  77   5.62931030e+10  5.62931008e+10  7.95e-07 1.37e-06  7.75e-04   174s
+  78   5.62931013e+10  5.62931012e+10  6.57e-06 1.99e-07  3.08e-05   176s
+  79   5.62931012e+10  5.62931012e+10  2.26e-07 2.53e-07  1.51e-07   177s
+  80   5.62931012e+10  5.62931012e+10  5.30e-10 3.24e-07  9.04e-11   178s
+
+Barrier solved model in 80 iterations and 177.74 seconds (71.99 work units)
+Optimal objective 5.62931012e+10
+
+Crossover log...
+
+  750416 DPushes remaining with DInf 0.0000000e+00               179s
+   56838 DPushes remaining with DInf 0.0000000e+00               182s
+       0 DPushes remaining with DInf 0.0000000e+00               185s
+
+  141793 PPushes remaining with PInf 0.0000000e+00               185s
+   75033 PPushes remaining with PInf 0.0000000e+00               190s
+   48193 PPushes remaining with PInf 0.0000000e+00               195s
+   31797 PPushes remaining with PInf 0.0000000e+00               200s
+     973 PPushes remaining with PInf 0.0000000e+00               209s
+       0 PPushes remaining with PInf 0.0000000e+00               210s
+
+  Push phase complete: Pinf 0.0000000e+00, Dinf 1.7977550e-07    210s
+
+
+Solved with barrier
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+  501999    5.6293101e+10   0.000000e+00   0.000000e+00    216s
+
+Solved in 501999 iterations and 216.03 seconds (99.42 work units)
+Optimal objective  5.629310123e+10
+
+=== SOLVE END ===
+{
+  "run_id": "02_gurobi_nsw_2period",
+  "config": "mvp_pass1_power\\bench\\configs\\02_nsw_2period.yaml",
+  "archetype": "cost_optimal",
+  "solver_options": null,
+  "started_at": 1778733415.6012554,
+  "started_at_iso": "2026-05-14T14:36:55",
+  "iasr_load_s": 53.868249299004674,
+  "templating_s": 1.254338899627328,
+  "translation_s": 73.56086069904268,
+  "pypsa_build_s": 32.800730500370264,
+  "solve_s": 290.92112880013883,
+  "solve_ok": true,
+  "save_network_s": 2.6685079000890255,
+  "extract_results_s": 15.09446849860251,
+  "annual_generation_mwh_by_period": {
+    "2030": 94700550.69625685,
+    "2050": 106606076.45756108
+  },
+  "wall_clock_s": 518.3632690012455,
+  "status": "completed",
+  "peak_rss_bytes": 6882836480,
+  "peak_rss_gib": 6.4101409912109375,
+  "lp_rows": 4877350,
+  "lp_cols": 2250776,
+  "lp_nonzeros": 8935253,
+  "model_status": "Optimal",
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "ipm_iterations": null,
+  "ipm_final_pinf": 5.3e-10,
+  "ipm_final_dinf": 3.24e-07,
+  "ipm_final_gap": 9.04e-11,
+  "objective_value": 56293101200.0,
+  "gurobi_iterations": 501999,
+  "gurobi_solver_time_s": 216.03,
+  "gurobi_barrier_iterations": 80,
+  "gurobi_barrier_time_s": 177.74,
+  "ipm_iterations_observed": 80
+}

@@ -1,0 +1,21 @@
+{
+  "run_id": "07_gurobi_nem_6period",
+  "status": "timed_out",
+  "wall_clock_s": 14404.348801136017,
+  "wall_clock_budget_s": 14400.0,
+  "peak_rss_bytes": 124817256448,
+  "peak_rss_gib": 116.2451286315918,
+  "lp_rows": 38123031,
+  "lp_cols": 17963800,
+  "lp_nonzeros": 76069533,
+  "model_status": null,
+  "highs_run_time_s": null,
+  "simplex_iterations": null,
+  "ipm_iterations": null,
+  "ipm_final_pinf": 886.0,
+  "ipm_final_dinf": 52800.0,
+  "ipm_final_gap": 209000000.0,
+  "objective_value": null,
+  "ipm_iterations_observed": 13,
+  "last_solver_line": "Objective                Residual"
+}

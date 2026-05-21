@@ -66,6 +66,12 @@ from .nger_factors import nger_factor_table, hyblend_factor
 
 log = logging.getLogger(__name__)
 
+# Carriers classified as renewable for share computation (matches extract_granular_outputs.py).
+# Water excluded: ISPyPSA models hydro with p_max_pu=1.0 (no availability traces),
+# producing ~60 TWh/year vs ~15-17 TWh realistic. Including it inflates renewable
+# share by ~20 pp. Wind + Solar + Biomass only.
+_RENEWABLE_CARRIERS = {"Wind", "Solar", "Biomass"}
+
 # Map ISPyPSA fuel_type (the PyPSA carrier) to simple-msm commodity ids.
 # Renewables / Storage / Water carry no commodity input.
 _CARRIER_TO_COMMODITY = {
@@ -90,13 +96,26 @@ def _load_pypsa_friendly_generators(pypsa_friendly_dir: Path) -> pd.DataFrame:
 
 
 def _load_fuel_price_tables(workbook_cache: Path) -> dict[str, pd.DataFrame]:
-    """Load all IASR fuel-price tables relevant to ISPyPSA carriers."""
+    """Load all IASR fuel-price tables relevant to ISPyPSA carriers.
+
+    Coal and gas tables are scenario-specific; try the Step Change variant
+    first (the only scenario used in Pass 1 runs).
+    """
     tables = {}
-    for name in ("coal_prices", "gas_prices", "liquid_fuel_prices",
-                 "biomass_prices", "hydrogen_prices", "biomethane_prices"):
-        path = workbook_cache / f"{name}.csv"
-        if path.exists():
-            tables[name] = pd.read_csv(path)
+    _CANDIDATES = {
+        "coal_prices":        ("coal_prices_step_change", "coal_prices"),
+        "gas_prices":         ("gas_prices_step_change",  "gas_prices"),
+        "liquid_fuel_prices": ("liquid_fuel_prices",),
+        "biomass_prices":     ("biomass_prices",),
+        "hydrogen_prices":    ("hydrogen_prices",),
+        "biomethane_prices":  ("biomethane_prices",),
+    }
+    for name, candidates in _CANDIDATES.items():
+        for candidate in candidates:
+            path = workbook_cache / f"{candidate}.csv"
+            if path.exists():
+                tables[name] = pd.read_csv(path)
+                break
     return tables
 
 
@@ -227,6 +246,14 @@ def _carrier_of(gens: pd.DataFrame) -> pd.Series:
     return gens["carrier"]
 
 
+def _renewable_share_pct(dispatch: pd.Series, gens: pd.DataFrame) -> float:
+    """Fraction of total dispatch from renewable carriers, as percentage."""
+    carrier = _carrier_of(gens).reindex(dispatch.index)
+    renewable_mwh = float(dispatch[carrier.isin(_RENEWABLE_CARRIERS)].sum())
+    total_mwh = float(dispatch.sum())
+    return (renewable_mwh / total_mwh * 100.0) if total_mwh > 0 else 0.0
+
+
 def _fuel_price_per_mwh(
     gen_row: pd.Series, fuel_tables: dict, period: int
 ) -> float:
@@ -286,6 +313,7 @@ def extract_method_year_row(
 
     input_coeffs = _aggregate_fuel_coefficients(fuel_gj, gens, annual_mwh, workbook_cache, period)
     emissions = _aggregate_emissions(fuel_gj, gens, annual_mwh, workbook_cache, period)
+    renewable_share = _renewable_share_pct(dispatch, gens)
 
     return _assemble_row(
         archetype_id, period,
@@ -296,6 +324,7 @@ def extract_method_year_row(
         emissions=emissions,
         bounds=archetype_bounds,
         annual_mwh_delivered=annual_mwh,
+        renewable_share=renewable_share,
     )
 
 
@@ -341,10 +370,15 @@ def _aggregate_emissions(
     fuel_gj: pd.Series, gens: pd.DataFrame, annual_mwh: float,
     workbook_cache: Path, period: int,
 ) -> dict[str, float]:
-    """Sum NGER scope-1 emissions across pollutants per generator, divide by load."""
+    """Sum NGER scope-1 emissions across pollutants per generator, divide by load.
+
+    Returns CO2e pollutant totals plus physical-mass CH4 and N2O (in kg/MWh).
+    Physical masses are derived by reversing AR5 GWP-100 from the CO2e values.
+    """
     nger = nger_factor_table().set_index("carrier")
     h2_frac = _h2_blend_fraction_per_period(workbook_cache, period)
-    em = {"CO2": 0.0, "CH4_CO2e": 0.0, "N2O_CO2e": 0.0}
+    em = {"CO2": 0.0, "CH4_CO2e": 0.0, "N2O_CO2e": 0.0,
+          "CH4_physical_kg": 0.0, "N2O_physical_kg": 0.0}
     for gen_name, gj in fuel_gj.items():
         if gj <= 0 or gen_name not in gens.index:
             continue
@@ -353,7 +387,16 @@ def _aggregate_emissions(
         em["CO2"]      += float(gj) * factors["co2_kg_per_gj"]
         em["CH4_CO2e"] += float(gj) * factors["ch4_co2e_kg_per_gj"]
         em["N2O_CO2e"] += float(gj) * factors["n2o_co2e_kg_per_gj"]
-    return {k: v / annual_mwh / 1000.0 for k, v in em.items()}  # kg → tonnes per MWh
+        em["CH4_physical_kg"] += float(gj) * factors["ch4_co2e_kg_per_gj"] / 28
+        em["N2O_physical_kg"] += float(gj) * factors["n2o_co2e_kg_per_gj"] / 265
+    # Convert kg → tonnes per MWh for CO2e; keep physical as kg per MWh.
+    return {
+        "CO2":              em["CO2"]      / annual_mwh / 1000.0,
+        "CH4_CO2e":         em["CH4_CO2e"] / annual_mwh / 1000.0,
+        "N2O_CO2e":         em["N2O_CO2e"] / annual_mwh / 1000.0,
+        "CH4_physical_kg_per_mwh": em["CH4_physical_kg"] / annual_mwh,
+        "N2O_physical_kg_per_mwh": em["N2O_physical_kg"] / annual_mwh,
+    }
 
 
 def _carrier_emission_factors(carrier: str, nger: pd.DataFrame, h2_frac: float) -> dict:
@@ -374,10 +417,13 @@ def _assemble_row(
     bundled_cost_per_unit: float, fuel_cost_per_unit: float,
     input_coeffs: dict, emissions: dict, bounds: dict,
     annual_mwh_delivered: float,
+    renewable_share: float = 0.0,
 ) -> dict:
     """Build one method_years row."""
     input_commodities = list(input_coeffs.keys())
     input_coefficients = [input_coeffs[c] for c in input_commodities]
+    co2e_pollutants = {k: v for k, v in emissions.items()
+                       if k in ("CO2", "CH4_CO2e", "N2O_CO2e")}
     return {
         "method_id": f"electricity__grid_supply__{archetype_id}",
         "year": period,
@@ -391,7 +437,7 @@ def _assemble_row(
             "CO2": emissions["CO2"],
             "CH4_CO2e": emissions["CH4_CO2e"],
             "N2O_CO2e": emissions["N2O_CO2e"],
-            "total_CO2e": sum(emissions.values()),
+            "total_CO2e": sum(co2e_pollutants.values()),
         },
         "process_emissions_by_pollutant": {"total_CO2e": 0.0},
         "emissions_units": "tCO2e/MWh",
@@ -402,6 +448,10 @@ def _assemble_row(
         "diagnostic_bundled_cost_per_unit": bundled_cost_per_unit,
         "diagnostic_fuel_cost_per_unit":   fuel_cost_per_unit,
         "diagnostic_annual_mwh_delivered": annual_mwh_delivered,
+        "diagnostic_ch4_physical_kg_per_mwh": emissions.get("CH4_physical_kg_per_mwh", 0.0),
+        "diagnostic_n2o_physical_kg_per_mwh": emissions.get("N2O_physical_kg_per_mwh", 0.0),
+        "diagnostic_co2_kg_per_mwh": emissions["CO2"] * 1000.0,  # tonne → kg
+        "renewable_share_pct": renewable_share,
         "source_ids": "AEMO IASR 2024 v6.0; NGA Factors 2024; ISPyPSA 0.1.3",
         "confidence_rating": "MVP_prototype",
         "review_notes": "Pass-1 MVP — fuel cost subtracted post-hoc from ISPyPSA bundled LP.",
@@ -414,6 +464,10 @@ def _empty_row(archetype_id: str, period: int, bounds: dict) -> dict:
         output_cost_per_unit=float("nan"),
         bundled_cost_per_unit=float("nan"),
         fuel_cost_per_unit=float("nan"),
-        input_coeffs={}, emissions={"CO2":0.0,"CH4_CO2e":0.0,"N2O_CO2e":0.0},
+        input_coeffs={},
+        emissions={
+            "CO2": 0.0, "CH4_CO2e": 0.0, "N2O_CO2e": 0.0,
+            "CH4_physical_kg_per_mwh": 0.0, "N2O_physical_kg_per_mwh": 0.0,
+        },
         bounds=bounds, annual_mwh_delivered=0.0,
     )

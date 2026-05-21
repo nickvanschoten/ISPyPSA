@@ -1,12 +1,13 @@
-carrier,co2_kg_per_gj,ch4_co2e_kg_per_gj,n2o_co2e_kg_per_gj,total_co2e_kg_per_gj,nga_table,nga_fuel_name
-Black Coal,90.0,0.04,0.2,90.24000000000001,Table 4,Bituminous coal
-Brown Coal,93.5,0.02,0.3,93.82,Table 4,Brown coal (lignite)
-Gas,51.4,0.1,0.03,51.53,Table 5,Natural gas distributed in a pipeline
-Liquid Fuel,69.9,0.1,0.2,70.2,Table 8,Diesel oil
-Biomass,0.0,0.8,1.0,1.8,Table 4,Primary solid biomass fuels
-Hydrogen,0.0,0.0,0.0,0.0,—,Pure H2 combustion (zero Scope 1)
-Biomethane,0.0,0.1,0.03,0.13,Table 5,Biomethane
-Wind,0.0,0.0,0.0,0.0,—,Non-combustion
-Solar,0.0,0.0,0.0,0.0,—,Non-combustion
-Water,0.0,0.0,0.0,0.0,—,Non-combustion
-Storage,0.0,0.0,0.0,0.0,—,No primary fuel
+carrier,co2_kg_per_gj,ch4_co2e_kg_per_gj,n2o_co2e_kg_per_gj,total_co2e_kg_per_gj,ch4_physical_kg_per_gj,n2o_physical_kg_per_gj,nga_table,nga_fuel_name
+Black Coal,90.0,0.04,0.2,90.24000000000001,0.0014285714285714286,0.0007547169811320755,Table 4,Bituminous coal
+Brown Coal,93.5,0.02,0.3,93.82,0.0007142857142857143,0.0011320754716981133,Table 4,Brown coal (lignite)
+Gas,51.4,0.1,0.03,51.53,0.0035714285714285718,0.00011320754716981132,Table 5,Natural gas distributed in a pipeline
+Liquid Fuel,69.9,0.1,0.2,70.2,0.0035714285714285718,0.0007547169811320755,Table 8,Diesel oil
+Biomass,0.0,0.8,1.0,1.8,0.028571428571428574,0.0037735849056603774,Table 4,Primary solid biomass fuels
+Hydrogen,0.0,0.0,0.0,0.0,0.0,0.0,—,Pure H2 combustion (zero Scope 1)
+Biomethane,0.0,0.1,0.03,0.13,0.0035714285714285718,0.00011320754716981132,Table 5,Biomethane
+Nuclear,0.0,0.0,0.0,0.0,0.0,0.0,—,Nuclear fission (zero Scope 1 combustion)
+Wind,0.0,0.0,0.0,0.0,0.0,0.0,—,Non-combustion
+Solar,0.0,0.0,0.0,0.0,0.0,0.0,—,Non-combustion
+Water,0.0,0.0,0.0,0.0,0.0,0.0,—,Non-combustion
+Storage,0.0,0.0,0.0,0.0,0.0,0.0,—,No primary fuel

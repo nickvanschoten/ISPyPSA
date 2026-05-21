@@ -1,0 +1,68 @@
+{
+  "run_id_prefix": "20260518_133337",
+  "archetypes": [
+    "cost_optimal",
+    "fast_fossil_exit",
+    "gas_bridge",
+    "storage_led",
+    "fossil_incumbent",
+    "nuclear_included"
+  ],
+  "periods": [
+    2025,
+    2030,
+    2035,
+    2040,
+    2045,
+    2050
+  ],
+  "total_wall_s": 8910.260596513748,
+  "started_at_iso": null,
+  "ended_at_iso": "2026-05-18T16:02:07",
+  "per_archetype": {
+    "cost_optimal": {
+      "total_wall_s": 7335.645571708679,
+      "periods_solved": 6,
+      "periods_failed": 0,
+      "peak_rss_gib": 2.211933135986328,
+      "failed_periods": []
+    },
+    "fast_fossil_exit": {
+      "total_wall_s": 8888.626304626465,
+      "periods_solved": 6,
+      "periods_failed": 0,
+      "peak_rss_gib": 2.1287994384765625,
+      "failed_periods": []
+    },
+    "gas_bridge": {
+      "total_wall_s": 8420.451559066772,
+      "periods_solved": 6,
+      "periods_failed": 0,
+      "peak_rss_gib": 2.1496810913085938,
+      "failed_periods": []
+    },
+    "storage_led": {
+      "total_wall_s": 7134.287174940109,
+      "periods_solved": 6,
+      "periods_failed": 0,
+      "peak_rss_gib": 2.0822715759277344,
+      "failed_periods": []
+    },
+    "fossil_incumbent": {
+      "total_wall_s": 5068.904892444611,
+      "periods_solved": 6,
+      "periods_failed": 0,
+      "peak_rss_gib": 1.6423606872558594,
+      "failed_periods": []
+    },
+    "nuclear_included": {
+      "total_wall_s": 61.83183717727661,
+      "periods_solved": 0,
+      "periods_failed": 1,
+      "peak_rss_gib": 2.109905242919922,
+      "failed_periods": [
+        "2025"
+      ]
+    }
+  }
+}

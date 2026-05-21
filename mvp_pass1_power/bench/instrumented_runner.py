@@ -68,8 +68,29 @@ class MemoryPoller(threading.Thread):
 _LP_SIZE_RE = re.compile(
     r"has\s+(\d+)\s+rows;\s+(\d+)\s+cols;\s+(\d+)\s+nonzeros",
 )
+# Gurobi: "Optimize a model with 100 rows, 200 columns and 20000 nonzeros"
+_GUROBI_LP_SIZE_RE = re.compile(
+    r"Optimize a model with\s+(\d+)\s+rows?,\s+(\d+)\s+columns?\s+and\s+(\d+)\s+nonzeros",
+)
 _MODEL_STATUS_RE = re.compile(r"Model status\s*:\s*(\S.*?)\s*$", re.MULTILINE)
 _HIGHS_RUN_TIME_RE = re.compile(r"HiGHS run time\s*:\s*([\d.]+)")
+# Gurobi solve-time lines (one of):
+#   "Solved in 148 iterations and 0.02 seconds (0.02 work units)"           [simplex]
+#   "Barrier solved model in 12 iterations and 5.31 seconds (3.20 work units)" [barrier]
+#   "Concurrent spin time: 0.00s"                                            [concurrent]
+_GUROBI_SIMPLEX_TIME_RE = re.compile(
+    r"Solved in\s+(\d+)\s+iterations? and\s+([\d.]+)\s+seconds"
+)
+_GUROBI_BARRIER_TIME_RE = re.compile(
+    r"Barrier solved model in\s+(\d+)\s+iterations? and\s+([\d.]+)\s+seconds"
+)
+# Gurobi status: "Optimal objective <value>" or terminal status line
+_GUROBI_OPTIMAL_OBJ_RE = re.compile(r"Optimal objective\s+([-\d.eE+]+)")
+_GUROBI_STATUS_RE = re.compile(
+    r"^\s*(Optimal|Infeasible|Unbounded|Sub-?optimal|Time limit|Iteration limit|"
+    r"Numerical trouble)\s+(?:solution|reached|encountered)?",
+    re.MULTILINE,
+)
 _HIGHS_SIMPLEX_ITER_RE = re.compile(r"Simplex\s+iterations:\s*(\d+)")
 _HIGHS_IPM_ITER_RE = re.compile(r"IPM\s+iterations:\s*(\d+)")
 _HIGHS_PDLP_ITER_RE = re.compile(r"PDLP\s+iterations:\s*(\d+)")
@@ -115,6 +136,27 @@ def _parse_highs_log(log_text: str) -> dict:
         out["lp_rows"] = int(m.group(1))
         out["lp_cols"] = int(m.group(2))
         out["lp_nonzeros"] = int(m.group(3))
+    else:
+        m = _GUROBI_LP_SIZE_RE.search(log_text)
+        if m:
+            out["lp_rows"] = int(m.group(1))
+            out["lp_cols"] = int(m.group(2))
+            out["lp_nonzeros"] = int(m.group(3))
+    m = _GUROBI_SIMPLEX_TIME_RE.search(log_text)
+    if m:
+        out["gurobi_iterations"] = int(m.group(1))
+        out["gurobi_solver_time_s"] = float(m.group(2))
+    m = _GUROBI_BARRIER_TIME_RE.search(log_text)
+    if m:
+        out["gurobi_barrier_iterations"] = int(m.group(1))
+        out["gurobi_barrier_time_s"] = float(m.group(2))
+    m = _GUROBI_OPTIMAL_OBJ_RE.search(log_text)
+    if m:
+        out["objective_value"] = float(m.group(1))
+        out["model_status"] = out.get("model_status") or "Optimal"
+    m = _GUROBI_STATUS_RE.search(log_text)
+    if m and not out.get("model_status"):
+        out["model_status"] = m.group(1).strip()
     m = _MODEL_STATUS_RE.search(log_text)
     if m:
         out["model_status"] = m.group(1).strip()
@@ -161,6 +203,7 @@ def _parse_highs_log(log_text: str) -> dict:
 def _run_staged_pipeline(
     config_path: Path, archetype: str, log_path: Path,
     solver_options: dict | None = None,
+    solver_name_override: str | None = None,
 ) -> dict:
     """Run the ISPyPSA pipeline with per-stage timing. Returns timings dict."""
     from io import StringIO
@@ -247,7 +290,7 @@ def _run_staged_pipeline(
         print(f"solver_options: {solver_options}", flush=True)
     t = time.perf_counter()
     try:
-        kwargs = {"solver_name": config.solver}
+        kwargs = {"solver_name": solver_name_override or config.solver}
         if solver_options:
             kwargs["solver_options"] = solver_options
         network.optimize.solve_model(**kwargs)
@@ -306,8 +349,13 @@ def main():
     ap.add_argument("--pdlp-tolerance", type=float, default=None,
                     help="Set pdlp_optimality_tolerance + primal/dual feasibility "
                          "tolerances all to this value (default uses HiGHS defaults)")
+    ap.add_argument("--use-gurobi", action="store_true",
+                    help="Use Gurobi (overrides config.solver = highs); default Gurobi settings")
+    ap.add_argument("--gurobi-bar-conv-tol", type=float, default=None,
+                    help="Set Gurobi BarConvTol (default 1e-8); e.g. 1e-3 for relaxed run")
     args = ap.parse_args()
     solver_options = None
+    solver_name_override = None
     if args.use_ipm:
         solver_options = {"solver": "ipm"}
         if args.no_crossover:
@@ -318,6 +366,10 @@ def main():
             solver_options["pdlp_optimality_tolerance"] = args.pdlp_tolerance
             solver_options["primal_feasibility_tolerance"] = args.pdlp_tolerance
             solver_options["dual_feasibility_tolerance"] = args.pdlp_tolerance
+    elif args.use_gurobi:
+        solver_name_override = "gurobi"
+        if args.gurobi_bar_conv_tol is not None:
+            solver_options = {"BarConvTol": args.gurobi_bar_conv_tol}
 
     bench_dir = Path(__file__).parent
     log_path = bench_dir / "logs" / f"{args.run_id}.log"
@@ -343,7 +395,8 @@ def main():
     t_total = time.perf_counter()
     try:
         timings = _run_staged_pipeline(args.config, args.archetype, log_path,
-                                       solver_options=solver_options)
+                                       solver_options=solver_options,
+                                       solver_name_override=solver_name_override)
         record.update(timings)
         record["wall_clock_s"] = time.perf_counter() - t_total
         record["status"] = "completed"

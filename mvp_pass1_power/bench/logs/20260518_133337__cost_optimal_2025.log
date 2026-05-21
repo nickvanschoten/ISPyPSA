@@ -1,0 +1,96 @@
+
+=== SOLVE START ===
+Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/275 [00:00<?, ?it/s]Writing constraints.:   1%|[38;2;128;191;255m1         [0m| 4/275 [00:00<00:15, 17.60it/s]Writing constraints.:   2%|[38;2;128;191;255m2         [0m| 6/275 [00:00<00:31,  8.45it/s]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 8/275 [00:00<00:37,  7.15it/s]Writing constraints.:   4%|[38;2;128;191;255m4         [0m| 11/275 [00:01<00:25, 10.48it/s]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 14/275 [00:01<00:19, 13.59it/s]Writing constraints.:   6%|[38;2;128;191;255m6         [0m| 17/275 [00:01<00:15, 16.24it/s]Writing constraints.:   7%|[38;2;128;191;255m7         [0m| 20/275 [00:01<00:13, 18.43it/s]Writing constraints.:   8%|[38;2;128;191;255m8         [0m| 23/275 [00:01<00:12, 20.16it/s]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 26/275 [00:01<00:18, 13.65it/s]Writing constraints.:  12%|[38;2;128;191;255m#1        [0m| 32/275 [00:02<00:11, 21.51it/s]Writing constraints.:  15%|[38;2;128;191;255m#4        [0m| 41/275 [00:02<00:06, 34.65it/s]Writing constraints.:  20%|[38;2;128;191;255m##        [0m| 55/275 [00:02<00:03, 57.34it/s]Writing constraints.:  25%|[38;2;128;191;255m##4       [0m| 68/275 [00:02<00:02, 74.33it/s]Writing constraints.:  29%|[38;2;128;191;255m##9       [0m| 81/275 [00:02<00:02, 88.35it/s]Writing constraints.:  34%|[38;2;128;191;255m###4      [0m| 94/275 [00:02<00:01, 99.37it/s]Writing constraints.:  39%|[38;2;128;191;255m###8      [0m| 107/275 [00:02<00:01, 105.46it/s]Writing constraints.:  44%|[38;2;128;191;255m####4     [0m| 121/275 [00:02<00:01, 112.84it/s]Writing constraints.:  49%|[38;2;128;191;255m####9     [0m| 135/275 [00:02<00:01, 119.11it/s]Writing constraints.:  54%|[38;2;128;191;255m#####3    [0m| 148/275 [00:03<00:01, 111.46it/s]Writing constraints.:  59%|[38;2;128;191;255m#####8    [0m| 162/275 [00:03<00:00, 117.88it/s]Writing constraints.:  64%|[38;2;128;191;255m######4   [0m| 176/275 [00:03<00:00, 122.30it/s]Writing constraints.:  69%|[38;2;128;191;255m######9   [0m| 190/275 [00:03<00:00, 125.50it/s]Writing constraints.:  74%|[38;2;128;191;255m#######4  [0m| 204/275 [00:03<00:00, 127.43it/s]Writing constraints.:  79%|[38;2;128;191;255m#######9  [0m| 218/275 [00:03<00:00, 128.81it/s]Writing constraints.:  84%|[38;2;128;191;255m########4 [0m| 232/275 [00:03<00:00, 131.25it/s]Writing constraints.:  89%|[38;2;128;191;255m########9 [0m| 246/275 [00:03<00:00, 132.56it/s]Writing constraints.:  95%|[38;2;128;191;255m#########4[0m| 260/275 [00:03<00:00, 132.03it/s]Writing constraints.: 100%|[38;2;128;191;255m#########9[0m| 274/275 [00:03<00:00, 131.67it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 275/275 [00:03<00:00, 69.24it/s] 
+Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 84.21it/s]
+Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
+LP linopy-problem-zrif0bx7 has 709292 rows; 329374 cols; 1312773 nonzeros
+Coefficient ranges:
+  Matrix  [5e-06, 8e+00]
+  Cost    [2e+02, 7e+06]
+  Bound   [0e+00, 0e+00]
+  RHS     [6e-04, 1e+05]
+WARNING: Problem has some excessively large costs
+WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -3
+Presolving model
+187523 rows, 242588 cols, 656517 nonzeros  1s
+Dependent equations search running on 37863 equations with time limit of 1000.00s
+Dependent equations search removed 0 rows and 0 nonzeros in 0.01s (limit = 1000.00s)
+179698 rows, 195417 cols, 633655 nonzeros  2s
+Presolve reductions: rows 179698(-529594); columns 195417(-133957); nonzeros 633655(-679118) 
+Solving the presolved LP
+Using EKK dual simplex solver - serial
+  Iteration        Objective     Infeasibilities num(sum)
+          0    -3.5346724961e+10 Ph1: 40747(5.2186e+07); Du: 12096(3.53467e+07) 3s
+      59965     2.2007472525e+09 Pr: 16105(4.62655e+06); Du: 0(1.28031e-06) 9s
+      77699     2.6313241167e+09 Pr: 21493(5.06448e+07); Du: 0(1.11986e-06) 14s
+      87876     2.8317662992e+09 Pr: 17523(7.87128e+06); Du: 0(8.07103e-07) 20s
+      92686     2.9417750441e+09 Pr: 16730(7.4277e+07); Du: 0(7.24196e-07) 25s
+     101851     3.1491662368e+09 Pr: 20225(3.45203e+07); Du: 0(7.09647e-07) 31s
+     108876     3.2636141961e+09 Pr: 18988(1.11696e+07); Du: 0(4.78755e-07) 37s
+     112731     3.3057461047e+09 Pr: 22179(8.16457e+07); Du: 0(4.65956e-07) 43s
+     116646     3.3615165752e+09 Pr: 17024(1.16088e+07); Du: 0(3.58238e-07) 48s
+     122055     3.4433630522e+09 Pr: 14276(3.46382e+06); Du: 0(2.49055e-07) 53s
+     126547     3.4953993570e+09 Pr: 17388(1.09187e+08); Du: 0(2.67884e-07) 59s
+     130834     3.5419209270e+09 Pr: 17865(1.09339e+08); Du: 0(1.06682e-07) 64s
+     139900     3.6998709429e+09 Pr: 15612(4.0994e+07); Du: 0(1.32088e-07) 69s
+     144108     3.7254125607e+09 Pr: 16262(4.16714e+07); Du: 0(1.38129e-07) 75s
+     148001     3.7520881283e+09 Pr: 16372(5.02896e+07); Du: 0(4.61522e-08) 80s
+     150462     3.7820636736e+09 Pr: 16933(6.46658e+07); Du: 0(1.11077e-07) 86s
+     153600     3.8049325193e+09 Pr: 20805(1.36772e+07); Du: 0(1.3189e-07) 93s
+     156086     3.8155115859e+09 Pr: 16675(1.62811e+07); Du: 0(7.45183e-08) 98s
+     158893     3.8255744552e+09 Pr: 13524(1.68176e+07); Du: 0(2.25745e-07) 103s
+     162938     3.8579333519e+09 Pr: 18516(8.19138e+06); Du: 0(3.15762e-07) 109s
+     166122     3.8780001119e+09 Pr: 16015(2.45812e+07); Du: 0(2.49385e-07) 114s
+     169294     3.8848482210e+09 Pr: 16543(6.71864e+07); Du: 0(3.24395e-07) 120s
+     172408     3.9001982522e+09 Pr: 15851(2.03074e+07); Du: 0(2.10322e-07) 126s
+     177603     3.9376765632e+09 Pr: 10296(572171); Du: 0(1.96951e-07) 132s
+     180985     3.9539207159e+09 Pr: 6094(1.12752e+06); Du: 0(1.06946e-07) 137s
+     185516     3.9782612628e+09 Pr: 6090(526023); Du: 0(1.26634e-08) 142s
+     190683     3.9888947310e+09 Pr: 0(0); Du: 0(6.69896e-08) 148s
+     190683     3.9885761507e+09 Pr: 0(0); Du: 0(3.46007e-09) 148s
+
+Performed postsolve
+Solving the original LP from the solution after postsolve
+
+Model name          : linopy-problem-zrif0bx7
+Model status        : Optimal
+Simplex   iterations: 190683
+Objective value     :  3.9885761507e+09
+P-D objective error :  7.5675606958e-14
+HiGHS run time      :        148.79
+
+=== SOLVE END ===
+{
+  "run_id": "20260518_133337__cost_optimal_2025",
+  "config": "D:\\van538\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\20260518_133337__cost_optimal_2025_2025.yaml",
+  "archetype": "cost_optimal",
+  "solver_options": null,
+  "started_at": 1779075218.7246108,
+  "started_at_iso": "2026-05-18T13:33:38",
+  "iasr_load_s": 1.9619255997240543,
+  "templating_s": 1.27900099940598,
+  "translation_s": 24.07239419966936,
+  "pypsa_build_s": 36.79237169958651,
+  "solve_s": 164.77866379916668,
+  "solve_ok": true,
+  "save_network_s": 0.8699900005012751,
+  "extract_results_s": 1.8946711998432875,
+  "annual_generation_mwh_by_period": {
+    "2025": 201130990.36676544
+  },
+  "wall_clock_s": 257.3131277002394,
+  "status": "completed",
+  "peak_rss_bytes": 2277081088,
+  "peak_rss_gib": 2.120697021484375,
+  "lp_rows": 709292,
+  "lp_cols": 329374,
+  "lp_nonzeros": 1312773,
+  "model_status": "Optimal",
+  "highs_run_time_s": 148.79,
+  "simplex_iterations": 190683,
+  "ipm_iterations": null,
+  "ipm_final_pinf": null,
+  "ipm_final_dinf": null,
+  "ipm_final_gap": null,
+  "objective_value": 3988576150.7
+}
