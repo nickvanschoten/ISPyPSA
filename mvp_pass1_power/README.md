@@ -333,6 +333,27 @@ the one-time IASR workbook + trace data download.
 
 ---
 
+## Viewing the dashboard
+
+A Streamlit dashboard renders the contract outputs and a per-archetype
+operational view. The simplest way to launch it:
+
+- **Windows**: double-click `run-dashboard.bat` at the project root.
+- **Linux / macOS**: `./run-dashboard.sh` from the project root.
+
+Both scripts `cd` to the project root, check that `.venv/` exists, and prefer
+`uv run` if available (falling back to the venv's Streamlit otherwise). The
+dashboard opens in your default browser at `http://localhost:8501`. Prerequisite
+is a one-time `uv sync` to install dependencies.
+
+To launch manually:
+
+```bash
+uv run streamlit run mvp_pass1_power/dashboard/dashboard.py
+```
+
+---
+
 ## Repository layout
 
 ```
