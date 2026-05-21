@@ -5,12 +5,21 @@ new_entrant_generators (one row per NEM sub-region) and new_entrant_build_costs
 (one technology row, constant cost). The LP may then choose nuclear alongside
 all other IASR new-entrant options.
 
-Nuclear parameters (CSIRO GenCost 2023-24):
-  - Build cost: 9,000,000 AUD/MW (constant — no cost reduction trajectory)
-  - VOM:        10 AUD/MWh
-  - Heat rate:  0.0 GJ/MWh (combustion emissions = zero; nuclear fission)
-  - Lifetime:   60 years
-  - Min stable: 50 %
+Nuclear parameters (CSIRO GenCost 2024-25 Final, July 2025):
+  - Build cost: 31,100,000 AUD/MW (SMR, derived from UAMPS CFPP USD 9.3bn ref;
+    GenCost p.ix). Constant — no cost-reduction trajectory in MVP.
+  - VOM:        10 AUD/MWh (indicative; IEA "Projected Costs of Generating
+    Electricity 2020" nuclear O&M ~USD 9-15/MWh)
+  - Heat rate:  0.0 GJ/MWh (nuclear fuel cost not represented in IASR fuel-cost
+    tables; modelled as a "free" carrier in the LP — capital + VOM only)
+  - Lifetime:   60 years (GenCost assumption)
+  - Min stable: 53 % (GenCost 2024-25 baseload CF range floor, p.51)
+
+Carrier: "Nuclear" is a first-class carrier from ISPyPSA's perspective. It is
+listed in src/ispypsa/translator/generators.py:non_fuel_carriers alongside
+Wind/Solar/Water so the translator routes zero-fuel-cost generators correctly.
+Post-processing (mvp_pass1_power/postprocess/nger_factors.py) maps Nuclear to
+zero Scope 1 combustion emissions.
 
 Structural template:
   CCGT rows (preferred), or H2/Hyblend if CCGT absent, are used to infer the
@@ -25,18 +34,14 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 _NUCLEAR_TECH = "Advanced Nuclear"
-# ISPyPSA's translator only supports fuel-cost lookup for carriers in
-# _CARRIER_TO_FUEL_COST_TABLES (Gas, Coal, …) or the hardcoded non_fuel_carriers
-# list (Wind, Water, Solar). "Nuclear" appears in neither, so using it directly
-# raises KeyError in create_pypsa_friendly_dynamic_marginal_costs. Setting
-# fuel_type to "Water" routes nuclear through the non_fuel path (zero fuel cost,
-# fully dispatchable), which is correct for the LP. The generator names and
-# technology_type remain "Advanced Nuclear" for post-processing identification.
-_NUCLEAR_FUEL = "Water"
-_BUILD_COST_AUD_PER_MW = 9_000_000
+_NUCLEAR_FUEL = "Nuclear"
+# CSIRO GenCost 2024-25 Final report (July 2025), Table B.2.
+# Capital cost is held constant across the modelling horizon; GenCost's
+# central case shows essentially no cost-reduction trajectory for SMR.
+_BUILD_COST_AUD_PER_MW = 31_100_000
 _VOM = 10.0
 _HEAT_RATE = 0.0
-_MIN_STABLE = 50.0
+_MIN_STABLE = 53.0
 _LIFETIME = 60
 
 _TEMPLATE_TECH_PREFERENCE = ["CCGT", "Hydrogen Reciprocating Engine", "Hyblend Reciprocating Engine"]

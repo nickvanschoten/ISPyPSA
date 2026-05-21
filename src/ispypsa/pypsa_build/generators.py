@@ -7,6 +7,45 @@ import pypsa
 from ispypsa.translator.helpers import convert_to_numeric_if_possible
 
 
+# Monthly capacity-factor profile for conventional (non-pumped) hydro, applied
+# as a static p_max_pu series for Water-carrier generators. ISPyPSA does not
+# load hydro availability traces, so without this constraint the LP dispatches
+# Water generators at ~85-100% CF (unbounded by anything except p_nom), inflating
+# annual hydro generation by ~4x vs realistic levels.
+#
+# Values derived from AEMO Generation Information NEM monthly hydro generation
+# (long-run averages, NSW + Tas hydro dominate the fleet). Annual mean ≈ 0.37,
+# inside the realistic 30-45% CF band for Australian conventional hydro. This
+# applies uniformly to all Water-carrier generators (Tumut, Murray, Eildon,
+# Bendeela, etc.); per-generator CF differentiation requires AEMO Gen Info
+# per-facility data which is out of scope for this fix.
+_HYDRO_MONTHLY_CF = {
+    1: 0.25, 2: 0.25,             # peak summer — low inflows
+    3: 0.35, 4: 0.35, 5: 0.35,    # autumn
+    6: 0.40, 7: 0.40, 8: 0.40,    # winter — peak inflows
+    9: 0.45, 10: 0.45, 11: 0.45,  # spring — snowmelt
+    12: 0.30,                     # early summer
+}
+
+
+def _build_seasonal_hydro_trace(snapshots: pd.MultiIndex) -> pd.DataFrame:
+    """Build a wind/solar-shaped trace DataFrame for Water-carrier generators.
+
+    PyPSA's network.snapshots MultiIndex levels are unnamed by default while
+    ISPyPSA's trace DataFrames use named columns ("investment_periods",
+    "snapshots") that get_set_index'd downstream. Construct by position to
+    work either way."""
+    investment_period_level = snapshots.get_level_values(0)
+    timestep_level = snapshots.get_level_values(1)
+    return pd.DataFrame(
+        {
+            "investment_periods": investment_period_level,
+            "snapshots": timestep_level,
+            "p_max_pu": [_HYDRO_MONTHLY_CF[m] for m in timestep_level.month],
+        }
+    )
+
+
 def _get_trace_data(generator_name: str, path_to_traces: Path):
     """Fetches trace data for a generator from directories containing traces.
 
@@ -75,6 +114,8 @@ def _add_generator_to_network(
         trace_data = _get_trace_data(generator_definition["name"], path_to_wind_traces)
     elif generator_definition["carrier"] == "Solar":
         trace_data = _get_trace_data(generator_definition["name"], path_to_solar_traces)
+    elif generator_definition["carrier"] == "Water":
+        trace_data = _build_seasonal_hydro_trace(network.snapshots)
     else:
         trace_data = None
 

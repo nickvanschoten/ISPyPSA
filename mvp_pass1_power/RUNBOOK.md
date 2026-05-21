@@ -19,7 +19,7 @@ new-entrant option set). No custom_constraints rows are used in the production c
 | `gas_bridge` | Gas bridge | Coal closure ≤ 2030; all gas new-entrant technologies retained; LP freely picks gas vs storage |
 | `storage_led` | Storage-led | Coal closure ≤ 2035; drops all gas new entrants including CCS variants; H2 and biomass remain |
 | `fossil_incumbent` | Fossil-incumbent | Coal closure pushed +10 years (AEMO schedule + 10); solar new entrants dropped, 75% of wind new entrants dropped (random_state=0 for reproducibility) |
-| `nuclear_included` | Nuclear included | IASR coal schedule unchanged; Advanced Nuclear injected into new_entrant_generators (one row per sub-region) at CSIRO GenCost 2023-24 cost |
+| `nuclear_included` | Nuclear included | IASR coal schedule unchanged; Advanced Nuclear injected into new_entrant_generators (one row per sub-region) at CSIRO GenCost 2024-25 cost (31.1M AUD/MW) |
 
 ### Design rationale
 
@@ -32,9 +32,11 @@ The five non-baseline archetypes each test a qualitatively different hypothesis:
   MGA near-optimal exploration without requiring a prescriptive fossil-share floor constraint.
   (A floor constraint would require custom_constraints_rhs, which cannot constrain
   storage_units directly in the current ISPyPSA schema.)
-- **nuclear_included** tests whether nuclear's high capital cost (≥ $9M/MW) is ever
-  cost-competitive against renewables + storage under IASR techno-economics. It answers
-  "at what carbon price would nuclear appear?" as an implicit output of the Pass 2 MGA sweep.
+- **nuclear_included** tests whether nuclear's high capital cost (≥ $31M/MW per CSIRO
+  GenCost 2024-25) is ever cost-competitive against renewables + storage under IASR
+  techno-economics. The corrected production run (`20260521_155855`) shows the LP
+  builds zero nuclear capacity in all six milestone years; the archetype is in the
+  catalogue as a structural option the LP rejects on economic grounds.
 
 ### What archetypes do NOT capture
 
@@ -185,7 +187,7 @@ Outputs (one row per archetype × year):
 | `storage_capacity.csv` | Total storage power (GW) and energy (GWh) |
 | `demand_generation.csv` | Total demand, generation, supply gap % |
 | `capacity_factors.csv` | CF per carrier |
-| `renewable_share.csv` | Wind + Solar + Water + Biomass share of total generation |
+| `renewable_share.csv` | Wind + Solar + Biomass share of total generation (Water excluded — see Section 7) |
 
 ---
 
@@ -193,13 +195,16 @@ Outputs (one row per archetype × year):
 
 ### 2030 demand overshoot (known)
 
-The `cost_optimal` archetype at NEM 6-period shows **+36% total generation vs AEMO
-Overview 2024** for the 2030 milestone year. This discrepancy is:
+The `cost_optimal` archetype at NEM 6-period shows **+15.2% total generation vs AEMO
+Overview 2024** for the 2030 milestone year (232.7 TWh vs 202 TWh — corrected
+production run `20260521_155855`; prior run was +14.2%). This discrepancy is:
 
 - Consistent across three solver backends (HiGHS simplex, PDLP 1e-3, Gurobi)
-- Presumed to be an IASR workbook data issue, not a solver or model artefact
-- Documented in the dashboard calibration panel with the flag text:
-  "Known data-side discrepancy (36% vs AEMO Overview; established across three solvers)"
+- Robust to the hydro/PHES fix — the overshoot was +14% before and +15% after,
+  confirming the demand-side discrepancy is the dominant calibration factor, not
+  hydro distortion
+- Presumed to be an IASR workbook data issue (representative-week scaling), not a
+  solver or model artefact
 
 The 2050 milestone year aligns with AEMO Overview within ~5%. Downstream Pass 2 users
 should be aware that 2030 cost and emission intensities are calibrated against an
@@ -216,7 +221,9 @@ over-served demand and may not represent the physical Australian grid in that ye
 
 ## 7. Renewable classification
 
-**Renewable carriers** = `{"Wind", "Solar", "Water", "Biomass"}`.
+**Renewable carriers** = `{"Wind", "Solar", "Biomass"}` (see
+`_RENEWABLE_CARRIERS` in `postprocess/extract_granular_outputs.py:34` and
+`postprocess/extract_method_years.py`).
 
 These are the zero- or near-zero direct combustion carriers that AEMO's ISP tracks as
 "variable renewable" or "clean dispatchable". The classification is used for:
@@ -225,6 +232,11 @@ These are the zero- or near-zero direct combustion carriers that AEMO's ISP trac
 
 **Excluded from renewable count:**
 
+- **Water (hydro)**: methodology choice. After the hydro fix (2026-05-21),
+  conventional hydro dispatches at realistic 30–45% CF and pumped storage is
+  modelled as StorageUnits. Including Water in the renewable share would be
+  defensible, but we keep it excluded so the metric stays strictly VRE+biomass
+  and is comparable to prior runs.
 - **Nuclear**: operationally zero-carbon but politically contested in Australia; excluded
   per AEMO ISP convention. Its carbon intensity is zero in the emission stack regardless.
 - **Hydrogen**: upstream embodied emissions (electrolysis or SMR+CCS) are out of scope;

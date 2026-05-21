@@ -24,6 +24,7 @@ Legacy archetypes (kept for backward compatibility, not in production catalogue)
   deep_clean_firmed — superseded by fast_fossil_exit
 """
 
+from ._pumped_storage_fix import apply as _pumped_storage_fix_apply
 from .cost_optimal import apply as cost_optimal_apply
 from .fast_fossil_exit import apply as fast_fossil_exit_apply
 from .gas_bridge import apply as gas_bridge_apply
@@ -42,14 +43,29 @@ PRODUCTION_ARCHETYPES = [
     "nuclear_included",
 ]
 
+
+def _with_pumped_storage_fix(archetype_fn):
+    """Wrap an archetype mutation to first re-route the four NEM pumped storage
+    facilities (Wivenhoe, Shoalhaven, Borumba, Snowy 2.0) from ecaa_generators
+    to ecaa_batteries — i.e. model them as PyPSA StorageUnits, not unconstrained
+    Water-carrier generators. See _pumped_storage_fix.py for the data sources."""
+
+    def wrapped(ispypsa_tables, config):
+        ispypsa_tables = _pumped_storage_fix_apply(ispypsa_tables, config)
+        return archetype_fn(ispypsa_tables, config)
+
+    wrapped.__name__ = f"{archetype_fn.__name__}_with_pumped_storage_fix"
+    return wrapped
+
+
 APPLY_ARCHETYPE = {
-    "cost_optimal":     cost_optimal_apply,
-    "fast_fossil_exit": fast_fossil_exit_apply,
-    "gas_bridge":       gas_bridge_apply,
-    "storage_led":      storage_led_apply,
-    "fossil_incumbent": fossil_incumbent_apply,
-    "nuclear_included": nuclear_included_apply,
+    "cost_optimal":     _with_pumped_storage_fix(cost_optimal_apply),
+    "fast_fossil_exit": _with_pumped_storage_fix(fast_fossil_exit_apply),
+    "gas_bridge":       _with_pumped_storage_fix(gas_bridge_apply),
+    "storage_led":      _with_pumped_storage_fix(storage_led_apply),
+    "fossil_incumbent": _with_pumped_storage_fix(fossil_incumbent_apply),
+    "nuclear_included": _with_pumped_storage_fix(nuclear_included_apply),
     # Legacy — not in PRODUCTION_ARCHETYPES but still callable.
-    "renewables_led":   renewables_led_apply,
-    "deep_clean_firmed": deep_clean_firmed_apply,
+    "renewables_led":    _with_pumped_storage_fix(renewables_led_apply),
+    "deep_clean_firmed": _with_pumped_storage_fix(deep_clean_firmed_apply),
 }

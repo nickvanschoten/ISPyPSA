@@ -710,7 +710,7 @@ def _get_dynamic_fuel_prices(
             )
             all_dynamic_fuel_prices.append(carrier_prices_table)
 
-    non_fuel_carriers = ["Wind", "Water", "Solar"]
+    non_fuel_carriers = ["Wind", "Water", "Solar", "Nuclear"]
     non_fuel_prices_df = pd.DataFrame(
         generators_df.loc[
             generators_df["carrier"].isin(non_fuel_carriers),

@@ -494,6 +494,11 @@ def _render_calibration(data_dir: Path) -> None:
 def _render_config_notes(selected_gwp_label: str, gwp: dict) -> None:
     with st.expander("Section 4 — Configuration Notes"):
         st.markdown(f"""
+**Production run:** `20260521_155855` — full NEM, 6 archetypes × 6 milestone years.
+3.99 h wall-clock (up from 2.48 h pre-fix; the realistic hydro/PHES constraints
+make the LP work harder). All 36 periods Optimal under HiGHS primal simplex — no
+Gurobi fallback required. Previous run preserved at `outputs/*_prior_20260518/`.
+
 **IASR scenario:** Step Change 2024 v6.0
 
 **Solver:** HiGHS default primal simplex (myopic period decomposition for multi-period runs)
@@ -512,8 +517,11 @@ def _render_config_notes(selected_gwp_label: str, gwp: dict) -> None:
 | nuclear_included | IASR schedule | Available | Advanced Nuclear added per sub-region |
 
 **Renewable classification (for renewable_share):**
-Wind, Solar, Biomass. Water (hydro) and Hydrogen are excluded from renewable share.
-Nuclear is also excluded (contested AU context).
+Wind, Solar, Biomass. Water (hydro) and Hydrogen are excluded as a *methodology
+choice* — Water now dispatches at realistic 30–45% CF after the hydro fix
+(unchanged inclusion is defensible; we have kept it excluded so the metric remains
+strictly VRE+biomass and is comparable to prior runs). Nuclear is also excluded
+(contested AU context).
 
 **Max share methodology:**
 All archetypes currently declare max_share = 1.0 (no deployment ceiling). These are
@@ -525,61 +533,97 @@ supply; differentiated bounds (e.g. fast_fossil_exit capped at 0.8 through 2030 
 reflect deployment ramp constraints) are a v2 modelling decision not implemented here.
 
 **Implied abatement cost sense-check (all years, fast_fossil_exit vs cost_optimal).**
-Uses `output_cost_per_unit` (fuel-decoupled). Corrected after Bug 1 fix (2026-05-19).
+Uses `output_cost_per_unit` (fuel-decoupled, post-Bug-1 fix). Values from the
+corrected production run (`20260521_155855`):
 
 | Year | Δ cost (AUD/MWh) | Δ CO₂e (tCO₂e/MWh) | Implied MAC (AUD/tCO₂e) |
 |---|---:|---:|---:|
-| 2030 | +36.97 | −0.367 | **101** |
-| 2035 | +19.08 | −0.179 | **107** |
-| 2040 | +12.13 | −0.116 | **105** |
-| 2045 | +7.11 | −0.071 | **100** |
-| 2050 | +3.81 | −0.030 | **127** |
+| 2030 | +53.87 | −0.408 | **132** |
+| 2035 | +21.77 | −0.203 | **108** |
+| 2040 | +13.69 | −0.125 | **110** |
+| 2045 | +7.92 | −0.081 | **98** |
+| 2050 | +3.77 | −0.033 | **115** |
 
-The range **100–127 AUD/tCO₂e** is broadly consistent with NEM decarbonisation
-literature (~80–150 AUD/tCO₂e). gas_bridge and storage_led are identical to
-fast_fossil_exit at 2030+ (gas bridge provides no additional flexibility under IASR
-Step Change; the LP never chooses new unabated gas even when it's available).
+The range **98–132 AUD/tCO₂e** sits at the upper end of the NEM decarbonisation
+literature band (~80–150 AUD/tCO₂e). The hydro fix lifted the 2030 figure
+materially (~+31% vs the pre-fix value) because the system now has to build
+firming capacity to cover the load that the prior phantom-hydro dispatch was
+silently meeting. Outer-year deltas are within ~10% of the pre-fix values.
+gas_bridge and storage_led are identical to fast_fossil_exit at 2030+ (gas
+bridge provides no additional flexibility under IASR Step Change; the LP
+never chooses new unabated gas even when it's available — confirmed
+structural under realistic hydro, not an artefact of the prior modelling).
 
-fossil_incumbent is not an abatement pathway. At 2030 it is cheaper (+$1.63/MWh) but
-dirtier (+0.037 tCO₂e/MWh) than cost_optimal; by 2045–2050 it is strictly dominated
-(higher cost AND more emissions). At 2050: fossil_incumbent pays +130 AUD/MWh for
-+0.165 tCO₂e/MWh — an implicit carbon penalty of ~790 AUD/tCO₂e on the excess
-emissions relative to cost_optimal.
+fossil_incumbent is not an abatement pathway. At 2030 it is cheaper (+$6.15/MWh
+delivered) but dirtier (+0.089 tCO₂e/MWh) than cost_optimal; by 2045–2050 it is
+strictly dominated (higher cost AND more emissions). At 2050: fossil_incumbent
+pays +177 AUD/MWh for +0.173 tCO₂e/MWh — an implicit carbon penalty of
+~**1,028 AUD/tCO₂e** on the excess emissions relative to cost_optimal. The
+gap widened from ~790 AUD/tCO₂e pre-fix because the constrained-renewable
+pathway now pays for PHES round-trip losses where the prior runs got hydro
+firming "for free". This widening is methodologically correct.
 
-**Energy intensity sense-check:**
-System-level GJ/MWh delivered at 2025: coal 4.37 (→ ~10.2 GJ/MWh per generator at 43%
-coal share ✓), natural_gas 0.45 (→ ~8.3 GJ/MWh at 5.4% gas share, OCGT-dominant ✓).
-fast_fossil_exit 2030 hydrogen: 1.08 GJ/MWh — high because coal exit forces significant
-H2 dispatch from hydrogen turbines with high heat rates (~15 GJ/MWh). fossil_incumbent
-2050 biomass: 3.74 GJ/MWh — anomalously high, indicating LP over-relies on biomass for
-firming when the aging thermal fleet cannot meet ramp constraints cheaply.
+**Nuclear (`nuclear_included`):** Now a first-class carrier in ISPyPSA (the
+prior KeyError workaround has been removed). Cost assumptions: CSIRO GenCost
+2024-25 Final (July 2025) — 31.1M AUD/MW capital cost, 53% min stable level,
+60-year lifetime. Heat rate held at 0 GJ/MWh (nuclear fuel cost not in IASR
+fuel-cost tables; routed as a non-fuel carrier), with VOM 10 AUD/MWh from IEA
+*Projected Costs of Generating Electricity 2020*. **The LP built zero nuclear
+in all six milestone years 2025–2050.** Nuclear_included's `output_cost_per_unit`
+trajectory is identical to cost_optimal in every year — the LP found the same
+optimum with the nuclear option ignored. The archetype is in the catalogue as a
+structural option the LP rejects on economic grounds, satisfying the
+over-generation invariant for downstream Pass 2 consumers.
+
+**Energy intensity sense-check (corrected run):**
+System-level GJ/MWh delivered at 2025 (cost_optimal): coal 5.92 (→ ~10 GJ/MWh
+per generator at ~59% coal share, consistent with sub-critical black coal),
+natural_gas 0.62 (→ ~8 GJ/MWh per OCGT-dominant new-gas mix). Values rose vs
+the prior run (4.37 / 0.45) because the corrected dispatch mix has more fossil
+output per MWh delivered — the prior runs' phantom hydro silently supplied
+~40 TWh/yr that fossil now has to cover. fast_fossil_exit 2030 fuel mix:
+natural_gas 1.96, hydrogen 0.66 GJ/MWh (gas grew under realistic hydro; H2
+dropped as gas is cheaper to dispatch). fossil_incumbent 2050 biomass: 5.16
+GJ/MWh — anomalously high (was 3.74); the constrained-build pathway leans
+even more on biomass for firming now that pumped storage costs energy to
+cycle. Heat rates per-generator are unchanged from the prior run; only the
+dispatch mix shifted.
+
+**Methodology choices vs remaining limitations:**
+- *Methodology choices* (conscious, kept for v2): Water excluded from
+  renewable_share; uniform max_share=1.0; AR5 NGER as default GWP basis;
+  myopic period decomposition without cross-period new-entrant chaining.
+- *Remaining limitations* (accepted for MVP): uniform monthly hydro CF profile
+  applied to all Water-carrier generators (no per-facility variation; AEMO
+  Generation Information per-facility data is out of scope); pumped storage
+  parameters hardcoded in `mvp_pass1_power/archetypes/_pumped_storage_fix.py`
+  (the IASR workbook does not carry energy capacity or round-trip efficiency
+  for PHES, and `isp-workbook-parser` would need an upstream extension);
+  Shoalhaven dispatches at 3.1% CF in cost_optimal 2050 — an LP economic
+  finding (small 247 MW × 6h PHES dominated by same-region batteries), not
+  a model bug.
 
 **Data caveats:**
-- **Hydro (Water carrier) modeling limitation:** ISPyPSA does not load hydro availability
-  traces. All Water generators run with p_max_pu=1.0 and zero marginal cost; the LP
-  dispatches them at 85–100% capacity factor (~60 TWh/year vs ~15–17 TWh realistic
-  NEM-wide). Water generation and capacity figures are LP-optimal given unconstrained
-  hydro, not physically realistic. Water is excluded from renewable_share_pct for this
-  reason. Pumped hydro (Wivenhoe, Shoalhaven, Borumba, Snowy 2.0) is modelled as
-  Generators, not StorageUnits — no pumping energy is deducted.
-- 2030 NEM consumption ~14% above AEMO Overview 202 TWh baseline. Consistent across
-  HiGHS simplex and Gurobi — confirmed data-side issue (IASR representative-week
-  scaling), not a solver artefact.
-- Myopic decomposition does not chain new-entrant capacity commitments across periods;
-  each period solves independently from the IASR baseline.
-- PDLP at 1e-3 tolerance returns `model_status: Unknown` even when all three convergence
-  metrics are below threshold. Solution values are populated correctly.
-- Physical-mass CH4/N2O columns enable AR6 GWP switching; AR5 NGER values stored
-  in nger_factor_table.csv are the authoritative NGER-compliant basis.
-- **N2O factors — current NGER framework:** The NGER Measurement Determination 2008
-  Compilation No. 18 (31/08/2024) carries a **single** N2O factor per fuel with no
-  electricity-generation sub-table. Bituminous coal N2O = 0.2 kg CO2-e/GJ; natural
-  gas N2O = 0.03 kg CO2-e/GJ. Early NGER editions (pre-2015) had separate
-  electricity-generation columns (~1.4 kg CO2-e/GJ for bituminous coal); that
-  distinction was removed in a later amendment. If a reference framework still uses
-  the pre-2015 electricity-generation N2O factors, reported N2O intensities will be
-  ~7× higher than these values. That is a known cross-framework divergence, not a
-  model error here.
+- **2030 NEM consumption ~15% above AEMO Overview 202 TWh baseline** (cost_optimal
+  232.7 TWh vs AEMO 202 TWh). Persists in the corrected run (was +14.2% prior,
+  now +15.2%). Confirmed across HiGHS simplex, PDLP, and Gurobi — data-side
+  issue (IASR representative-week scaling), not a solver or hydro artefact.
+- Myopic decomposition does not chain new-entrant capacity commitments across
+  periods; each period solves independently from the IASR baseline.
+- PDLP at 1e-3 tolerance returns `model_status: Unknown` even when all three
+  convergence metrics are below threshold. Solution values are populated
+  correctly.
+- Physical-mass CH4/N2O columns enable AR6 GWP switching; AR5 NGER values
+  stored in nger_factor_table.csv are the authoritative NGER-compliant basis.
+- **N2O factors — current NGER framework:** The NGER Measurement Determination
+  2008 Compilation No. 18 (31/08/2024) carries a **single** N2O factor per fuel
+  with no electricity-generation sub-table. Bituminous coal N2O = 0.2
+  kg CO2-e/GJ; natural gas N2O = 0.03 kg CO2-e/GJ. Early NGER editions
+  (pre-2015) had separate electricity-generation columns (~1.4 kg CO2-e/GJ
+  for bituminous coal); that distinction was removed in a later amendment.
+  If a reference framework still uses the pre-2015 electricity-generation
+  N2O factors, reported N2O intensities will be ~7× higher than these
+  values. That is a known cross-framework divergence, not a model error here.
 """)
 
 

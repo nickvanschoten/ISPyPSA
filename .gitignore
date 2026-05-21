@@ -190,3 +190,4 @@ data/*
 
 # ignore all pypsa output files
 *.nc
+/mvp_pass1_power

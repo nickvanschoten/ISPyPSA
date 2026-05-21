@@ -353,13 +353,13 @@ def test_nuclear_included_sets_correct_overridden_parameters(sample_ispypsa_tabl
     ].iloc[0]
 
     assert row["technology_type"] == "Advanced Nuclear"
-    # fuel_type = "Water" so ISPyPSA treats nuclear as a non-fuel carrier
-    # (zero fuel cost, fully dispatchable). See nuclear_included.py for rationale.
-    assert row["fuel_type"] == "Water"
+    # fuel_type = "Nuclear" — listed in translator/generators.py:non_fuel_carriers,
+    # so ISPyPSA treats it as a zero-fuel-cost, fully-dispatchable carrier.
+    assert row["fuel_type"] == "Nuclear"
     assert row["heat_rate_gj/mwh"] == 0.0
     assert row["vom_$/mwh_sent_out"] == 10.0
     assert row["lifetime"] == 60
-    assert row["minimum_stable_level_%"] == 50.0
+    assert row["minimum_stable_level_%"] == 53.0
     assert pd.isna(row["rez_id"])
     assert pd.isna(row["fuel_cost_mapping"])
 
@@ -374,7 +374,7 @@ def test_nuclear_included_adds_build_cost_row_at_csiro_gencost(sample_ispypsa_ta
     year_cols = [c for c in bc.columns if c.endswith("_$/mw")]
     assert len(year_cols) > 0
     for col in year_cols:
-        assert nuclear_bc.iloc[0][col] == 9_000_000
+        assert nuclear_bc.iloc[0][col] == 31_100_000
 
 
 def test_nuclear_included_does_not_duplicate_nuclear_across_same_sub_region(csv_str_to_df):
