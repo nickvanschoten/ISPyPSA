@@ -1,4 +1,4 @@
-Generator Station,Generating Unit,Technology Type,Min Stable Level (MW)
-Condamine,CPSA_GT1,CCGT - Gas Turbine,20
-Condamine,CPSA_GT2,CCGT - Gas Turbine,20
+Power Station,IASR ID,Technology Type,Min Stable Level (MW)
+Condamine,CPSA_GT1,CCGT - Gas Turbine,20.0
+Condamine,CPSA_GT2,CCGT - Gas Turbine,20.0
 Condamine,CPSA_ST,CCGT - Steam Turbine,13.1

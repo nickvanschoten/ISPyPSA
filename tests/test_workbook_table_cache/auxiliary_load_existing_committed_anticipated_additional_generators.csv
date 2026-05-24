@@ -1,13 +1,10 @@
-Fuel/Technology type,Auxiliary load (% of nameplate capacity)
-Black Coal QLD,6.6709717097171
-Black Coal NSW,5.46386066763425
-Brown Coal VIC,8.214647302904563
-Hydro,0.3426919235849361
-Gas-powered steam turbine,5.002129697862933
-CCGT,1.7476193182921973
-OCGT,0.6142963982743525
-Liquid Fuel,0.6698564593301436
-Solar,0.017458191994355995
-Wind,0.06975869288182919
-Hydrogen-based gas turbines,1.5
-Battery Storage,0.0
+IASR ID,Power Station,Technology,Auxiliary load (% of generation)
+,White Rock Wind Farm - Stage 1,,0.0697586928818291
+,Kogan Creek,,6.6709717097171
+,Condamine A,,1.7476193182921973
+,Braemar,,0.6142963982743525
+,Wivenhoe,,0.3426919235849361
+,Wambo Wind Farm,,0.0697586928818291
+,Tamworth Solar Farm,,0.0174581919943559
+,New England Solar Farm - stage 2,,0.0174581919943559
+,Wandoan South BESS,,0.0

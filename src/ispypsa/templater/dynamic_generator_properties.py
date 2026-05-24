@@ -331,60 +331,58 @@ def _template_biomass_prices(
     return biomass_prices.reset_index(drop=True)
 
 
+# Generator-to-region mapping for the two named H2 GPG generators ISPyPSA's
+# Hyblend carrier flow expects. v6.0 modelled these explicitly; v7.4 publishes
+# a per-region H2 blend trajectory that each named generator inherits from its
+# sub-region (per (c3) Reading 1 design call 2026-05-24). Methodology tab:
+# H2 blend fractions are applied uniformly to all gas peakers within each
+# sub-region, per v7.4's regional framing.
+_H2_GPG_GENERATOR_TO_REGION = {
+    "Kogan Gas": "QLD",
+    "SA Hydrogen Turbine": "SA",
+}
+
+
 def _template_h2_gpg_emissions_reduction_factors(
     iasr_tables: dict[str : pd.DataFrame], scenario: str
 ) -> pd.DataFrame:
-    """Creates an emissions reduction factor template for H2 GPG plants SA Hydrogen
-    Turbine and Kogan Gas.
+    """Per-generator H2 blend % time series for the H2 GPG generators ISPyPSA
+    recognises (Kogan Gas, SA Hydrogen Turbine).
 
-    The function behaviour depends on the `scenario` specified in the model
-    configuration.
+    Source is v7.4's `hydrogen_limit_for_gpg` (regions × scenarios × years).
+    Each known H2 GPG generator inherits its region's time series. v6.0 caches
+    get the same shape via schema normalisation
+    (`consolidate_v60_h2_gpg_to_regional` combines the two v6.0 split tables
+    into the regional layout, mapping Kogan→QLD, SA Hydrogen Turbine→SA).
+
+    The downstream translator consumes this per-generator output to compute
+    blended fuel prices for each Hyblend generator — see `translator/
+    generators.py::_calculate_blended_fuel_prices` and the [[c3]] design call.
 
     Args:
-        iasr_tables: Dict of tables from the IASR workbook that have been parsed using
-            `isp-workbook-parser`.
-        scenario: Scenario obtained from the model configuration
+        iasr_tables: Dict of tables from the IASR workbook.
+        scenario: ISP scenario name from the model configuration.
 
     Returns:
-        `pd.DataFrame`: ISPyPSA template for H2 GPG plant emissions reductions factors
+        `pd.DataFrame`: one row per H2 GPG generator with year columns; empty
+        DataFrame (no rows, same columns) if the scenario isn't present.
     """
-    # get both H2 GPG emissions reductions tables and combine
-    kogan_gas_emissions_reduction_factors = iasr_tables[
-        "gpg_emissions_reduction_h2_kogan"
-    ].rename(columns={"Kogan Gas": "scenario"})
-    kogan_gas_emissions_reduction_factors["generator"] = "Kogan Gas"
-
-    sa_hydrogen_turbine_emissions_reduction_factors = iasr_tables[
-        "gpg_emissions_reduction_h2_sa_turbine"
-    ].rename(columns={"SA Hydrogen Turbine": "scenario"})
-    sa_hydrogen_turbine_emissions_reduction_factors["generator"] = "SA Hydrogen Turbine"
-
-    h2_gpg_emissions_reduction_factors = pd.concat(
-        [
-            kogan_gas_emissions_reduction_factors,
-            sa_hydrogen_turbine_emissions_reduction_factors,
-        ],
-        axis=0,
-    )
-    # select the rows for the scenario given in config only
-    h2_gpg_emissions_reduction_factors_scenario = (
-        h2_gpg_emissions_reduction_factors[
-            h2_gpg_emissions_reduction_factors["scenario"] == scenario
-        ]
-        .drop(columns=["scenario"])
-        .set_index("generator")
-    )
-    h2_gpg_emissions_reduction_factors_scenario.columns = (
-        _add_units_to_financial_year_columns(
-            h2_gpg_emissions_reduction_factors_scenario.columns, "%"
-        )
-    )
-    h2_gpg_emissions_reduction_factors_scenario = (
-        _convert_financial_year_columns_to_float(
-            h2_gpg_emissions_reduction_factors_scenario
-        )
-    )
-    return h2_gpg_emissions_reduction_factors_scenario.reset_index()
+    regional = iasr_tables["hydrogen_limit_for_gpg"]
+    regional = regional[regional["Scenario"] == scenario].copy()
+    regional = regional.drop(columns=["Scenario"]).set_index("Region")
+    rows = []
+    for generator, region in _H2_GPG_GENERATOR_TO_REGION.items():
+        if region not in regional.index:
+            continue
+        row = regional.loc[region].to_dict()
+        row["generator"] = generator
+        rows.append(row)
+    if not rows:
+        return pd.DataFrame(columns=["generator"])
+    result = pd.DataFrame(rows).set_index("generator")
+    result.columns = _add_units_to_financial_year_columns(result.columns, "%")
+    result = _convert_financial_year_columns_to_float(result)
+    return result.reset_index()
 
 
 def _template_biom_gpg_emissions_reduction_factors(

@@ -46,7 +46,7 @@ _MINIMUM_REQUIRED_GENERATOR_COLUMNS = [
     "heat_rate_gj/mwh",
     # connection/build cost & limits
     "connection_cost_technology",
-    "connection_cost_rez/_region_id",
+    "connection_cost_region_id",
     "build_limit_technology",
     "build_limit_region_id",
     "technology_specific_lcf_%",

@@ -1,6 +1,10 @@
-Generator,MLF
-Braemar,0.9617
-Condamine A,0.9832
-Kogan Creek,0.9673
-White Rock Wind Farm - Stage 1,0.8289
-Wivenhoe,0.9994
+Power Station,MLF,Status,Shadow connection point,Policy
+Braemar,0.9617,Existing,,
+Condamine A,0.9832,Existing,,
+Kogan Creek,0.9673,Existing,,
+White Rock Wind Farm - Stage 1,0.8289,Existing,,
+Wivenhoe,0.9994,Existing,,
+Wandoan South Solar Farm - stage 1,0.9832,Committed,Wandoan South Solar Farm - stage 1,
+Tamworth Solar Farm,0.8289,Anticipated,White Rock Solar Farm,
+New England Solar Farm - stage 2,0.8718,Additional,New England Solar Farm,LTESA Round 1
+Wandoan South BESS,0.9751,Existing,Wandoan BESS (Generation),

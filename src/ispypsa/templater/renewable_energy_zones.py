@@ -9,14 +9,24 @@ from .helpers import _snakecase_string
 
 
 def _template_rez_build_limits(
-    rez_build_limits: pd.DataFrame, scenario: str
+    iasr_tables: dict[str, pd.DataFrame], scenario: str
 ) -> pd.DataFrame:
     """Create a template for renewable energy zones that contains data on resource and
     transmission limits and transmission expansion costs.
 
+    v6.0 carried both resource limits (wind/solar capacity) and REZ-to-grid
+    transmission limits + expansion costs in a single `initial_build_limits`
+    table. v7.x split these across `initial_resource_limits` and
+    `initial_transmission_limits`. The templater reads transmission columns
+    from the latter when present (v7.4) and otherwise falls back to the same
+    `initial_resource_limits` DataFrame (v6.0, where both sets of columns
+    live in the same renamed table).
+
     Args:
-        rez_build_limits: pd.DataFrame IASR table specifying the renewable energy
-            zone build limits
+        iasr_tables: dict of IASR tables from `isp-workbook-parser`. Reads
+            `initial_resource_limits` for resource columns, and optionally
+            `initial_transmission_limits` if AEMO publishes transmission
+            data in a separate table (v7.4+).
         scenario: ISP scenario to generate template inputs based on.
 
     Returns:
@@ -24,6 +34,7 @@ def _template_rez_build_limits(
             table
     """
     logging.info("Creating a rez_build_limits template")
+    rez_build_limits = _merge_resource_and_transmission_limits(iasr_tables)
     rez_build_limits.columns = [
         _snakecase_string(col) for col in rez_build_limits.columns
     ]
@@ -102,9 +113,41 @@ def _template_rez_build_limits(
     return rez_build_limits
 
 
+def _merge_resource_and_transmission_limits(
+    iasr_tables: dict[str, pd.DataFrame],
+) -> pd.DataFrame:
+    """Combine `initial_resource_limits` with the transmission columns AEMO now
+    publishes separately in `initial_transmission_limits` (v7.4+), and bring in
+    the per-REZ ISP sub-region from `renewable_energy_zones` if it isn't already
+    in the resource table.
+
+    For v6.0 caches both the transmission columns and the ISP sub-region live
+    in `initial_resource_limits` (the renamed file from v6.0's
+    `initial_build_limits`), so the cross-table merges are no-ops.
+    """
+    resource_df = iasr_tables["initial_resource_limits"].copy()
+    if "initial_transmission_limits" in iasr_tables:
+        transmission_df = iasr_tables["initial_transmission_limits"].copy()
+        transmission_cols = [
+            col for col in transmission_df.columns if col != "REZ name"
+        ]
+        resource_df = resource_df.merge(
+            transmission_df[transmission_cols], on="REZ ID", how="left"
+        )
+    if "ISP sub-region" not in resource_df.columns:
+        rez_df = iasr_tables["renewable_energy_zones"][["ID", "ISP sub-region"]]
+        resource_df = resource_df.merge(
+            rez_df, left_on="REZ ID", right_on="ID", how="left"
+        ).drop(columns="ID")
+    return resource_df
+
+
 def _process_transmission_limit(data):
     """Replace 0.0 MW Transmission limits with nan if there is not a cost given for
     expansion.
+
+    v7.4 made the Tranche 1 expansion-cost column suffix explicit; v6.0 caches
+    get the same suffix added via the schema normalisation column rename.
     """
     cols = [
         "rez_transmission_network_limit_peak_demand",
@@ -113,7 +156,7 @@ def _process_transmission_limit(data):
     ]
     for col in cols:
         replacement_check = data[
-            "indicative_transmission_expansion_cost_$m/mw"
+            "indicative_transmission_expansion_cost_$m/mw_tranche_1"
         ].isna() & (data[col] == 0.0)
         data.loc[replacement_check, col] = np.nan
     return data
@@ -124,7 +167,7 @@ def _combine_transmission_expansion_cost_to_one_column(data):
     1 column is nan then this function adopts the tranche 2 cost if it is not
     nan. The process is repeated with tranche 3 if the cost is still nan.
     """
-    tranche_one = "indicative_transmission_expansion_cost_$m/mw"
+    tranche_one = "indicative_transmission_expansion_cost_$m/mw_tranche_1"
     tranche_two = "indicative_transmission_expansion_cost_$m/mw_tranche_2"
     tranche_three = "indicative_transmission_expansion_cost_$m/mw_tranche_3"
 

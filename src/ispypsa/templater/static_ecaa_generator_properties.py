@@ -8,10 +8,14 @@ from .helpers import (
     _snakecase_string,
     _where_any_substring_appears,
 )
-from .lists import _ECAA_GENERATOR_TYPES, _MINIMUM_REQUIRED_GENERATOR_COLUMNS
+from .lists import _MINIMUM_REQUIRED_GENERATOR_COLUMNS
 from .mappings import (
     _ECAA_GENERATOR_NEW_COLUMN_MAPPING,
     _ECAA_GENERATOR_STATIC_PROPERTY_TABLE_MAP,
+)
+
+_ECAA_CONSOLIDATED_SUMMARY_TABLE = (
+    "existing_committed_anticipated_additional_generator_summary"
 )
 
 _OBSOLETE_COLUMNS = [
@@ -35,14 +39,13 @@ def _template_ecaa_generators_static_properties(
     logging.info(
         "Creating an existing, committed, anticipated and additional generators template"
     )
-    ecaa_generator_summaries = []
-    for gen_type in _ECAA_GENERATOR_TYPES:
-        df = iasr_tables[_snakecase_string(gen_type) + "_summary"]
-        df.columns = ["Generator", *df.columns[1:]]
-        ecaa_generator_summaries.append(df)
-    ecaa_generator_summaries = pd.concat(ecaa_generator_summaries, axis=0).reset_index(
-        drop=True
-    )
+    # v7.4 has a single consolidated summary table (v6.0's four per-status
+    # tables are merged into this form at cache-load time by the schema
+    # normalisation layer). The downstream code expects a "Generator" column
+    # holding the human-readable identifier — in v7.4 that's "Power Station".
+    ecaa_generator_summaries = iasr_tables[
+        _ECAA_CONSOLIDATED_SUMMARY_TABLE
+    ].rename(columns={"Power Station": "Generator"})
     cleaned_ecaa_generator_summaries = _clean_generator_summary(
         ecaa_generator_summaries
     )
@@ -323,11 +326,15 @@ def _process_and_merge_existing_gpg_min_load(
     """Processes and merges in gas-fired generation minimum load data
 
     Only retains first Gas Turbine min load if there are multiple turbines (OPINIONATED).
+
+    v7.4 canonical column names: `Power Station` (was v6.0's `Generator Station`)
+    and `IASR ID` (was `Generating Unit`). Schema normalisation renames v6.0
+    columns to match.
     """
     to_merge = []
-    for station in existing_gpg_min_loads["Generator Station"].drop_duplicates():
+    for station in existing_gpg_min_loads["Power Station"].drop_duplicates():
         station_rows = existing_gpg_min_loads[
-            existing_gpg_min_loads["Generator Station"] == station
+            existing_gpg_min_loads["Power Station"] == station
         ]
         if len(station_rows) > 1:
             # CCGTs with ST and GTs
@@ -345,12 +352,12 @@ def _process_and_merge_existing_gpg_min_load(
             to_merge.append(station_rows.squeeze())
     processed_gpg_min_loads = pd.concat(to_merge, axis=1).T
     # manual corrections
-    processed_gpg_min_loads["Generator Station"] = processed_gpg_min_loads[
-        "Generator Station"
+    processed_gpg_min_loads["Power Station"] = processed_gpg_min_loads[
+        "Power Station"
     ].replace(
         {"Tamar Valley": "Tamar Valley Combined Cycle", "Condamine": "Condamine A"}
     )
-    processed_gpg_min_loads = processed_gpg_min_loads.set_index("Generator Station")
+    processed_gpg_min_loads = processed_gpg_min_loads.set_index("Power Station")
     for gen, row in processed_gpg_min_loads.iterrows():
         df.loc[df["generator"] == gen, "minimum_load_mw"] = row["Min Stable Level (MW)"]
     return df
@@ -382,11 +389,13 @@ def _add_closure_year_column(
 
     default_closure_year = -1
 
-    # reformat closure_years table for clearer mapping:
+    # reformat closure_years table for clearer mapping. v7.4 canonical
+    # identifier column is `power_station` (snakecased from "Power Station";
+    # v6.0's "Generator name" gets renamed to match at cache load).
     closure_years.columns = [_snakecase_string(col) for col in closure_years.columns]
     closure_years = closure_years.rename(
         columns={
-            "generator_name": "generator",
+            "power_station": "generator",
             "expected_closure_year_calendar_year": "closure_year",
         }
     )

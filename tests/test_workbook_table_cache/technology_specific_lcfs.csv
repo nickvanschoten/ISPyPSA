@@ -1,8 +1,8 @@
-Cost zones / Sub-region,OCGT (small GT),OCGT (large GT),CCGT,CCGT with CCS,Biomass,Battery storage (1hr storage),Battery storage (2hrs storage),Battery storage (4hrs storage),Battery Storage (8hrs storage),Large scale Solar PV,Solar Thermal (15hrs storage),Wind,Wind - Offshore (fixed),Wind - offshore (floating),Hydrogen reciprocating engines,Pumped Hydro (8hrs storage),Pumped Hydro (24hrs storage),Pumped Hydro (48hrs storage),BOTN - Cethana
-NSW Low,1,1.01,1,1,1,1,1,1,0.99,1.01,1,0.99,1,1,1,,,,
+Cost zone / REZ ID,OCGT (small GT),OCGT (large GT),CCGT,CCGT with CCS,Biomass,Battery storage (1hr storage),Battery storage (2hrs storage),Battery storage (4hrs storage),Battery Storage (8hrs storage),Large scale Solar PV,Solar Thermal (15hrs storage),Wind,Wind - Offshore (fixed),Wind - offshore (floating),Hydrogen reciprocating engines,Pumped Hydro (8hrs storage),Pumped Hydro (24hrs storage),Pumped Hydro (48hrs storage),BOTN - Cethana
+NSW Low,1.0,1.01,1.0,1.0,1.0,1.0,1.0,1.0,0.99,1.01,1.0,0.99,1.0,1.0,1.0,,,,
 NSW Medium,1.0432,1.054,1.0433,1.0431,1.0477,1.0435,1.0461,1.0513,1.0434,1.0639,1.0599,1.0463,1.0593,1.0593,1.0477,,,,
 NSW High,1.0578,1.0702,1.0576,1.057,1.0658,1.0685,1.0774,1.0952,1.0931,1.0956,1.1161,1.0952,1.1112,1.1112,1.0658,,,,
-QLD Low,1,1.01,1,1,1,1,1,1,0.99,1.01,1,0.99,1,1,1,,,,
+QLD Low,1.0,1.01,1.0,1.0,1.0,1.0,1.0,1.0,0.99,1.01,1.0,0.99,1.0,1.0,1.0,,,,
 QLD Medium,1.0337,1.0452,1.0337,1.0332,1.0422,1.035,1.0406,1.0518,1.0469,1.0649,1.0694,1.0523,1.0678,1.0678,1.0422,,,,
 QLD High,1.0889,1.1022,1.0888,1.0877,1.1065,1.0828,1.0917,1.1095,1.1074,1.1374,1.1436,1.1216,1.1431,1.1431,1.1065,,,,
 SQ,,,,,,,,,,,,,,,,1.114,0.964,0.876,

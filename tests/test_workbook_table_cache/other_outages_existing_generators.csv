@@ -1,0 +1,9 @@
+Fuel type,Full outage (% of time),Partial outage (% of time),Full outage MTTR (hrs),Partial outage MTTR (hrs),Partial Outage Derating Factor (%)
+Brown Coal,7.75,11.56,90.05,12.2,17.91
+Black Coal NSW,6.3100000000000005,31.46,157.62,33.97,16.6
+Black Coal QLD,6.75,12.86,185.0,56.42,25.16
+OCGT,7.21,1.12,44.08,106.48,9.99
+Small peaking plants,9.58,0.32,150.2,189.52,33.7
+Hydro,5.11,1.71,38.1,473.44,15.18
+CCGT + Steam Turbine,5.04,1.66,61.19,40.35,15.21
+Batteries,1.84,,26.05,,

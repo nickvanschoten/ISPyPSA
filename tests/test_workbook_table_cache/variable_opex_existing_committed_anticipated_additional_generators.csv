@@ -1,12 +1,12 @@
-Generator,Technology,Variable OPEX ($/MWh sent out)
-All Battery storage (1hr storage),Battery storage (1hr storage),0
-All Battery storage (2hrs storage),Battery storage (2hrs storage),0
-All Battery storage (4hrs storage),Battery storage (4hrs storage),0
-All Battery storage (8hrs storage),Battery storage (8hrs storage),0
+Power Station / Technology,Technology,Variable OPEX ($/MWh sent out)
+All Battery storage (1hr storage),Battery storage (1hr storage),0.0
+All Battery storage (2hrs storage),Battery storage (2hrs storage),0.0
+All Battery storage (4hrs storage),Battery storage (4hrs storage),0.0
+All Battery storage (8hrs storage),Battery storage (8hrs storage),0.0
 All Hydro,Hydro,8.579681334
-All Pumped Hydro,Pumped Hydro,0
-All Large scale solar PV,Large scale Solar PV,0
-All Wind,Wind,0
+All Pumped Hydro,Pumped Hydro,0.0
+All Large scale solar PV,Large scale Solar PV,0.0
+All Wind,Wind,0.0
 Kogan Creek,Steam Super Critical,5.023707707
 Condamine A,CCGT,8.794471687
 Braemar,OCGT,12.56523567

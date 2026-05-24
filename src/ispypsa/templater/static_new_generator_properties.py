@@ -42,7 +42,11 @@ def _template_new_generators_static_properties(
     new_generator_summaries = []
     for gen_type in _NEW_GENERATOR_TYPES:
         df = iasr_tables[_snakecase_string(gen_type) + "_summary"]
-        df.columns = ["Generator Name", *df.columns[1:]]
+        # v7.4 canonical: the human-readable identifier is the `Power Station`
+        # column. v6.0's first column was the per-status name (e.g.
+        # `New entrants`) — renamed at cache load to match v7.4's
+        # `Power Station`.
+        df = df.rename(columns={"Power Station": "Generator Name"})
         new_generator_summaries.append(df)
     new_generator_summaries = pd.concat(new_generator_summaries, axis=0).reset_index(
         drop=True
@@ -173,7 +177,7 @@ def _merge_and_set_new_generators_static_properties(
         # if col is an opex column, use separate function to handle merging in:
         if re.search("^[fv]om_", col):
             data = iasr_tables[table_attrs["table"]]
-            df, col = _process_and_merge_opex(df, data, col, table_attrs)
+            df, col = _process_and_merge_opex(df, data, col, table_attrs, iasr_tables)
         else:
             if type(table_attrs["table"]) is list:
                 data = [iasr_tables[table] for table in table_attrs["table"]]
@@ -246,14 +250,25 @@ def _process_and_merge_opex(
     table_data: pd.DataFrame,
     col_name: str,
     table_attrs: dict,
+    iasr_tables: dict[str, pd.DataFrame] | None = None,
 ) -> tuple[pd.DataFrame, str]:
     """Processes and merges in fixed or variable OPEX values for new entrant generators.
 
-    In v6.0 of the IASR workbook the base values for all OPEX are found in
-    the column "NSW Low" or the relevant table, all other values are calculated
-    from this base value multiplied by the O&M locational cost factor. This function
-    merges in the post-LCF calculated values provided in the IASR workbook.
+    Two shapes are supported (detected from the table columns):
+
+    v6.0: per-region cost columns (e.g. `Fixed OPEX ($/kW sent out/year)_NSW Low`).
+        Values are pre-multiplied per (region, cost-band). Templater maps
+        `regional_build_cost_zone` → the matching column.
+
+    v7.4 (per design call 2026-05-24, Reading 1): single `Base value` column.
+        OPEX is computed as `base × O&M LCF / 100` where the LCF comes from
+        `locational_cost_factors` keyed by the generator's sub-region. The
+        cost-band variation v6.0 had (Low/Medium/High) was scenario-driven
+        and is collapsed in v7.4 — no methodological loss for the team's
+        Step Change scenario use.
     """
+    if any("base value" in c.lower() for c in table_data.columns):
+        return _compute_opex_from_base_and_lcf(df, iasr_tables, table_data, col_name)
     # update the mapping in this column to include generator name and the cost region initially given
     df[col_name] = df["generator_name"] + " " + df[col_name]
     table_data = table_data.rename(
@@ -287,6 +302,51 @@ def _process_and_merge_opex(
     return df, col_name
 
 
+def _compute_opex_from_base_and_lcf(
+    df: pd.DataFrame,
+    iasr_tables: dict[str, pd.DataFrame],
+    base_table: pd.DataFrame,
+    col_name: str,
+) -> tuple[pd.DataFrame, str]:
+    """v7.4 OPEX flow: `opex = base value × O&M LCF / 100`.
+
+    The base table's identifier column is `Technology Type` (fixed_opex_new_entrants)
+    or `Generator` (variable_opex_new_entrants) — auto-detected. The summary df's
+    `technology_type` / `generator_name` column provides the matching key.
+    Sub-region LCF comes from `locational_cost_factors` `O&M costs 3` (the only
+    OPEX-relevant column in the LCF set).
+    """
+    base_value_col = next(c for c in base_table.columns if "base value" in c.lower())
+    if "Technology Type" in base_table.columns:
+        id_col_in_table = "Technology Type"
+        id_col_in_summary = "technology_type"
+    else:
+        id_col_in_table = "Generator"
+        id_col_in_summary = "generator_name"
+    base_dict = base_table.set_index(id_col_in_table)[base_value_col].to_dict()
+
+    lcf_table = iasr_tables["locational_cost_factors"]
+    om_col = next(c for c in lcf_table.columns if "O&M" in c)
+    zone_col = lcf_table.columns[0]
+    lcf_dict = lcf_table.set_index(zone_col)[om_col].to_dict()
+
+    def compute(row):
+        base = base_dict.get(row[id_col_in_summary])
+        # Prefer the generator's explicit cost zone if it exists in the LCF
+        # table; otherwise fall back to its sub-region (v7.4 LCFs are keyed
+        # by sub-region / REZ ID rather than by Low/Med/High band).
+        zone = row.get("regional_build_cost_zone")
+        lcf = lcf_dict.get(zone)
+        if not isinstance(lcf, (int, float)):
+            lcf = lcf_dict.get(row.get("sub_region_id"))
+        if not isinstance(base, (int, float)) or not isinstance(lcf, (int, float)):
+            return pd.NA
+        return base * lcf / 100
+
+    df[col_name] = df.apply(compute, axis=1)
+    return df, col_name
+
+
 def _calculate_and_merge_tech_specific_lcfs(
     df: pd.DataFrame, iasr_tables: dict[str, pd.DataFrame], tech_lcf_col: str
 ) -> pd.DataFrame:
@@ -301,16 +361,34 @@ def _calculate_and_merge_tech_specific_lcfs(
     locational_cost_factors = locational_cost_factors.set_index(
         locational_cost_factors.columns[0]
     )
-    cols = [col for col in locational_cost_factors.columns if "O&M" not in col]
+    # Drop non-numeric companion columns v7.4 added (e.g. `REZ name`) and the
+    # O&M column (handled separately for OPEX). The cost categories that
+    # remain are what's used in the `.dot()` against breakdown_ratios.
+    cols = [
+        col
+        for col in locational_cost_factors.columns
+        if "O&M" not in col and col != "REZ name"
+    ]
     locational_cost_factors = locational_cost_factors.loc[:, cols]
 
-    # reshape technology_specific_lcfs and name columns manually:
+    # reshape technology_specific_lcfs and name columns manually. v7.4 adds a
+    # `REZ name / Description` column alongside the cost-zone ID — treat both
+    # as id_vars so they're not mistakenly melted into the Technology axis.
+    id_var_cols = [
+        c
+        for c in ("Cost zone / REZ ID", "REZ name / Description")
+        if c in technology_specific_lcfs.columns
+    ]
     technology_specific_lcfs = technology_specific_lcfs.melt(
-        id_vars="Cost zones / Sub-region", value_name="LCF", var_name="Technology"
+        id_vars=id_var_cols, value_name="LCF", var_name="Technology"
     ).dropna(axis=0, how="any")
     technology_specific_lcfs.rename(
-        columns={"Cost zones / Sub-region": "Location"}, inplace=True
+        columns={"Cost zone / REZ ID": "Location"}, inplace=True
     )
+    if "REZ name / Description" in technology_specific_lcfs.columns:
+        technology_specific_lcfs = technology_specific_lcfs.drop(
+            columns=["REZ name / Description"]
+        )
     # ensures generator names in LCF tables match those in the summary table
     for df_to_match_gen_names in [technology_specific_lcfs, breakdown_ratios]:
         df_to_match_gen_names["Technology"] = _fuzzy_match_names(
@@ -326,13 +404,28 @@ def _calculate_and_merge_tech_specific_lcfs(
         set(locational_cost_factors.columns.to_list()),
         set(breakdown_ratios.columns.to_list()),
         not_match="existing",
-        threshold=90,
+        threshold=80,
     )
     locational_cost_factors.rename(columns=fuzzy_column_renaming, inplace=True)
+    # Restrict the .dot() to the intersection of cost categories. v7.4 added a
+    # `Topographical cost` column to breakdown_ratios with no matching LCF row
+    # in locational_cost_factors — including it would misalign the matrices.
+    shared_cost_cats = [
+        c for c in breakdown_ratios.columns if c in locational_cost_factors.columns
+    ]
+    breakdown_ratios = breakdown_ratios.loc[:, shared_cost_cats].apply(
+        pd.to_numeric, errors="coerce"
+    )
+    locational_cost_factors = locational_cost_factors.loc[:, shared_cost_cats].apply(
+        pd.to_numeric, errors="coerce"
+    )
     # loops over rows and use existing LCF for all pumped hydro gens, calculates for others
-    # values are all converted to a percentage as needed
+    # values are all converted to a percentage as needed.
+    # Some techs in technology_specific_lcfs may not exist in breakdown_ratios
+    # (e.g. v7.4's "Solar Thermal (16hrs storage)" whose 15hr v6.0 counterpart
+    # has no v7.4 equivalent) — fall back to the existing LCF value for those.
     for tech, row in technology_specific_lcfs.iterrows():
-        if re.search(r"^(Pump|BOTN)", tech):
+        if re.search(r"^(Pump|BOTN)", tech) or tech not in breakdown_ratios.index:
             calculated_or_given_lcf = row["LCF"] * 100
         else:
             calculated_or_given_lcf = breakdown_ratios.loc[tech, :].dot(

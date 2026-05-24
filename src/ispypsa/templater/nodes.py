@@ -25,13 +25,21 @@ def _template_sub_regions(
     """
     sub_regional_df = sub_regional_reference_nodes
     sub_region_name_and_id = _split_out_sub_region_name_and_id(sub_regional_df)
-    node_voltage_col = "Sub-region Reference Node"
+    # v7.4 input column is "Sub-regional reference node"; the templater output
+    # schema downstream of this function uses `sub_region_reference_node*`
+    # (without the trailing "al"). Override the snakecased output names so the
+    # public column contract stays stable.
+    node_voltage_col = "Sub-regional reference node"
     split_node_voltage = _extract_voltage(sub_regional_df, node_voltage_col)
+    split_node_voltage.columns = [
+        "sub_region_reference_node",
+        "sub_region_reference_node_voltage_kv",
+    ]
     sub_regions = pd.concat(
         [
             sub_region_name_and_id,
             split_node_voltage,
-            sub_regional_df["NEM Region"].rename("nem_region"),
+            sub_regional_df["NEM region"].rename("nem_region"),
         ],
         axis=1,
     )
@@ -63,12 +71,20 @@ def _template_regions(regional_reference_nodes: pd.DataFrame) -> pd.DataFrame:
 
     """
     regional_df = regional_reference_nodes
-    node_voltage_col = "Regional Reference Node"
+    # v7.4 unified the per-region and per-sub-region reference-node column
+    # names into "Sub-regional reference node". The templater output column
+    # name (`regional_reference_node*`) is kept stable for downstream code,
+    # so we extract from the v7.4 column and rename to the templater's name.
+    node_voltage_col = "Sub-regional reference node"
     split_node_voltage = _extract_voltage(regional_df, node_voltage_col)
+    split_node_voltage.columns = [
+        _snakecase_string("Regional Reference Node"),
+        _snakecase_string("Regional Reference Node Voltage (kV)"),
+    ]
     sub_region_name_and_id = _split_out_sub_region_name_and_id(regional_df)
     regions = pd.concat(
         [
-            regional_df["NEM Region"].rename("nem_region"),
+            regional_df["NEM region"].rename("nem_region"),
             split_node_voltage,
             sub_region_name_and_id["isp_sub_region_id"],
         ],
@@ -88,7 +104,7 @@ def _template_regions(regional_reference_nodes: pd.DataFrame) -> pd.DataFrame:
 
 
 def _split_out_sub_region_name_and_id(data: pd.DataFrame):
-    name_id_col = "ISP Sub-region"
+    name_id_col = "ISP sub-region"
     sub_region_name_and_id = _capture_just_name(data[name_id_col])
     sub_region_name_and_id["name"] = _fuzzy_match_names(
         sub_region_name_and_id["name"],

@@ -1,4 +1,4 @@
-Generator type,Unit size (MW),Number of units,Total plant size (MW)
+Technology Type,Unit size (MW),Number of units,Total plant size (MW)
 OCGT (small GT),49.0,5.0,245.0
 OCGT (large GT),265.0,1.0,265.0
 CCGT,409.0,1.0,409.0

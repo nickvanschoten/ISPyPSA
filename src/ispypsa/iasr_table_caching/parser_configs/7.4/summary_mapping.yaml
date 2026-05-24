@@ -1,0 +1,36 @@
+existing_committed_anticipated_additional_generator_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  end_row: 649  # v7.4-adjusted: one row past v7.5 (Pine Lodge BESS present in v7.4)
+  column_range: "B:AF"
+  forward_fill_values: False
+
+consumer_energy_resources_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  skip_rows:
+    start: 7
+    end: 655  # v7.4-adjusted: gen-section ends one row later than v7.5
+  end_row: 705  # v7.4-adjusted: CER section has one more row than v7.5
+  column_range: "B:AF"
+  forward_fill_values: False
+
+new_entrants_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  skip_rows:
+    start: 7
+    end: 711  # v7.4-adjusted: CER ends one row later
+  end_row: 1228  # v7.4-adjusted: new_entrants has one more row than v7.5
+  column_range: "B:AF"
+  forward_fill_values: False
+
+new_entrant_electrolysers_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  skip_rows:
+    start: 7
+    end: 1233  # v7.4-adjusted: new_entrants ends one row later
+  end_row: 1384  # v7.4-adjusted: electrolysers has one more row than v7.5
+  column_range: "B:AF"
+  forward_fill_values: False

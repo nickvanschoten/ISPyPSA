@@ -11,7 +11,12 @@ from .helpers import (
     _standardise_storage_capitalisation,
     _where_any_substring_appears,
 )
-from .lists import _ALL_GENERATOR_STORAGE_SUMMARIES, _MINIMUM_REQUIRED_BATTERY_COLUMNS
+from .lists import _MINIMUM_REQUIRED_BATTERY_COLUMNS
+
+_CONSOLIDATED_GENERATOR_SUMMARY = (
+    "existing_committed_anticipated_additional_generator_summary"
+)
+_NEW_ENTRANTS_SUMMARY = "new_entrants_summary"
 from .mappings import (
     _ECAA_STORAGE_NEW_COLUMN_MAPPING,
     _ECAA_STORAGE_STATIC_PROPERTY_TABLE_MAP,
@@ -23,13 +28,20 @@ from .mappings import (
 def _template_battery_properties(
     iasr_tables: dict[str, pd.DataFrame],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    storage_summaries = []
-    for gen_storage_type in _ALL_GENERATOR_STORAGE_SUMMARIES:
-        summary_df = iasr_tables[_snakecase_string(gen_storage_type) + "_summary"]
-        summary_df.columns = ["Storage Name", *summary_df.columns[1:]]
-        storage_summaries.append(summary_df)
-
-    storage_summaries = pd.concat(storage_summaries, axis=0).reset_index(drop=True)
+    # v7.4 has a single consolidated generator+storage summary (v6.0's per-
+    # status ECAA tables + batteries_summary are merged into this form at
+    # cache-load time by the schema normalisation layer). New entrants stay
+    # in their own table in both versions. Downstream code expects a
+    # "Storage Name" column holding the human-readable identifier — that's
+    # "Power Station" in v7.4.
+    ecaa_summary = iasr_tables[_CONSOLIDATED_GENERATOR_SUMMARY].rename(
+        columns={"Power Station": "Storage Name"}
+    )
+    new_entrants_summary = iasr_tables[_NEW_ENTRANTS_SUMMARY].copy()
+    new_entrants_summary.columns = ["Storage Name", *new_entrants_summary.columns[1:]]
+    storage_summaries = pd.concat(
+        [ecaa_summary, new_entrants_summary], axis=0
+    ).reset_index(drop=True)
 
     cleaned_storage_summaries = _clean_storage_summary(storage_summaries)
 
@@ -130,25 +142,17 @@ def _clean_storage_summary(df: pd.DataFrame) -> pd.DataFrame:
 def _restructure_battery_property_table(
     battery_property_table: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Restructures the IASR battery property table into a more usable format.
+    """Light prep on the v7.4-shape battery_properties table.
 
-    The output table will have columns "storage_name" and the battery property names as
-    columns, with the values of those properties as the values in the table (converted to
-    numeric values where possible). Rows match storage names/mappings in the summary tables.
-
-    Args:
-        battery_property_table: pd.DataFrame, `battery_properties` table from the IASR workbook.
-
-    Returns:
-        pd.DataFrame, restructured battery property table.
+    v7.4 publishes the table wide-form (rows = battery types, cols =
+    property_unit-suffixed names). Schema normalisation transforms v6.0's
+    long-form into this shape, so this function just renames the identifier
+    column to `storage_name` and coerces value cols to numeric for the
+    downstream lookups.
     """
-    battery_properties = battery_property_table.set_index("Property").drop(
-        columns="Units"
+    battery_properties = battery_property_table.rename(
+        columns={"Technology": "storage_name"}
     )
-    battery_properties = battery_properties.T.reset_index(names="storage_name")
-
-    battery_properties.columns.name = None
-
     columns_to_make_numeric = [
         col for col in battery_properties.columns if col != "storage_name"
     ]
@@ -156,7 +160,6 @@ def _restructure_battery_property_table(
         battery_properties[col] = pd.to_numeric(
             battery_properties[col], errors="coerce"
         )
-
     return battery_properties
 
 
@@ -324,7 +327,29 @@ def _process_and_merge_opex(
         tuple[pd.DataFrame, str]: Updated dataframe with merged in values and `col_name`
             returned for use in `_merge_table_data`.
     """
-    # update the mapping in this column to include storage name and the cost region initially given
+    # v7.4 shape: single `Base value` column. Compute opex = base × O&M LCF.
+    # See `static_new_generator_properties._compute_opex_from_base_and_lcf`
+    # for the same logic on new entrant generators.
+    if any("base value" in c.lower() for c in table_data.columns):
+        base_value_col = next(
+            c for c in table_data.columns if "base value" in c.lower()
+        )
+        # Identifier in v7.4 storage opex tables is either Technology Type
+        # (fixed_opex) or Generator (variable_opex); the storage summary uses
+        # `storage_name` for the matching value.
+        id_col_in_table = (
+            "Technology Type"
+            if "Technology Type" in table_data.columns
+            else "Generator"
+        )
+        base_dict = (
+            table_data.set_index(id_col_in_table)[base_value_col]
+            .squeeze()
+            .to_dict()
+        )
+        df[col_name] = df["storage_name"].map(base_dict)
+        return df, col_name
+    # v6.0 shape: per-region cost columns + identifier lookup.
     df[col_name] = df["storage_name"] + " " + df[col_name]
     table_data = table_data.rename(
         columns={
@@ -377,7 +402,9 @@ def _add_closure_year_column(
     closure_years.columns = [_snakecase_string(col) for col in closure_years.columns]
     closure_years = closure_years.rename(
         columns={
-            "generator_name": "storage_name",
+            # v7.4 canonical identifier; v6.0's `Generator name` renamed at
+            # cache load to `Power Station` (snakecased to `power_station`).
+            "power_station": "storage_name",
             "expected_closure_year_calendar_year": "closure_year",
         }
     )
@@ -427,7 +454,7 @@ def _process_and_merge_connection_cost(
             with connection costs in $/MW merged in as new column named "connection_cost_$/mw".
     """
     df["connection_cost_$/mw"] = (
-        df["connection_cost_rez/_region_id"] + "_" + df["connection_cost_technology"]
+        df["connection_cost_region_id"] + "_" + df["connection_cost_technology"]
     )
     for col in connection_costs_table.columns[1:]:
         connection_costs_table[col] *= 1000  # convert to $/mw
@@ -505,13 +532,26 @@ def _calculate_and_merge_tech_specific_lcfs(
     locational_cost_factors = locational_cost_factors.set_index(
         locational_cost_factors.columns[0]
     )
-    cols = [col for col in locational_cost_factors.columns if "O&M" not in col]
+    # Drop non-numeric companion columns v7.4 added (e.g. `REZ name`) and the
+    # O&M column (used for OPEX, not for the technology-specific LCF .dot()).
+    cols = [
+        col
+        for col in locational_cost_factors.columns
+        if "O&M" not in col and col != "REZ name"
+    ]
     locational_cost_factors = locational_cost_factors.loc[:, cols]
 
-    # reshape technology_specific_lcfs and name columns manually:
+    # reshape technology_specific_lcfs and name columns manually. v7.4 adds a
+    # `REZ name / Description` column alongside the cost-zone ID — treat both
+    # as id_vars so they're not mistakenly melted into the Technology axis.
+    id_var_cols = [
+        c
+        for c in ("Cost zone / REZ ID", "REZ name / Description")
+        if c in technology_specific_lcfs.columns
+    ]
     technology_specific_lcfs = (
         technology_specific_lcfs.melt(
-            id_vars="Cost zones / Sub-region", value_name="LCF", var_name="Technology"
+            id_vars=id_var_cols, value_name="LCF", var_name="Technology"
         )
         .dropna(axis=0, how="any")
         .reset_index(drop=True)
@@ -522,8 +562,12 @@ def _calculate_and_merge_tech_specific_lcfs(
         )
     ].copy()
     technology_specific_lcfs.rename(
-        columns={"Cost zones / Sub-region": "Location"}, inplace=True
+        columns={"Cost zone / REZ ID": "Location"}, inplace=True
     )
+    if "REZ name / Description" in technology_specific_lcfs.columns:
+        technology_specific_lcfs = technology_specific_lcfs.drop(
+            columns=["REZ name / Description"]
+        )
     # ensures storage names in LCF tables match those in the summary table
     for df_to_match_batt_names in [technology_specific_lcfs, breakdown_ratios]:
         df_to_match_batt_names["Technology"] = _fuzzy_match_names(
@@ -539,11 +583,27 @@ def _calculate_and_merge_tech_specific_lcfs(
         set(locational_cost_factors.columns.to_list()),
         set(breakdown_ratios.columns.to_list()),
         not_match="existing",
-        threshold=90,
+        threshold=80,
     )
     locational_cost_factors.rename(columns=fuzzy_column_renaming, inplace=True)
-    # loops over rows to calculate LCF for batteries:
+    # Restrict the .dot() to the intersection of cost categories (v7.4 added a
+    # `Topographical cost` column to breakdown_ratios with no matching LCF row).
+    # Coerce to numeric in case v7.4 cached the values as strings (e.g. mixed
+    # with "Not Applicable" for the Topographical column).
+    shared_cost_cats = [
+        c for c in breakdown_ratios.columns if c in locational_cost_factors.columns
+    ]
+    breakdown_ratios = breakdown_ratios.loc[:, shared_cost_cats].apply(
+        pd.to_numeric, errors="coerce"
+    )
+    locational_cost_factors = locational_cost_factors.loc[:, shared_cost_cats].apply(
+        pd.to_numeric, errors="coerce"
+    )
+    # loops over rows to calculate LCF for batteries. Skip techs missing from
+    # breakdown_ratios (v7.4 may have storage techs without v6.0 equivalents).
     for tech, row in technology_specific_lcfs.iterrows():
+        if tech not in breakdown_ratios.index:
+            continue
         calculated_lcf = breakdown_ratios.loc[tech, :].dot(
             locational_cost_factors.loc[row["Location"], :]
         )

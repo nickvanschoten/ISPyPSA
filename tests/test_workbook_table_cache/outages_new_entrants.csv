@@ -1,4 +1,4 @@
-Fuel type,Forced Outage Rate (%)_Full outage (% of time),Forced Outage Rate (%)_Partial outage (% of time),Mean time to repair (hrs)_Full outage,Mean time to repair (hrs)_Partial outage,Partial Outage Derating Factor (%)
+Fuel type,Full outage (% of time),Partial outage (% of time),Full outage MTTR (hrs),Partial outage MTTR (hrs),Partial Outage Derating Factor (%)
 OCGT (small GT),2.0,,75.0,,
 OCGT (large GT),2.0,,22.0,,
 CCGT,3.5000000000000004,,54.0,,

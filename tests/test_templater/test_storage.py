@@ -111,7 +111,7 @@ def test_add_closure_year_column(csv_str_to_df):
     ecaa_batteries = csv_str_to_df(ecaa_batteries_csv)
 
     closure_years_csv = """
-    Generator__name,        DUID,       Expected__Closure__Year__(Calendar__year)
+    Power__Station,         IASR__ID,   Expected__Closure__Year__(Calendar__year)
     Existing__Battery,      EB01,       2035
     Existing__Battery,      EB02,       2036
     """
@@ -149,7 +149,7 @@ def test_add_closure_year_column_empty_ecaa_df(csv_str_to_df):
 
     # Case 1a: Empty closure years dataframe
     empty_closure = pd.DataFrame(
-        columns=["Generator name", "DUID", "Expected Closure Year (Calendar year)"]
+        columns=["Power Station", "IASR ID", "Expected Closure Year (Calendar year)"]
     )
 
     # Execute function
@@ -183,13 +183,14 @@ def test_restructure_battery_property_table(
     # Execute function
     result = _restructure_battery_property_table(battery_properties)
 
-    # Expected result - restructured with batteries as rows
+    # Expected result — v7.4 canonical wide shape (Technology/storage_name as rows,
+    # property+unit-suffixed columns).
     expected_csv = """
-    storage_name,                       Maximum__power, Energy__capacity,   Charge__efficiency__(utility),  Discharge__efficiency__(utility),   Round__trip__efficiency__(utility),     Annual__degradation__(utility)
-    Battery__storage__(1hr__storage),   1.0,            1.0,                91.7,                           91.7,                               84.0,                                     1.8
-    Battery__storage__(2hrs__storage),  1.0,            2.0,                91.7,                           91.7,                               84.0,                                     1.8
-    Battery__storage__(4hrs__storage),  1.0,            4.0,                92.2,                           92.2,                               85.0,                                     1.8
-    Battery__storage__(8hrs__storage),  1.0,            8.0,                91.1,                           91.1,                               83.0,                                     1.8
+    storage_name,                       Maximum__power_MW,  Energy__capacity_Hours, Charge__efficiency_%,   Discharge__efficiency_%,    Round__trip__efficiency_%,  Annual__degradation_%
+    Battery__storage__(1hr__storage),   1.0,                1.0,                    91.7,                   91.7,                       84.0,                       1.8
+    Battery__storage__(2hrs__storage),  1.0,                2.0,                    91.7,                   91.7,                       84.0,                       1.8
+    Battery__storage__(4hrs__storage),  1.0,                4.0,                    92.2,                   92.2,                       85.0,                       1.8
+    Battery__storage__(8hrs__storage),  1.0,                8.0,                    91.1,                   91.1,                       83.0,                       1.8
     """
     expected = csv_str_to_df(expected_csv)
 
@@ -544,7 +545,7 @@ def test_process_and_merge_connection_cost(csv_str_to_df):
     """Test the _process_and_merge_connection_cost function."""
     # Setup test data
     storage_df_csv = """
-    storage_name,                        connection_cost_rez/_region_id,    connection_cost_technology
+    storage_name,                        connection_cost_region_id,    connection_cost_technology
     Battery__Storage__(2hrs__storage),   NSW,                               2hr__Battery__Storage
     Battery__Storage__(1hr__storage),    QLD,                               1hr__Battery__Storage
     """
@@ -562,7 +563,7 @@ def test_process_and_merge_connection_cost(csv_str_to_df):
 
     # Expected result - connection costs should be in $/MW (multiplied by 1000)
     expected_csv = """
-    storage_name,                        connection_cost_rez/_region_id,    connection_cost_technology,      connection_cost_$/mw
+    storage_name,                        connection_cost_region_id,    connection_cost_technology,      connection_cost_$/mw
     Battery__Storage__(2hrs__storage),   NSW,                               2hr__Battery__Storage,           55000.0
     Battery__Storage__(1hr__storage),    QLD,                               1hr__Battery__Storage,           45000.0
     """
@@ -580,7 +581,7 @@ def test_process_and_merge_connection_cost(csv_str_to_df):
         columns=[
             "storage_name",
             "technology_type",
-            "connection_cost_rez/_region_id",
+            "connection_cost_region_id",
             "connection_cost_technology",
         ]
     )
