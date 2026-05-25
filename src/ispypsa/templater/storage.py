@@ -37,8 +37,13 @@ def _template_battery_properties(
     ecaa_summary = iasr_tables[_CONSOLIDATED_GENERATOR_SUMMARY].rename(
         columns={"Power Station": "Storage Name"}
     )
-    new_entrants_summary = iasr_tables[_NEW_ENTRANTS_SUMMARY].copy()
-    new_entrants_summary.columns = ["Storage Name", *new_entrants_summary.columns[1:]]
+    # v7.4 new_entrants_summary's first column is `RowID` (integer); the
+    # human-readable identifier is `Power Station` (matching ECAA). Renaming
+    # by name rather than position keeps the storage_name column populated
+    # with tech labels (e.g. "Battery Storage (1hr storage)").
+    new_entrants_summary = iasr_tables[_NEW_ENTRANTS_SUMMARY].rename(
+        columns={"Power Station": "Storage Name"}
+    )
     storage_summaries = pd.concat(
         [ecaa_summary, new_entrants_summary], axis=0
     ).reset_index(drop=True)
@@ -453,9 +458,21 @@ def _process_and_merge_connection_cost(
         pd.DataFrame: dataframe containing `ISPyPSA` formatted new entrant storage summary table
             with connection costs in $/MW merged in as new column named "connection_cost_$/mw".
     """
+    # v7.4 publishes connection costs at NEM region level (QLD/NSW/VIC/SA/TAS)
+    # even though battery new entrants are differentiated at sub-region / REZ
+    # level (per design call 2026-05-24). Inherit the region-level cost via
+    # the generator's `region_id` rather than `connection_cost_region_id`,
+    # whose values carry mixed semantics (band labels, sub-region codes,
+    # REZ IDs depending on tech and version) and don't directly key into the
+    # connection_costs_other Region column.
     df["connection_cost_$/mw"] = (
-        df["connection_cost_region_id"] + "_" + df["connection_cost_technology"]
+        df["region_id"] + "_" + df["connection_cost_technology"]
     )
+    # v7.4 prepends a "Table Note Number" non-data row that we need to drop
+    # before melting / multiplying.
+    connection_costs_table = connection_costs_table[
+        connection_costs_table["Region"] != "Table Note Number"
+    ].copy()
     for col in connection_costs_table.columns[1:]:
         connection_costs_table[col] *= 1000  # convert to $/mw
 
@@ -690,6 +707,9 @@ def _add_and_clean_rez_ids(
 
     # add a new column to hold the REZ IDs that maps to the current rez_location:
     df[rez_id_col_name] = df["rez_location"]
+    # v7.4 uses the literal "Not Applicable" string for non-REZ generators;
+    # v6.0 used NaN. Normalise so downstream rez_id-based masks work.
+    df[rez_id_col_name] = df[rez_id_col_name].replace("Not Applicable", pd.NA)
 
     # update references to "North [East|West] Tasmania Coast" to "North Tasmania Coast"
     # update references to "Portland Coast" to "Southern Ocean"
@@ -748,6 +768,13 @@ def _add_unique_new_entrant_storage_name_column(df: pd.DataFrame):
             filled by a unique identifier string for each row.
     """
 
+    # v7.4 added battery categories ("Distributed Resources Batteries") that
+    # don't match the templater's recognised "Xhr storage" pattern — those
+    # rows have NaN `isp_resource_type` and would propagate NaN into the
+    # concat below. Drop them: Distributed Resources are modelled outside
+    # the new-entrant battery investment decision scope (see methodology
+    # note for the team's hydrogen-sector / DR exclusion).
+    df = df.dropna(subset=["isp_resource_type"]).reset_index(drop=True)
     df["storage_name"] = df["isp_resource_type"] + "_" + df["sub_region_id"]
     df["storage_name"] = df["storage_name"].map(_snakecase_string)
 

@@ -465,6 +465,11 @@ def _get_least_cost_options(
         transmission_analysis["cost"]
         / transmission_analysis["nominal_capacity_increase"]
     )
+    # Drop rows where cost_per_mw can't be computed (NaN capacity or cost).
+    # v7.4 publishes some secondary REZ constraints (e.g. SWNSW1, NSA1) in the
+    # cost table without matching capacity-increase entries — these are
+    # intra-region constraint rows, not expansion options.
+    transmission_analysis = transmission_analysis.dropna(subset=["cost_per_mw"])
     least_cost_options = transmission_analysis.loc[
         transmission_analysis.groupby("id")["cost_per_mw"].idxmin()
     ]

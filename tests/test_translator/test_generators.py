@@ -148,7 +148,7 @@ def test_translate_new_entrant_generators(
             # "unit_capacity_mw": [50, None, None],
             "lifetime": [40, 30, 30],
             "connection_cost_technology": ["CCGT", "Large scale Solar PV", "Wind"],
-            "connection_cost_rez/_region_id": ["SA", "Tumut", "Far North Queensland"],
+            "connection_cost_region_id": ["SA", "Tumut", "Far North Queensland"],
             "technology_specific_lcf_%": [100.0, 95.0, 103.0],
             "isp_resource_type": ["CCGT", "SAT", "WM"],
             "rez_id": [None, "N7", "Q1"],
@@ -255,7 +255,7 @@ def test_translate_new_entrant_generators_region_handling(
             "unit_capacity_mw": [50, None],
             "lifetime": [40, 30],
             "connection_cost_technology": ["CCGT", "Wind"],
-            "connection_cost_rez/_region_id": ["QLD", "Wide Bay"],
+            "connection_cost_region_id": ["QLD", "Wide Bay"],
             "technology_specific_lcf_%": [100.0, 103.0],
             "rez_id": [None, "Q7"],
             "generator": ["CCGT_CQ", "Wind_Q7_WM"],
@@ -453,7 +453,7 @@ def test_add_new_entrant_generator_connection_costs(
     csv_str_to_df, sample_generator_translator_tables
 ):
     generators_csv = """
-    generator_name,                fuel_type,     build_year,   connection_cost_technology,     connection_cost_rez/_region_id,     generator
+    generator_name,                fuel_type,     build_year,   connection_cost_technology,     connection_cost_region_id,     generator
     CCGT,                          Gas,           2024,         CCGT,                           NSW,                                ccgt_nsw
     Large__scale__Solar__PV,       Solar,         2025,         Large__scale__Solar__PV,        Far__North__Queensland,             large_scale_solar_pv_sat_q1
     Wind,                          Wind,          2023,         Wind,                           Tumut,                              wind_wm_n7
@@ -477,7 +477,7 @@ def test_add_new_entrant_generator_connection_costs(
     result_col_order = result.columns
 
     expected_result = """
-    generator_name,                fuel_type,     build_year,   connection_cost_technology,     connection_cost_rez/_region_id,        connection_cost_$/mw,    generator
+    generator_name,                fuel_type,     build_year,   connection_cost_technology,     connection_cost_region_id,        connection_cost_$/mw,    generator
     CCGT,                          Gas,           2024,         CCGT,                           NSW,                                   85000,                   ccgt_nsw
     Large__scale__Solar__PV,       Solar,         2025,         Large__scale__Solar__PV,        Far__North__Queensland,                267000,                  large_scale_solar_pv_sat_q1
     Wind,                          Wind,          2023,         Wind,                           Tumut,                                 337000,                  wind_wm_n7
@@ -493,7 +493,7 @@ def test_add_new_entrant_generator_connection_costs(
     # check that if there's an extra generator that doesn't have connection costs the
     # correct error gets returned:
     extra_generator_csv = """
-    generator_name,                fuel_type,     build_year,   connection_cost_technology,     connection_cost_rez/_region_id,     generator
+    generator_name,                fuel_type,     build_year,   connection_cost_technology,     connection_cost_region_id,     generator
     Dummy__Gen,                    Gas,           2024,         Dummy__Gen,                     NSW,                                dummy_gen_nsw
     """
     extra_generator = csv_str_to_df(extra_generator_csv)

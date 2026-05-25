@@ -1,0 +1,55 @@
+# 01_v74: NSW single-period 2050 on IASR v7.4 cache — Phase 1 final gate.
+
+paths:
+  run_directory: "mvp_pass1_power/bench/runs"
+  ispypsa_run_name: bench_01_nsw_1period_v74
+  parsed_traces_directory: "mvp_pass1_power/data/traces"
+  workbook_path: "iasr inputs/2025-inputs-and-assumptions-workbook.xlsm"
+  parsed_workbook_cache: "mvp_pass1_power/data/_v74_smoke_cache"
+
+trace_data:
+  dataset_type: example
+  dataset_year: 2024
+
+iasr_workbook_version: "7.4"
+scenario: Step Change
+wacc: 0.07
+discount_rate: 0.05
+unserved_energy:
+  cost: 10000.0
+  max_per_node: 100000.0
+
+filter_by_nem_regions: [NSW]
+
+network:
+  transmission_expansion: True
+  rez_transmission_expansion: True
+  annuitisation_lifetime: 30
+  nodes:
+    regional_granularity: sub_regions
+    rezs: discrete_nodes
+  rez_to_sub_region_transmission_default_limit: 1e5
+
+temporal:
+  year_type: fy
+  range:
+    start_year: 2050
+    end_year: 2050
+  capacity_expansion:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    investment_periods: [2050]
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+  operational:
+    resolution_min: 30
+    reference_year_cycle: [2018]
+    horizon: 336
+    overlap: 48
+    aggregation:
+      representative_weeks: ~
+      named_representative_weeks: [residual-peak-demand]
+
+solver: highs
+create_plots: False

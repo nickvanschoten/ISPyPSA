@@ -249,8 +249,19 @@ def _run_staged_pipeline(
     timings = {}
 
     t = time.perf_counter()
-    if not (parsed_workbook_cache / "existing_generators_summary.csv").exists():
-        build_local_cache(parsed_workbook_cache, workbook_path, config.iasr_workbook_version)
+    # Cache sentinel uses the v7.4 canonical name; schema normalisation
+    # produces this file for both v6.0 and v7.4 source workbooks.
+    cache_sentinel = (
+        parsed_workbook_cache
+        / "existing_committed_anticipated_additional_generator_summary.csv"
+    )
+    if not cache_sentinel.exists():
+        build_local_cache(
+            parsed_workbook_cache,
+            workbook_path,
+            config.iasr_workbook_version,
+            trace_directory=Path(config.paths.parsed_traces_directory),
+        )
     iasr_tables = read_csvs(parsed_workbook_cache)
     manually_extracted_tables = load_manually_extracted_tables(config.iasr_workbook_version)
     timings["iasr_load_s"] = time.perf_counter() - t

@@ -307,7 +307,7 @@ def _add_new_entrant_generator_connection_costs(
     Args:
         new_entrant_generators_table: dataframe containing `ISPyPSA` formatted
             new-entrant generator detail, with a row for each generator in every possible
-            build year. Must have columns "connection_cost_rez/_region_id" and "fuel_type".
+            build year. Must have columns "connection_cost_region_id" and "fuel_type".
         new_entrant_wind_and_solar_connection_costs: `ISPyPSA` formatted dataframe
             containing connection cost details (including system strength costs) in $/MW for
             new VRE (wind and solar) generators in each REZ by financial year.
@@ -319,7 +319,7 @@ def _add_new_entrant_generator_connection_costs(
             as new column named "connection_cost_$/mw".
     """
     new_entrant_generators_table["connection_cost_$/mw"] = new_entrant_generators_table[
-        "connection_cost_rez/_region_id"
+        "connection_cost_region_id"
     ]
 
     def _add_build_year_or_technology_string(row):
@@ -390,7 +390,7 @@ def _get_vre_connection_costs_dict(
 
     Notes:
         1. The function assumes that new_entrant_wind_and_solar_connection_costs has a "REZ names"
-           column that matches with the "connection_cost_rez/_region_id" column in
+           column that matches with the "connection_cost_region_id" column in
            new_entrant_generators_table.
     """
     # only keep "REZ names" and columns that contain cost values ("$" in col name)
@@ -647,9 +647,15 @@ def _calculate_dynamic_marginal_costs_single_generator(
         )
 
     # dynamic_marginal_cost calculation = fuel_price * heat_rate + VOM
-    dynamic_marginal_costs = (
-        gen_fuel_prices * generator_row["isp_heat_rate_gj/mwh"]
-    ) + generator_row["isp_vom_$/mwh_sent_out"]
+    # Non-thermal generators (wind, solar, hydro) typically have heat_rate=0
+    # and may have VOM not published in the IASR tables (treated as 0).
+    heat_rate = generator_row["isp_heat_rate_gj/mwh"]
+    vom = generator_row["isp_vom_$/mwh_sent_out"]
+    if pd.isna(heat_rate):
+        heat_rate = 0.0
+    if pd.isna(vom):
+        vom = 0.0
+    dynamic_marginal_costs = (gen_fuel_prices * heat_rate) + vom
 
     dynamic_marginal_costs.name = "marginal_cost"
     dynamic_marginal_costs = dynamic_marginal_costs.to_frame()

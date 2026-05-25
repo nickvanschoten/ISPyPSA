@@ -543,11 +543,13 @@ def test_calculate_and_merge_tech_specific_lcfs(
 
 def test_process_and_merge_connection_cost(csv_str_to_df):
     """Test the _process_and_merge_connection_cost function."""
-    # Setup test data
+    # Setup test data. v7.4 lookup uses `region_id` (NEM region) directly
+    # rather than `connection_cost_region_id` (which has mixed sub-region /
+    # band semantics) — see _process_and_merge_connection_cost docstring.
     storage_df_csv = """
-    storage_name,                        connection_cost_region_id,    connection_cost_technology
-    Battery__Storage__(2hrs__storage),   NSW,                               2hr__Battery__Storage
-    Battery__Storage__(1hr__storage),    QLD,                               1hr__Battery__Storage
+    storage_name,                        region_id,  connection_cost_technology
+    Battery__Storage__(2hrs__storage),   NSW,        2hr__Battery__Storage
+    Battery__Storage__(1hr__storage),    QLD,        1hr__Battery__Storage
     """
     storage_df = csv_str_to_df(storage_df_csv)
 
@@ -563,9 +565,9 @@ def test_process_and_merge_connection_cost(csv_str_to_df):
 
     # Expected result - connection costs should be in $/MW (multiplied by 1000)
     expected_csv = """
-    storage_name,                        connection_cost_region_id,    connection_cost_technology,      connection_cost_$/mw
-    Battery__Storage__(2hrs__storage),   NSW,                               2hr__Battery__Storage,           55000.0
-    Battery__Storage__(1hr__storage),    QLD,                               1hr__Battery__Storage,           45000.0
+    storage_name,                        region_id,  connection_cost_technology,      connection_cost_$/mw
+    Battery__Storage__(2hrs__storage),   NSW,        2hr__Battery__Storage,           55000.0
+    Battery__Storage__(1hr__storage),    QLD,        1hr__Battery__Storage,           45000.0
     """
     expected = csv_str_to_df(expected_csv)
 
@@ -581,7 +583,7 @@ def test_process_and_merge_connection_cost(csv_str_to_df):
         columns=[
             "storage_name",
             "technology_type",
-            "connection_cost_region_id",
+            "region_id",
             "connection_cost_technology",
         ]
     )

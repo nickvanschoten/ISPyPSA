@@ -141,6 +141,17 @@ def _clean_generator_summary(df: pd.DataFrame) -> pd.DataFrame:
     ) in _ECAA_GENERATOR_NEW_COLUMN_MAPPING.items():
         df[new_column] = df[existing_column_mapping]
 
+    # v7.4 publishes per-plant `Fuel cost mapping` values for Liquid Fuel
+    # generators (e.g. "Hunter Economic Zone"). The translator's
+    # `_get_single_carrier_fuel_prices` for Liquid Fuel doesn't have a
+    # fuel_cost_mapping_col, so it expects every Liquid Fuel generator's
+    # mapping to be "Liquid Fuel" (matching the single aggregated price row).
+    # Override per-plant labels to "Liquid Fuel" — Phase 1 simplification
+    # consistent with aggregate_v74_liquid_fuel_prices_to_v60_form.
+    if "fuel_type" in df.columns and "fuel_cost_mapping" in df.columns:
+        liquid_mask = df["fuel_type"] == "Liquid Fuel"
+        df.loc[liquid_mask, "fuel_cost_mapping"] = "Liquid Fuel"
+
     return df
 
 
@@ -442,6 +453,11 @@ def _add_rez_id_column(
 
     # add a new column to hold the REZ IDs that maps to the current rez_location:
     df[rez_id_col_name] = df["rez_location"]
+    # v7.4 uses the literal string "Not Applicable" for non-REZ generators
+    # (thermal, hydro, etc.); v6.0 used NaN. Normalise so downstream
+    # rez_id-based masks (e.g. translator's REZ-bus reassignment) work as
+    # intended for both versions.
+    df[rez_id_col_name] = df[rez_id_col_name].replace("Not Applicable", pd.NA)
 
     rez_id_table_attributes = dict(table_lookup="Name", table_value="ID")
     # merge in the REZ IDs:

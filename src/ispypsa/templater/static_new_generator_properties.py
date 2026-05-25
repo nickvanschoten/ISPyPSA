@@ -21,6 +21,12 @@ from .mappings import (
 
 _OBSOLETE_COLUMNS = [
     "Maximum capacity factor (%)",
+    # v6.0 had a lowercase "Technology type" column with reduced tech detail
+    # (the canonical column is "Technology Type" capital T — renamed from
+    # v6.0's "New entrants" by schema normalisation). v7.4 doesn't have the
+    # lowercase variant. Dropping here makes both versions produce identical
+    # post-snake_case column sets.
+    "Technology type",
 ]
 
 
@@ -42,11 +48,16 @@ def _template_new_generators_static_properties(
     new_generator_summaries = []
     for gen_type in _NEW_GENERATOR_TYPES:
         df = iasr_tables[_snakecase_string(gen_type) + "_summary"]
-        # v7.4 canonical: the human-readable identifier is the `Power Station`
-        # column. v6.0's first column was the per-status name (e.g.
-        # `New entrants`) — renamed at cache load to match v7.4's
-        # `Power Station`.
-        df = df.rename(columns={"Power Station": "Generator Name"})
+        # The downstream templater + translator key on `generator_name`
+        # for property lookups (heat rate, FOM, VOM, etc.) and for the
+        # build_costs.technology merge. v7.4 publishes the tech label under
+        # `Technology Type`; v6.0's `New entrants` column is renamed to
+        # `Technology Type` by schema normalisation. Copy (not rename) so
+        # the original Technology Type column is preserved for downstream
+        # code paths that use `technology_type` (e.g. battery/PHES filtering,
+        # OPEX base-and-LCF lookup).
+        df = df.copy()
+        df["Generator Name"] = df["Technology Type"]
         new_generator_summaries.append(df)
     new_generator_summaries = pd.concat(new_generator_summaries, axis=0).reset_index(
         drop=True
@@ -128,7 +139,7 @@ def _clean_generator_summary(df: pd.DataFrame) -> pd.DataFrame:
             df = df.drop(columns=post_cols)
         return df
 
-    df = df.drop(columns=_OBSOLETE_COLUMNS)
+    df = df.drop(columns=_OBSOLETE_COLUMNS, errors="ignore")
     df.columns = [_snakecase_string(col_name) for col_name in df.columns]
     df = df.rename(
         columns={col: (col + "_id") for col in df.columns if re.search(r"region$", col)}
@@ -143,6 +154,40 @@ def _clean_generator_summary(df: pd.DataFrame) -> pd.DataFrame:
     # don't have any trace data from AEMO currently and "No VRE is projected for this REZ."
     # (AEMO 2024 | Appendix 3. Renewable Energy Zones, p.38)
     df = df.loc[~(df["rez_location"] == "Illawarra"), :]
+
+    # v7.4 added "Distributed Resources Solar" / "Distributed Resources Batteries"
+    # as new-entrant deployment rows (per-sub-region). Per methodology design call
+    # 2026-05-21, Distributed Resources are excluded from new-entrant investment
+    # scope — they're modelled exogenously via demand-side adjustments rather
+    # than as candidate investments in the orchestrator-facing capacity expansion.
+    df = df.loc[
+        ~df["technology_type"].str.contains("Distributed Resources", case=False, na=False),
+        :,
+    ]
+
+    # v7.4 publishes `Connection cost_Region` at sub-region granularity (e.g.
+    # `NNSW`, `CNSW`); v6.0 used NEM region (e.g. `NSW`). The downstream
+    # non-VRE connection-cost lookup table (`connection_costs_other`) is keyed
+    # by NEM region. Aggregate sub-region → NEM region using each row's own
+    # `region_id` column so the join key aligns. Phase 1 simplification: v7.4
+    # sub-regional granularity collapses to NEM region (the connection-cost
+    # table's natural key). Sub-region resolution is a Phase 2+ refinement.
+    if (
+        "connection_cost_region_id" in df.columns
+        and "sub_region_id" in df.columns
+        and "region_id" in df.columns
+    ):
+        sub_to_nem = (
+            df[["sub_region_id", "region_id"]]
+            .dropna()
+            .drop_duplicates()
+            .set_index("sub_region_id")["region_id"]
+            .to_dict()
+        )
+        is_sub_region = df["connection_cost_region_id"].isin(sub_to_nem.keys())
+        df.loc[is_sub_region, "connection_cost_region_id"] = (
+            df.loc[is_sub_region, "connection_cost_region_id"].map(sub_to_nem)
+        )
 
     for (
         new_column,
@@ -532,6 +577,9 @@ def _add_and_clean_rez_ids(
 
     # add a new column to hold the REZ IDs that maps to the current rez_location:
     df[rez_id_col_name] = df["rez_location"]
+    # v7.4 uses the literal "Not Applicable" string for non-REZ generators;
+    # v6.0 used NaN. Normalise so downstream rez_id-based masks work.
+    df[rez_id_col_name] = df[rez_id_col_name].replace("Not Applicable", pd.NA)
 
     # update references to "North [East|West] Tasmania Coast" to "North Tasmania Coast"
     # update references to "Portland Coast" to "Southern Ocean"

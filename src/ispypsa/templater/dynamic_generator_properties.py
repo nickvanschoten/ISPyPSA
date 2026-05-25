@@ -17,6 +17,21 @@ from .helpers import _fuzzy_match_names, _snakecase_string
 from .lists import _ECAA_GENERATOR_TYPES
 
 
+# ISP scenario (config name) → v7.4 canonical scenario value used in the
+# consolidated fuel-price tables. The mapping mirrors the cost-scenario
+# dispatch in `flow_paths._determine_cost_scenario` for v7.x — see design
+# call 2026-05-24. v7.4 retained "Step Change" but renamed the lower-
+# ambition v6.0 "Progressive Change" → "Slower Growth" and the highest-
+# ambition v6.0 "Green Energy Exports" → "Accelerated Transition".
+_ISP_TO_V74_SCENARIO = {
+    "Step Change": "Step Change",
+    "Progressive Change": "Slower Growth",
+    "Slower Growth": "Slower Growth",
+    "Green Energy Exports": "Accelerated Transition",
+    "Accelerated Transition": "Accelerated Transition",
+}
+
+
 def _template_generator_dynamic_properties(
     iasr_tables: dict[str, pd.DataFrame], scenario: str
 ) -> dict[str, pd.DataFrame | pd.Series]:
@@ -34,12 +49,35 @@ def _template_generator_dynamic_properties(
             rates for existing generators and ECAA generator seasonal ratings.
     """
     logging.info("Creating a template for dynamic generator properties")
-    snakecase_scenario = _snakecase_string(scenario)
 
-    coal_prices = iasr_tables[f"coal_prices_{snakecase_scenario}"]
+    # v7.4 canonical: single consolidated coal_fuel_price table with a
+    # Scenario column. Map config's ISP scenario name to the v7.4 canonical
+    # scenario value used in the table. v6.0 caches are normalised forward
+    # to this same shape at cache load.
+    v74_scenario = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
+    coal_prices = iasr_tables["coal_fuel_price"]
+    coal_prices = coal_prices[coal_prices["Scenario"] == v74_scenario].drop(
+        columns="Scenario"
+    )
     coal_prices = _template_coal_prices(coal_prices)
 
-    gas_prices = iasr_tables[f"gas_prices_{snakecase_scenario}"]
+    # v7.4 split gas prices into ECAA / new-entrant tables; concat both so
+    # the downstream fuel-cost calculation can resolve any generator's
+    # gas price. v6.0 normalisation produces both tables with identical
+    # content (single combined v6.0 source).
+    gas_prices = pd.concat(
+        [
+            iasr_tables["gas_prices_existing_generators"],
+            iasr_tables["gas_prices_new_entrants"],
+        ],
+        ignore_index=True,
+    )
+    gas_prices = gas_prices[gas_prices["Gas price scenario"] == v74_scenario].drop(
+        columns="Gas price scenario"
+    )
+    gas_prices = gas_prices.drop_duplicates(subset=gas_prices.columns[0]).reset_index(
+        drop=True
+    )
     gas_prices = _template_gas_prices(gas_prices)
 
     liquid_fuel_prices = iasr_tables["liquid_fuel_prices"]
@@ -78,11 +116,14 @@ def _template_generator_dynamic_properties(
         iasr_tables["partial_outages_forecast_existing_generators"]
     )
 
-    seasonal_ratings = [
-        iasr_tables[f"seasonal_ratings_{gen_type}"]
-        for gen_type in _ECAA_GENERATOR_TYPES
-    ]
-    seasonal_ratings = _template_seasonal_ratings(seasonal_ratings)
+    # v7.4 canonical: single consolidated seasonal_ratings table for all ECAA
+    # statuses. v6.0's four per-status tables are concat'd into this form
+    # at cache load by schema normalisation.
+    seasonal_ratings = _template_seasonal_ratings(
+        [iasr_tables[
+            "seasonal_ratings_existing_committed_anticipated_additional_generators"
+        ]]
+    )
 
     build_costs = _template_new_entrant_build_costs(iasr_tables, scenario)
     wind_and_solar_connection_costs = (
@@ -124,7 +165,9 @@ def _template_coal_prices(coal_prices: pd.DataFrame) -> pd.DataFrame:
     coal_prices.columns = _add_units_to_financial_year_columns(
         coal_prices.columns, "$/GJ"
     )
-    coal_prices = coal_prices.drop(columns="coal_price_scenario")
+    # `Scenario` column is dropped upstream by the per-scenario filter, but
+    # tolerate either form.
+    coal_prices = coal_prices.drop(columns="coal_price_scenario", errors="ignore")
     coal_prices = _convert_financial_year_columns_to_float(coal_prices)
     return coal_prices
 
@@ -142,7 +185,7 @@ def _template_gas_prices(gas_prices: pd.DataFrame) -> pd.DataFrame:
     cols = _add_units_to_financial_year_columns(gas_prices.columns, "$/GJ")
     cols[0] = "generator"
     gas_prices.columns = cols
-    gas_prices = gas_prices.drop(columns="gas_price_scenario")
+    gas_prices = gas_prices.drop(columns="gas_price_scenario", errors="ignore")
     gas_prices = _convert_financial_year_columns_to_float(gas_prices)
     return gas_prices
 
@@ -195,7 +238,7 @@ def _template_existing_generators_full_outage_forecasts(
     full_outages_forecast = full_outages_forecast.set_index("fuel_type")
     full_outages_forecast = _apply_all_coal_averages(full_outages_forecast)
     full_outages_forecast = _convert_financial_year_columns_to_float(
-        full_outages_forecast.drop(index="All Coal Average")
+        full_outages_forecast.drop(index="All Coal Average", errors="ignore")
     )
     full_outages_forecast = full_outages_forecast.reset_index()
     return full_outages_forecast
@@ -219,7 +262,7 @@ def _template_existing_generators_partial_outage_forecasts(
     partial_outages_forecast = partial_outages_forecast.set_index("fuel_type")
     partial_outages_forecast = _apply_all_coal_averages(partial_outages_forecast)
     partial_outages_forecast = _convert_financial_year_columns_to_float(
-        partial_outages_forecast.drop(index="All Coal Average")
+        partial_outages_forecast.drop(index="All Coal Average", errors="ignore")
     )
     partial_outages_forecast = partial_outages_forecast.reset_index()
     return partial_outages_forecast
@@ -242,6 +285,11 @@ def _template_seasonal_ratings(
     seasonal_rating.columns = [
         _snakecase_string(col) for col in seasonal_rating.columns
     ]
+    # v7.4 canonical name is `Power Station`; v6.0 had `Generator`. The
+    # downstream filter (filter_template._filter_generator_dependent_tables)
+    # keys on `generator`, so normalise to that here.
+    if "power_station" in seasonal_rating.columns:
+        seasonal_rating = seasonal_rating.rename(columns={"power_station": "generator"})
     seasonal_rating = _convert_seasonal_columns_to_float(seasonal_rating)
     return seasonal_rating
 
@@ -262,21 +310,17 @@ def _template_new_entrant_build_costs(
     Returns:
         `pd.DataFrame`: ISPyPSA template for new entrant build costs
     """
-    scenario_mapping = iasr_tables["build_costs_scenario_mapping"]
-    scenario_mapping = scenario_mapping.set_index(scenario_mapping.columns[0])
-    scenario_mapping = scenario_mapping.transpose().squeeze()
-    gencost_scenario_desc = re.match(
-        r"GenCost\s(.*)", scenario_mapping[scenario]
-    ).group(1)
-
-    build_costs_scenario = iasr_tables[
-        f"build_costs_{_snakecase_string(gencost_scenario_desc)}"
-    ]
-    build_costs_phes = iasr_tables["build_costs_pumped_hydro"]
-
-    build_costs = pd.concat([build_costs_scenario, build_costs_phes], axis=0)
+    # v7.4 canonical: single `build_costs` table with `Technology`,
+    # `GenCost Scenario`, `IASR Scenario`, `Source` columns and per-year
+    # cost values. Filter by IASR Scenario. Pumped hydro is folded in.
+    # v6.0 sources are normalised forward to this shape at cache load.
+    v74_scenario = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
+    build_costs = iasr_tables["build_costs"]
+    build_costs = build_costs[build_costs["IASR Scenario"] == v74_scenario]
+    build_costs = build_costs.drop(
+        columns=["GenCost Scenario", "IASR Scenario", "Source"], errors="ignore"
+    )
     build_costs = _convert_financial_year_columns_to_float(build_costs)
-    build_costs = build_costs.drop(columns=["Source"])
     # convert data in $/kW to $/MW
     build_costs.columns = _add_units_to_financial_year_columns(
         build_costs.columns, "$/MW"
@@ -306,28 +350,19 @@ def _template_biomass_prices(
     Returns:
         `pd.DataFrame`: ISPyPSA template for new entrant biomass pricess
     """
-    scenario_mapping = iasr_tables["coal_and_biomass_price_consultant_scenario_mapping"]
-    scenario_mapping = scenario_mapping.set_index(scenario_mapping.columns[0])
-    scenario_mapping = scenario_mapping.transpose().squeeze()
-    fuel_cost_scenario_desc = scenario_mapping[scenario]
-
-    biomass_prices = iasr_tables["biomass_prices"]
-    biomass_prices.loc[:, "Price Scenario"] = _fuzzy_match_names(
-        biomass_prices.loc[:, "Price Scenario"],
-        scenario_mapping.values,
-        "Templating biomass prices by fuel cost scenario",
-        "existing",
-        threshold=85,  # Set to 85 as >=90 did not handle the case changes for all rows!
-    )
-    biomass_prices = biomass_prices.drop(columns=["Biomass price"]).set_index(
-        "Price Scenario"
-    )
-
+    # v7.4 canonical: single `biomass_fuel_price` table keyed by ISP scenario
+    # directly (Scenario column). v6.0's two-table mapping
+    # (biomass_prices + coal_and_biomass_price_consultant_scenario_mapping)
+    # is collapsed into this form by schema normalisation at cache load.
+    v74_scenario = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
+    biomass_prices = iasr_tables["biomass_fuel_price"]
+    biomass_prices = biomass_prices[
+        biomass_prices["Scenario"] == v74_scenario
+    ].drop(columns=["Biomass price", "Scenario"])
     biomass_prices = _convert_financial_year_columns_to_float(biomass_prices)
     biomass_prices.columns = _add_units_to_financial_year_columns(
         biomass_prices.columns, "$/GJ"
     )
-    biomass_prices = biomass_prices.loc[[fuel_cost_scenario_desc], :]
     return biomass_prices.reset_index(drop=True)
 
 
@@ -429,8 +464,11 @@ def _template_new_entrant_wind_and_solar_connection_costs(
 ) -> pd.DataFrame:
     """Creates a new entrant wind and solar connection cost template
 
-    The function behaviour depends on the `scenario` specified in the model
-    configuration.
+    Reads the version-naive consolidated `connection_cost_forecast_wind_and_solar`
+    table (REZ names + Scenario + Connection capacity (MVA) + FY $ columns),
+    filters to the active scenario, computes $/MW per FY, appends the system
+    strength cost from `connection_costs_for_wind_and_solar`, and maps REZ
+    names to IDs.
 
     Args:
         iasr_tables: Dict of tables from the IASR workbook that have been parsed using
@@ -441,78 +479,66 @@ def _template_new_entrant_wind_and_solar_connection_costs(
     Returns:
         `pd.DataFrame`: ISPyPSA template for new entrant wind and solar connection costs
     """
-    scenario = _snakecase_string(scenario)
-    if scenario == "step_change" or scenario == "green_energy_exports":
-        file_scenario = "step_change&green_energy_exports"
-    else:
-        file_scenario = scenario
-    # get rez cost forecasts and concatenate non-rez cost forecasts
-    wind_solar_connection_costs_forecasts = iasr_tables[
-        f"connection_cost_forecast_wind_and_solar_{file_scenario}"
-    ]
-    wind_solar_connection_costs_forecasts = (
-        wind_solar_connection_costs_forecasts.set_index("REZ names")
+    forecasts = _filter_forecast_to_scenario(
+        iasr_tables["connection_cost_forecast_wind_and_solar"], scenario
     )
-    wind_solar_connection_costs_forecasts = (
-        wind_solar_connection_costs_forecasts.rename(
-            columns={"REZ network voltage (kV)": "Network voltage (kV)"}
-        )
+    forecasts = forecasts.set_index("REZ names")
+    forecasts = _convert_per_mva_columns_to_per_mw(forecasts)
+    forecasts = _append_system_strength_cost(
+        forecasts, iasr_tables["connection_costs_for_wind_and_solar"]
     )
-
-    non_rez_connection_costs_forecasts = iasr_tables[
-        f"connection_cost_forecast_non_rez_{file_scenario}"
-    ]
-    # Rename column here to align index names for future use
-    non_rez_connection_costs_forecasts = non_rez_connection_costs_forecasts.rename(
-        columns={"Non-REZ name": "REZ names"}
-    ).set_index("REZ names")
-
-    wind_solar_connection_cost_forecasts = pd.concat(
-        [non_rez_connection_costs_forecasts, wind_solar_connection_costs_forecasts],
-        axis=0,
-    )
-    # get system strength connection cost from the initial connection cost table
-    initial_wind_solar_connection_costs = iasr_tables[
-        f"connection_costs_for_wind_and_solar"
-    ].set_index("REZ names")
-
-    system_strength_cost = (
-        initial_wind_solar_connection_costs["System Strength connection cost ($/kW)"]
-        * 1000
-    ).rename("System strength connection cost ($/MW)")
-    wind_solar_connection_cost_forecasts = pd.concat(
-        [wind_solar_connection_cost_forecasts, system_strength_cost], axis=1
-    )
-    # remove notes
-    wind_solar_connection_cost_forecasts = wind_solar_connection_cost_forecasts.replace(
-        "Note 1", np.nan
-    )
-    # calculate $/MW by dividing total cost by connection capacity in MVA
-    wind_solar_connection_cost_forecasts = _convert_financial_year_columns_to_float(
-        wind_solar_connection_cost_forecasts
-    )
-    fy_cols = [
-        col
-        for col in wind_solar_connection_cost_forecasts.columns
-        if re.match(r"[0-9]{4}-[0-9]{2}", col)
-    ]
-    for col in fy_cols:
-        wind_solar_connection_cost_forecasts[col] /= (
-            wind_solar_connection_cost_forecasts["Connection capacity (MVA)"]
-        )
-    wind_solar_connection_cost_forecasts.columns = _add_units_to_financial_year_columns(
-        wind_solar_connection_cost_forecasts.columns, "$/MW"
-    )
-    wind_solar_connection_cost_forecasts = (
-        wind_solar_connection_cost_forecasts.reset_index()
-    )
-
-    wind_solar_connection_cost_forecasts["REZ names"] = _rez_name_to_id_mapping(
-        wind_solar_connection_cost_forecasts["REZ names"],
+    forecasts = forecasts.replace("Note 1", np.nan).reset_index()
+    forecasts["REZ names"] = _rez_name_to_id_mapping(
+        forecasts["REZ names"],
         "REZ names",
         iasr_tables["renewable_energy_zones"],
     )
-    return wind_solar_connection_cost_forecasts
+    return forecasts
+
+
+def _filter_forecast_to_scenario(
+    forecasts: pd.DataFrame, scenario: str
+) -> pd.DataFrame:
+    v74_scenario = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
+    filtered = forecasts[forecasts["Scenario"] == v74_scenario].drop(columns="Scenario")
+    return filtered
+
+
+def _convert_per_mva_columns_to_per_mw(forecasts: pd.DataFrame) -> pd.DataFrame:
+    forecasts = _convert_financial_year_columns_to_float(forecasts)
+    fy_cols = [c for c in forecasts.columns if re.match(r"[0-9]{4}-[0-9]{2}", c)]
+    for col in fy_cols:
+        forecasts[col] = forecasts[col] / forecasts["Connection capacity (MVA)"]
+    forecasts.columns = _add_units_to_financial_year_columns(
+        forecasts.columns, "$/MW"
+    )
+    return forecasts
+
+
+def _append_system_strength_cost(
+    forecasts: pd.DataFrame, initial_connection_costs: pd.DataFrame
+) -> pd.DataFrame:
+    """Append a `System strength connection cost ($/MW)` column.
+
+    v6.0 publishes a per-REZ system strength cost ($/kW) in
+    `connection_costs_for_wind_and_solar`. v7.4 dropped this column from the
+    workbook — AEMO's documentation indicates system strength costs are folded
+    into the forecast totals in v7.4. When the column is absent, append zeros
+    so the downstream contract is preserved without double-counting.
+    """
+    initial = initial_connection_costs.set_index("REZ names")
+    series_name = "system_strength_connection_cost_$/mw"
+    if "System Strength connection cost ($/kW)" in initial.columns:
+        system_strength_cost = (
+            initial["System Strength connection cost ($/kW)"] * 1000
+        ).rename(series_name)
+    else:
+        system_strength_cost = pd.Series(
+            0.0,
+            index=forecasts.index,
+            name=series_name,
+        )
+    return pd.concat([forecasts, system_strength_cost], axis=1)
 
 
 def _template_new_entrant_non_vre_connection_costs(
@@ -539,9 +565,15 @@ def _template_new_entrant_non_vre_connection_costs(
 
 
 def _convert_seasonal_columns_to_float(df: pd.DataFrame) -> pd.DataFrame:
-    """Forcefully converts seasonal columns to float columns"""
+    """Forcefully converts seasonal columns to float columns.
+
+    Uses `pd.to_numeric(errors='coerce')` to tolerate stray non-numeric
+    values that occasionally appear in the v7.4 workbook (e.g. a Region
+    code spilled into a Summer Peak cell on a misaligned row). Non-numeric
+    cells become NaN.
+    """
     cols = [
-        df[col].astype(float)
+        pd.to_numeric(df[col], errors="coerce")
         if re.match(r"summer", col) or re.match(r"winter", col)
         else df[col]
         for col in df.columns
@@ -550,7 +582,15 @@ def _convert_seasonal_columns_to_float(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _apply_all_coal_averages(outages_df: pd.DataFrame) -> pd.DataFrame:
-    """Applies the All Coal Average to each coal fuel type"""
+    """Applies the All Coal Average to each coal fuel type.
+
+    v6.0 outage forecasts published an aggregate "All Coal Average" row used
+    to fill in years where individual coal-type values were missing. v7.4
+    publishes the full time series for each coal type directly and omits
+    the aggregate — in that case the fill-in is a no-op.
+    """
+    if "All Coal Average" not in outages_df.index:
+        return outages_df
     where_coal_average = outages_df.loc["All Coal Average", :].notna()
     for coal_row in outages_df.index[outages_df.index.str.contains("Coal")]:
         outages_df.loc[coal_row, where_coal_average] = outages_df.loc[

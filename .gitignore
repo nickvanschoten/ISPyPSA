@@ -191,3 +191,6 @@ data/*
 # ignore all pypsa output files
 *.nc
 /mvp_pass1_power
+
+# Local IASR workbook + PDFs (downloadable from AEMO portal; not in repo)
+/iasr inputs/

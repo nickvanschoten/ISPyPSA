@@ -1043,5 +1043,7 @@ _VRE_RESOURCE_QUALITY_AND_TECH_CODES = {
     "Wind - offshore (fixed)": "WFX",
     "Wind - offshore (floating)": "WFL",
     "Large scale Solar PV": "SAT",
+    # v6.0 used "Solar Thermal (15hrs storage)"; v7.4 renamed to 16hrs.
     "Solar Thermal (15hrs storage)": "CST",
+    "Solar Thermal (16hrs storage)": "CST",
 }

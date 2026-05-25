@@ -206,7 +206,10 @@ def required_tables_for_version(iasr_workbook_version: str) -> list[str]:
 
 
 def build_local_cache(
-    cache_path: Path | str, workbook_path: Path | str, iasr_workbook_version: str
+    cache_path: Path | str,
+    workbook_path: Path | str,
+    iasr_workbook_version: str,
+    trace_directory: Path | str | None = None,
 ) -> None:
     """Uses `isp-workbook-parser` to build a local cache of parsed workbook CSVs
 
@@ -227,6 +230,13 @@ def build_local_cache(
         workbook_path: Path to an ISP Assumptions Workbook that is supported by
             `isp-workbook-parser`
         iasr_workbook_version: str specifying the version of the work being used.
+        trace_directory: Optional path to the parsed trace data directory. When
+            provided and the source version is v7.x, the v7.4 cache is filtered
+            to the set of generators with matched trace coverage in
+            `<trace_directory>/isp_2024/project/`. Surfaces the data-coverage
+            limitation explicitly at cache load (rather than letting the
+            translator fail at runtime) and persists a dropped-generator
+            manifest CSV. See `filter_v74_ecaa_to_trace_coverage`.
 
     Returns:
         None
@@ -256,12 +266,20 @@ def build_local_cache(
     # Translate older-version column headers to v7.4 canonical form. Cached
     # CSVs on disk become version-independent so downstream readers (templater,
     # tests) never see v6.0 column names.
-    _normalise_cached_csvs_to_v74(Path(cache_path), tables_to_get, iasr_workbook_version)
+    _normalise_cached_csvs_to_v74(
+        Path(cache_path),
+        tables_to_get,
+        iasr_workbook_version,
+        Path(trace_directory) if trace_directory is not None else None,
+    )
     return None
 
 
 def _normalise_cached_csvs_to_v74(
-    cache_path: Path, table_names: list[str], source_version: str
+    cache_path: Path,
+    table_names: list[str],
+    source_version: str,
+    trace_directory: Path | None = None,
 ) -> None:
     """Rewrite cached CSVs with v7.4 canonical column headers + filenames.
 
@@ -274,14 +292,27 @@ def _normalise_cached_csvs_to_v74(
     Tables not in either map are left alone (no disk I/O).
     """
     from .schema_normalisation import (
+        _V60_TO_V74_CELL_VALUE_RENAMES,
         _V60_TO_V74_COLUMN_RENAMES,
         _V60_TO_V74_TABLE_RENAMES,
         _V74_TO_CANONICAL_COLUMN_RENAMES,
+        aggregate_v74_biomethane_prices_to_v60_form,
+        aggregate_v74_ecaa_units_to_power_stations,
+        aggregate_v74_liquid_fuel_prices_to_v60_form,
+        filter_v74_ecaa_to_trace_coverage,
+        consolidate_v60_biomass_prices_to_v74,
+        consolidate_v60_build_costs_to_v74,
+        consolidate_v60_coal_prices_to_v74,
+        consolidate_v60_connection_cost_forecasts_to_v74,
         consolidate_v60_ecaa_generator_summaries,
+        consolidate_v60_gas_prices_to_v74,
         consolidate_v60_h2_gpg_to_regional,
         consolidate_v60_marginal_loss_factors_tables,
         consolidate_v60_maximum_capacity_tables,
+        consolidate_v60_seasonal_ratings_tables,
         expand_v60_auxiliary_load_to_per_generator,
+        merge_v74_connection_capacity_into_forecast,
+        strip_v74_rez_prefix_from_aug_cost_options,
         pivot_v74_other_outages_to_wide,
         split_v74_maximum_capacity_commissioning_dates,
         transform_v60_battery_properties_to_wide,
@@ -309,6 +340,31 @@ def _normalise_cached_csvs_to_v74(
         # so we pivot to wide-form picking the 2025-26 year. See design call
         # 2026-05-24 — full time-series consumption is Phase 1+ work.
         pivot_v74_other_outages_to_wide(cache_path)
+        # v7.4 liquid_fuel_prices is per-generator; templater downstream
+        # consumes a single representative price. Aggregate across the
+        # Generator dimension.
+        aggregate_v74_liquid_fuel_prices_to_v60_form(cache_path)
+        # v7.4 biomethane_prices is per-source (Landfill/Waste/Crop) × scenario;
+        # templater consumes a single representative price per scenario.
+        aggregate_v74_biomethane_prices_to_v60_form(cache_path)
+        # v7.4 connection_cost_forecast_wind_and_solar has no MVA col;
+        # the templater needs it inline for the per-MW division. Merge it
+        # in from connection_costs_for_wind_and_solar so both v6.0 and v7.4
+        # forecasts have the same shape.
+        merge_v74_connection_capacity_into_forecast(cache_path)
+        # v7.4 publishes one row per generating unit; templater expects
+        # per-power-station rows. Aggregate (first values for properties,
+        # sum for installed capacity).
+        aggregate_v74_ecaa_units_to_power_stations(cache_path)
+        # v7.4 rez_augmentation_costs tables prefix Option values with REZ
+        # IDs (e.g. "DN1 Option 1"); the merge with options tables (which
+        # use bare suffixes) needs them stripped.
+        strip_v74_rez_prefix_from_aug_cost_options(cache_path)
+        # Trace-coverage filter: drop v7.4 VRE generators with no matched
+        # 2025-26 trace data (Option B, see methodology note). No-op if
+        # trace_directory not supplied or empty.
+        if trace_directory is not None:
+            filter_v74_ecaa_to_trace_coverage(cache_path, trace_directory)
         return
 
     for table_name in table_names:
@@ -316,9 +372,18 @@ def _normalise_cached_csvs_to_v74(
         if not csv_path.exists():
             continue
         column_renames = _V60_TO_V74_COLUMN_RENAMES.get(table_name)
-        if column_renames:
+        cell_value_renames_for_table = {
+            col: vals
+            for (t, col), vals in _V60_TO_V74_CELL_VALUE_RENAMES.items()
+            if t == table_name
+        }
+        if column_renames or cell_value_renames_for_table:
             df = pd.read_csv(csv_path)
-            df = df.rename(columns=column_renames)
+            if column_renames:
+                df = df.rename(columns=column_renames)
+            for col, value_map in cell_value_renames_for_table.items():
+                if col in df.columns:
+                    df[col] = df[col].replace(value_map)
             df.to_csv(csv_path, index=False)
         new_table_name = _V60_TO_V74_TABLE_RENAMES.get(table_name)
         if new_table_name:
@@ -346,6 +411,22 @@ def _normalise_cached_csvs_to_v74(
     # battery_properties shape: transpose v6.0 long-form to v7.4 wide-form,
     # embed units into column headers.
     transform_v60_battery_properties_to_wide(cache_path)
+    # Fuel-price restructure: collapse v6.0 per-scenario coal_prices_* tables
+    # into v7.4's single `coal_fuel_price` (Scenario as column). Same for
+    # gas — v7.4 split into existing-generators / new-entrants pair; v6.0
+    # didn't, so we produce both tables with identical content.
+    consolidate_v60_coal_prices_to_v74(cache_path)
+    consolidate_v60_gas_prices_to_v74(cache_path)
+    consolidate_v60_biomass_prices_to_v74(cache_path)
+    # Same per-status concat pattern for seasonal_ratings.
+    consolidate_v60_seasonal_ratings_tables(cache_path)
+    # build_costs: per-GenCost-scenario tables + pumped_hydro → consolidated.
+    consolidate_v60_build_costs_to_v74(cache_path)
+    # Connection cost forecasts: 4 per-scenario × {wind_and_solar, non_rez}
+    # tables → single `connection_cost_forecast_wind_and_solar` keyed by
+    # (REZ names, Scenario). Non-REZ entries are renamed and folded in,
+    # matching v7.4's promotion of non-REZ regions to first-class REZ IDs.
+    consolidate_v60_connection_cost_forecasts_to_v74(cache_path)
 
 
 def _strip_leading_underscore_columns(

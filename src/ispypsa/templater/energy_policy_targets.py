@@ -26,8 +26,18 @@ def _template_energy_policy_targets(
     # Create templates for energy policy targets
     renewable_share_targets = _template_renewable_share_targets(iasr_tables)
 
-    power_aus_plan = iasr_tables["powering_australia_plan_trajectory"]
-    power_aus_plan = _template_powering_australia_plan(power_aus_plan, scenario)
+    # Powering Australia Plan was dropped from v7.4 IASR. Emit empty template
+    # if the source table is absent.
+    if "powering_australia_plan_trajectory" in iasr_tables:
+        power_aus_plan = _template_powering_australia_plan(
+            iasr_tables["powering_australia_plan_trajectory"], scenario
+        )
+    else:
+        logging.warning(
+            "Energy policy target source missing in IASR cache: "
+            "['powering_australia_plan_trajectory'] — emitting empty template"
+        )
+        power_aus_plan = pd.DataFrame(columns=["FY", "policy_id", "pct"])
 
     renewable_generation_targets = _template_renewable_generation_targets(iasr_tables)
 
@@ -64,7 +74,15 @@ def _template_renewable_share_targets(
         "template_renewable_share_targets"
     ]
 
+    missing = sorted(t["csv"] for t in target_files if t["csv"] not in iasr_tables)
+    if missing:
+        logging.warning(
+            f"Renewable share target sources missing in IASR cache: {missing}"
+        )
+
     for target in target_files:
+        if target["csv"] not in iasr_tables:
+            continue
         df = iasr_tables[target["csv"]]
 
         df = df.melt(id_vars=df.columns[0], var_name="FY", value_name="pct")
@@ -76,6 +94,9 @@ def _template_renewable_share_targets(
         state_renewable_share_targets.append(
             df[["FY", "region_id", "policy_id", "pct"]]
         )
+
+    if not state_renewable_share_targets:
+        return pd.DataFrame(columns=["FY", "region_id", "policy_id", "pct"])
 
     merged_state_renewable_share_targets = pd.concat(
         state_renewable_share_targets, ignore_index=True
@@ -152,7 +173,15 @@ def _template_technology_capacity_targets(
         "template_technology_capacity_targets"
     ]
 
+    missing = sorted(t["csv"] for t in target_files if t["csv"] not in iasr_tables)
+    if missing:
+        logging.warning(
+            f"Technology capacity target sources missing in IASR cache: {missing}"
+        )
+
     for target in target_files:
+        if target["csv"] not in iasr_tables:
+            continue
         df = iasr_tables[target["csv"]]
         # Extract technology type from the row containing "target (MW)"
         target_row_mask = df.iloc[:, 0].str.contains("target", case=False) & df.iloc[
@@ -170,6 +199,9 @@ def _template_technology_capacity_targets(
         values_df["policy_id"] = target["policy_id"]
 
         technology_capacity_targets.append(values_df)
+
+    if not technology_capacity_targets:
+        return pd.DataFrame(columns=["FY", "region_id", "policy_id", "capacity_mw"])
 
     merged_technology_capacity_targets = pd.concat(
         technology_capacity_targets, ignore_index=True
@@ -207,7 +239,15 @@ def _template_renewable_generation_targets(
         "template_renewable_generation_targets"
     ]
 
+    missing = sorted(t["csv"] for t in target_files if t["csv"] not in iasr_tables)
+    if missing:
+        logging.warning(
+            f"Renewable generation target sources missing in IASR cache: {missing}"
+        )
+
     for target in target_files:
+        if target["csv"] not in iasr_tables:
+            continue
         df = iasr_tables[target["csv"]]
         # Check for GWh in row indices
         if not df.iloc[:, 0].str.contains("GWh", case=False).any():
@@ -229,6 +269,9 @@ def _template_renewable_generation_targets(
         renewable_generation_targets.append(
             renewable_gen_target[["FY", "region_id", "policy_id", "capacity_mwh"]]
         )
+
+    if not renewable_generation_targets:
+        return pd.DataFrame(columns=["FY", "region_id", "policy_id", "capacity_mwh"])
 
     # Combine all dataframes
     merged_renewable_generation_targets = pd.concat(

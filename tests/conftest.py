@@ -124,7 +124,7 @@ def sample_ispypsa_tables(csv_str_to_df):
                 "Large scale Solar PV",
                 "Wind",
             ],
-            "connection_cost_rez/_region_id": [
+            "connection_cost_region_id": [
                 "NSW",
                 "NSW",
                 "Central-West Orana",
