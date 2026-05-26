@@ -1037,6 +1037,42 @@ with another — e.g. `nuclear_baseload` builds zero nuclear in the corrected
 run, but stays in the catalogue. The orchestrator selects which archetype to
 use; Pass 1 over-generates structural options rather than pre-emptively pruning.
 
+**Phase 2 catalogue redesign — AEMO-anchored deployment mandates.** Three of
+the six archetypes now carry an explicit deployment mandate as PyPSA
+`custom_constraints` rows, anchored against AEMO's published 2024 ISP Step
+Change projections (Coalition 2024 policy reference for nuclear, which AEMO
+does not model). `gas_fleet_maintained` floors NEM gas at ≥ 12,500 MW at
+2030 and 2035 (binding +616 MW and +648 MW above AEMO). `storage_led` floors
+StorageUnit power at 1.25× AEMO Step Change trajectory each milestone year.
+`nuclear_baseload` floors total nuclear at ≥ 2,000 MW @ 2045 and ≥ 4,000 MW
+@ 2050. Existing-asset capacity contribution is subtracted from the RHS so
+the LP only sees decision variables on the LHS; mandate years outside the
+configured `investment_periods` are skipped with a warning.
+
+**Phase 2 Option B maintenance overlay.** Every archetype runs through a
+pre-pass that adds an ageing premium to `fom_$/kw/annum` for ECAA thermal
+generators inside the EOL window. Coal: linear ramp to +50 AUD/kW/yr over
+the final 10 years (Bayswater refurbishment disclosure ≈ 76 AUD/kW/yr used
+as upper bound). Gas: ramp to +20 AUD/kW/yr over the final 5 years. New
+entrants are unaffected. Documented as a fleet-level simplification; Pass 3
+should use per-plant refurbishment schedules.
+
+**Phase 2 EOL renewable repowering.** Every archetype also runs through a
+repowering pre-pass that extends ECAA wind / solar `closure_year` by 20
+years and adds an annualised repowering capex premium to `fom_$/kw/annum`
+(1,000 AUD/kW for wind, 800 AUD/kW for solar, ~50% of greenfield CapEx per
+IRENA Renewable Power Generation Costs 2023 and GenCost 2024-25 §3.5).
+Pass-1 simplification — no capacity-factor uplift (would require trace
+modification, out of MVP scope) and not a true LP investment decision.
+Addresses the 2045 wind capacity dip observed in prior production runs.
+
+**Myopic-nuclear documented limitation.** Under myopic period
+decomposition, the LP can treat nuclear capacity as commissionable in the
+mandate year (instant deployment). Real nuclear construction lead time is
+~10 years. The `nuclear_baseload` cost trajectory therefore represents the
+structural cost of "nuclear-included" rather than a realistic deployment
+forecast. Surfaced explicitly so the cost figures aren't misread.
+
 **Myopic decomposition.** Each milestone year is solved as a single-period LP
 with the previous period's new-entrant builds carried forward. Cross-period
 optimisation is not performed; this trades global optimality for tractability

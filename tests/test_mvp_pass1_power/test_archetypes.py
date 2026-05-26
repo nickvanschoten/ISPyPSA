@@ -679,6 +679,98 @@ def test_maintenance_overlay_pre_pass_runs_for_every_archetype(csv_str_to_df):
 
 
 # ---------------------------------------------------------------------------
+# Phase 2.4 pre-solve integration check — exercise every wrapped archetype in
+# PRODUCTION_ARCHETYPES against the shared sample fixture; assert no crashes
+# and that each runs the three pre-passes (pumped storage / Option B / repowering)
+# before the per-archetype mutation.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def minimal_templater_output(csv_str_to_df):
+    """Minimal post-templater inputs in the templater-output schema (term_id, not
+    variable_name) so the pumped_storage_fix and downstream archetype mutations
+    can run end-to-end without column-name surprises."""
+    return {
+        "ecaa_generators": csv_str_to_df("""
+            generator,  technology_type,        sub_region_id,  fuel_type,    fom_$/kw/annum,  vom_$/mwh_sent_out,  heat_rate_gj/mwh,  closure_year,  maximum_capacity_mw
+            Bayswater,  Steam__Sub__Critical,   CNSW,           Black__Coal,  60.0,            5.0,                 10.0,              2033,          2640
+            Tarong,     Steam__Sub__Critical,   CNSW,           Black__Coal,  55.0,            5.0,                 10.0,              2038,          1843
+            Tallawarra, CCGT,                   CNSW,           Gas,          15.0,            4.0,                 7.0,               2042,          400
+            Bodangora,  Wind,                   CNSW,           Wind,         25.0,            0.0,                 0.0,               2045,          250
+            Moree,      Large__scale__Solar__PV,CNSW,           Solar,        18.0,            0.0,                 0.0,               2046,          320
+        """),
+        "new_entrant_generators": csv_str_to_df("""
+            generator,     generator_name, technology_type, fuel_type, sub_region_id, fuel_cost_mapping, heat_rate_gj/mwh, vom_$/mwh_sent_out, lifetime, minimum_stable_level_%, connection_cost_technology, rez_id
+            ccgt_cnsw,     CCGT,           CCGT,            Gas,       CNSW,          NSW__new__CCGT,    7.0,              4.0,                40,       40,                     CCGT,                       N3
+            ocgt_cnsw,     OCGT,           OCGT,            Gas,       CNSW,          NSW__new__OCGT,    10.0,             8.0,                30,       40,                     OCGT,                       N3
+            wind_n3,       Wind,           Wind,            Wind,      CNSW,          ,                  0.0,              0.0,                25,       0,                      ,                           N3
+            solar_n3,      Solar__PV,      Large__scale__Solar__PV,  Solar, CNSW,     ,                  0.0,              0.0,                25,       0,                      ,                           N3
+        """),
+        "new_entrant_build_costs": pd.DataFrame([
+            {"technology": "CCGT", "2024_25_$/mw": 1_800_000},
+            {"technology": "OCGT", "2024_25_$/mw": 900_000},
+            {"technology": "Wind", "2024_25_$/mw": 2_000_000},
+            {"technology": "Large scale Solar PV", "2024_25_$/mw": 1_400_000},
+        ]),
+        "ecaa_batteries": pd.DataFrame(columns=[
+            "storage_name", "sub_region_id", "closure_year",
+            "maximum_capacity_mw", "storage_duration_hours",
+        ]),
+        "new_entrant_batteries": csv_str_to_df("""
+            storage_name,        sub_region_id, lifetime, storage_duration_hours
+            battery_8h_cnsw,     CNSW,          20,       8
+        """),
+        "custom_constraints_lhs": pd.DataFrame(columns=["constraint_id", "term_type", "term_id", "coefficient"]),
+        "custom_constraints_rhs": pd.DataFrame(columns=["constraint_id", "constraint_type", "rhs"]),
+    }
+
+
+@pytest.mark.parametrize("archetype_id", [
+    "cost_optimal",
+    "rapid_coal_phaseout",
+    "gas_fleet_maintained",
+    "storage_led",
+    "fossil_incumbent",
+    "nuclear_baseload",
+])
+def test_every_wrapped_archetype_runs_against_minimal_inputs(archetype_id, minimal_templater_output):
+    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+
+    config = _StubConfig(investment_periods=[2030, 2040, 2050])
+
+    result = APPLY_ARCHETYPE[archetype_id](minimal_templater_output, config)
+
+    # Pre-pass evidence: repowering extends every VRE closure_year by 20 yr.
+    # Bodangora 2045 -> 2065; Moree 2046 -> 2066. (fossil_incumbent thins wind
+    # in new_entrants but doesn't touch ecaa.)
+    vre = result["ecaa_generators"][result["ecaa_generators"]["fuel_type"].isin(["Wind", "Solar"])]
+    assert int(vre[vre["generator"] == "Bodangora"]["closure_year"].iloc[0]) == 2065
+    assert int(vre[vre["generator"] == "Moree"]["closure_year"].iloc[0]) == 2066
+
+    # Pre-pass evidence: Bayswater (Black Coal, 2033 closure, 3 yr to first
+    # period 2030) gets a maintenance overlay premium of 35 AUD/kW/yr.
+    bayswater = result["ecaa_generators"][result["ecaa_generators"]["generator"] == "Bayswater"]
+    expected_premium = (10 - 3) / 10 * 50
+    assert abs(float(bayswater.iloc[0]["fom_$/kw/annum"]) - (60.0 + expected_premium)) < 1e-6
+
+
+def test_production_archetypes_registry_lists_six_entries():
+    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE, PRODUCTION_ARCHETYPES
+
+    expected = {
+        "cost_optimal",
+        "rapid_coal_phaseout",
+        "gas_fleet_maintained",
+        "storage_led",
+        "fossil_incumbent",
+        "nuclear_baseload",
+    }
+    assert set(PRODUCTION_ARCHETYPES) == expected
+    assert set(APPLY_ARCHETYPE.keys()) == expected
+
+
+# ---------------------------------------------------------------------------
 # EOL renewable repowering — extends VRE closure_year by 20y and adds an
 # annualised repowering capex premium to fom_$/kw/annum. Applied as pre-pass.
 # ---------------------------------------------------------------------------
