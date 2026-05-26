@@ -252,6 +252,42 @@ gas_fleet_maintained,2025,Liquid Fuel,0.0
 gas_fleet_maintained,2025,Solar,0.1701465741318141
 gas_fleet_maintained,2025,Water,0.3501076296735407
 gas_fleet_maintained,2025,Wind,0.22750038874431636
+gas_fleet_maintained,2030,Gas,0.5683416807099498
+gas_fleet_maintained,2030,Hyblend,0.0
+gas_fleet_maintained,2030,Liquid Fuel,0.0
+gas_fleet_maintained,2030,Solar,0.14535354008170656
+gas_fleet_maintained,2030,Water,0.3705699501465675
+gas_fleet_maintained,2030,Wind,0.31712206585916103
+gas_fleet_maintained,2035,Biomass,1.000044395905612
+gas_fleet_maintained,2035,Gas,0.548574953600567
+gas_fleet_maintained,2035,Hyblend,0.0
+gas_fleet_maintained,2035,Liquid Fuel,0.0
+gas_fleet_maintained,2035,Solar,0.1894580146896256
+gas_fleet_maintained,2035,Water,0.3867961055537359
+gas_fleet_maintained,2035,Wind,0.29932881383094473
+gas_fleet_maintained,2040,Biomass,0.9795310489741977
+gas_fleet_maintained,2040,Gas,0.532561558093709
+gas_fleet_maintained,2040,Hyblend,0.0
+gas_fleet_maintained,2040,Liquid Fuel,0.0
+gas_fleet_maintained,2040,Solar,0.20947152014995443
+gas_fleet_maintained,2040,Water,0.3885653723948624
+gas_fleet_maintained,2040,Wind,0.30123739352701634
+gas_fleet_maintained,2045,Biomass,0.9470864195641963
+gas_fleet_maintained,2045,Gas,0.3791203574064547
+gas_fleet_maintained,2045,Hyblend,0.0
+gas_fleet_maintained,2045,Hydrogen,3.5479522907672907
+gas_fleet_maintained,2045,Liquid Fuel,0.0
+gas_fleet_maintained,2045,Solar,0.4102259844874804
+gas_fleet_maintained,2045,Water,0.37837435752387927
+gas_fleet_maintained,2045,Wind,0.34217754565594577
+gas_fleet_maintained,2050,Biomass,0.9669772432138295
+gas_fleet_maintained,2050,Gas,0.022620090635479984
+gas_fleet_maintained,2050,Hyblend,0.0014880952380952378
+gas_fleet_maintained,2050,Hydrogen,4.935643783982894
+gas_fleet_maintained,2050,Liquid Fuel,0.0
+gas_fleet_maintained,2050,Solar,0.23867357714830575
+gas_fleet_maintained,2050,Water,0.39170469771555483
+gas_fleet_maintained,2050,Wind,0.306741404792464
 nuclear_baseload,2025,Black Coal,0.34872557859972986
 nuclear_baseload,2025,Brown Coal,0.5969035596356367
 nuclear_baseload,2025,Gas,0.0847331906163558

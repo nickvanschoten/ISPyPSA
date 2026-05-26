@@ -293,6 +293,46 @@ gas_fleet_maintained,2025,Liquid Fuel,0.6635
 gas_fleet_maintained,2025,Solar,10.742492849051542
 gas_fleet_maintained,2025,Water,6.83712
 gas_fleet_maintained,2025,Wind,13.384970297778418
+gas_fleet_maintained,2030,Biomass,0.0
+gas_fleet_maintained,2030,Gas,23.45014463747818
+gas_fleet_maintained,2030,Hyblend,0.4
+gas_fleet_maintained,2030,Hydrogen,0.0
+gas_fleet_maintained,2030,Liquid Fuel,0.527
+gas_fleet_maintained,2030,Solar,12.788802578088642
+gas_fleet_maintained,2030,Water,9.382570686098058
+gas_fleet_maintained,2030,Wind,24.921539067477628
+gas_fleet_maintained,2035,Biomass,0.6712098869995656
+gas_fleet_maintained,2035,Gas,23.030331878880105
+gas_fleet_maintained,2035,Hyblend,0.4
+gas_fleet_maintained,2035,Hydrogen,0.0
+gas_fleet_maintained,2035,Liquid Fuel,0.1035
+gas_fleet_maintained,2035,Solar,15.133029815728197
+gas_fleet_maintained,2035,Water,11.443663721289449
+gas_fleet_maintained,2035,Wind,29.294797153829858
+gas_fleet_maintained,2040,Biomass,5.387128950032633
+gas_fleet_maintained,2040,Gas,18.654823667271774
+gas_fleet_maintained,2040,Hyblend,0.4
+gas_fleet_maintained,2040,Hydrogen,0.0
+gas_fleet_maintained,2040,Liquid Fuel,0.1035
+gas_fleet_maintained,2040,Solar,16.658753211438285
+gas_fleet_maintained,2040,Water,11.447755071342186
+gas_fleet_maintained,2040,Wind,30.74348167696904
+gas_fleet_maintained,2045,Biomass,3.7902391422059196
+gas_fleet_maintained,2045,Gas,10.419518530439376
+gas_fleet_maintained,2045,Hyblend,0.4
+gas_fleet_maintained,2045,Hydrogen,3.0366589556784903e-06
+gas_fleet_maintained,2045,Liquid Fuel,0.1035
+gas_fleet_maintained,2045,Solar,30.16137164252774
+gas_fleet_maintained,2045,Water,11.19560261903589
+gas_fleet_maintained,2045,Wind,19.690647150723496
+gas_fleet_maintained,2050,Biomass,16.04705307609051
+gas_fleet_maintained,2050,Gas,2.40611076526658
+gas_fleet_maintained,2050,Hyblend,0.4
+gas_fleet_maintained,2050,Hydrogen,1.091519163432587e-06
+gas_fleet_maintained,2050,Liquid Fuel,0.1035
+gas_fleet_maintained,2050,Solar,26.35823374070586
+gas_fleet_maintained,2050,Water,11.610061879070253
+gas_fleet_maintained,2050,Wind,27.303935048106
 nuclear_baseload,2025,Biomass,0.0
 nuclear_baseload,2025,Black Coal,13.555
 nuclear_baseload,2025,Brown Coal,4.82

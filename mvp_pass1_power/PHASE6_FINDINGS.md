@@ -10,7 +10,7 @@
 |---|---:|---:|---:|---:|
 | `cost_optimal` | 6 / 6 | 0 | 18.6 min | 2.1 GiB |
 | `rapid_coal_phaseout` | 6 / 6 | 0 | 19.0 min | 2.2 GiB |
-| `gas_fleet_maintained` | (rerunning post-fix) | — | — | — |
+| `gas_fleet_maintained` | 6 / 6 | 0 | 19.0 min | 2.0 GiB |
 | `storage_led` | 6 / 6 | 0 | 57.3 min | 2.1 GiB |
 | `fossil_incumbent` | 6 / 6 | 0 | 13.6 min | 1.5 GiB |
 | `nuclear_baseload` | 6 / 6 | 0 | 18.2 min | 2.0 GiB |
@@ -95,10 +95,23 @@ chars). Fixed in commit 7c0862c (Phase 1 follow-up f); rerun in progress.
 | 2045 | 1.392e10 | 1.515e10 | 1.621e10 | 1.349e10 | 1.584e10 |
 | 2050 | 1.908e10 | 1.982e10 | 2.051e10 | 1.842e10 | **2.289e10** |
 
-(`gas_fleet_maintained` rerun in progress; 2025 obj 4.022e9, 2030 obj
-1.291e10 already observed — identical to `rapid_coal_phaseout` at 2030
-because the gas_floor is non-binding given the natural ~23 GW gas build
-at 2030 to replace the clipped coal.)
+**gas_fleet_maintained completes; identical to rapid_coal_phaseout
+within PDLP tolerance at every period:**
+
+| Year | gas_fleet obj | rapid_coal obj | Δ |
+|---|---:|---:|---:|
+| 2025 | 4.022e9 | 4.022e9 | 0 |
+| 2030 | 1.291e10 | 1.292e10 | 0.08 % |
+| 2035 | 1.470e10 | 1.470e10 | 0 |
+| 2040 | 1.751e10 | 1.751e10 | 0 |
+| 2045 | 1.515e10 | 1.515e10 | 0 |
+| 2050 | 1.982e10 | 1.982e10 | 0 |
+
+Capacity by carrier matches within max-diff ≤ 0.07 GW across all years
+and carriers. **The gas mandate is non-binding under PDLP NEM-wide
+single-period myopic** — rapid_coal_phaseout naturally builds 23+ GW
+gas at 2030 to replace clipped coal, well above the 12,500 MW floor.
+See finding (g) below.
 
 ---
 
@@ -194,7 +207,85 @@ accelerated coal exit relative to the IASR schedule.
 annuitised (at WACC 7 %, 60-yr life ≈ $9B/yr) dominates the 2050 cost
 delta. Consistent with the GenCost 2024-25 nuclear-uncompetitive finding.
 
-### (f) Supply gap modest at all archetypes
+### (f) **Biomass dominance is bigger at NEM scale than the smoke suggested.**
+
+Generation by carrier at 2050 (TWh):
+
+| Carrier | cost_opt | rapid_coal | gas_fleet | storage_led | fossil_inc | nuclear_bl |
+|---|---:|---:|---:|---:|---:|---:|
+| Wind | 107.2 | 73.4 | 73.4 | 108.1 | 70.2 | 72.1 |
+| Solar | 123.2 | 55.1 | 55.1 | 134.4 | 10.4 | 43.7 |
+| Water (hydro) | 20.6 | 39.8 | 39.8 | 20.6 | 20.9 | 39.8 |
+| Black Coal | 11.7 | 0.0 | 0.0 | 0.0 | 34.2 | 12.5 |
+| Brown Coal | 0.0 | 0.0 | 0.0 | 0.0 | 10.2 | 0.0 |
+| Gas | (small) | (small) | (small) | (small) | (small) | (small) |
+| **Biomass** | **22.5** | **135.9** | **135.9** | 22.5 | **88.1** | **100.3** |
+
+In `rapid_coal_phaseout` and `gas_fleet_maintained` the LP dispatches
+135.9 TWh of biomass from 16.1 GW capacity — about a 96 % CF. Australian
+biomass consumption today is on the order of 1-2 TWh; the LP's biomass
+draw is **~70× larger** than current real-world usage. The IASR-default
+biomass price ($0.66/GJ) combined with the unconstrained p_max_pu=1.0
+makes biomass structurally the cheapest firm-capacity option whenever
+coal is forced out without a storage mandate.
+
+**Phase 1 hypothesis tested and rejected.** Phase 1 closure said:
+> Production multi-region NEM-wide configurations expected to mitigate
+> via inter-state import diversity — if they don't, that's Phase 6 work.
+
+NEM-wide multi-region diversity does NOT mitigate. The LP at every
+NEM sub-region prefers biomass over alternatives. Worth the team
+conversation:
+
+  - **Option A**: tighten biomass fuel price or add availability cap
+    (a real fuel-supply constraint for biomass at NEM scale)
+  - **Option B**: accept ISPyPSA-default biomass economics as
+    methodological exposure and document the unrealistic dispatch
+    explicitly in deliverable
+  - **Option C**: reinstate an explicit storage mandate on every archetype
+    (storage_led-style) so the LP cannot lean on biomass as firming.
+
+Note: `storage_led` is the only archetype that avoids the biomass
+dominance — its 38 GW storage floor provides the firming biomass
+would otherwise supply.
+
+### (g) **gas_fleet_maintained ≡ rapid_coal_phaseout under PDLP NEM-wide
+single-period myopic.**
+
+The gas floor (≥ 12,500 MW @ 2030 and 2035) was designed to test the
+cost of "maintaining gas fleet stable" relative to AEMO's projected
+decline. Under Phase 6's actual run conditions, the mandate is
+**non-binding at every milestone year**:
+
+- rapid_coal_phaseout's natural gas response to coal-out-by-2030 builds
+  23.5 GW at 2030, 23.0 GW at 2035 — both well above the 12,500 MW floor.
+- gas_fleet_maintained's mandate adds no additional constraint, so the
+  LP picks the same solution.
+
+Capacity and objective match within PDLP tolerance at every period
+(0-0.08 % delta). **The catalogue effectively has 5 distinct paths,
+not 6.**
+
+This is methodologically significant because gas_fleet_maintained was
+designed against AEMO's published Step Change projection (gas declining
+to ~11.9 GW @ 2030, ~11.9 GW @ 2035 — below the mandate floor). The
+team's IASR Step Change LP doesn't reproduce AEMO's gas decline at
+those years; instead the LP keeps gas higher than AEMO's projection.
+Two possibilities:
+
+  - **Modelling difference**: Phase 6's PDLP at 1e-3 produces gas
+    trajectories that differ from AEMO's published projection (different
+    solver, different tolerance, different cost convention).
+  - **Mandate underdesigned**: 12,500 MW was anchored against AEMO's
+    central case but the team's own LP overshoots this naturally,
+    making the mandate ineffective.
+
+Worth team discussion: should the mandate be tightened (e.g. 18-20 GW)
+to actually differentiate `gas_fleet_maintained`, or is the structural
+finding "coal-out-by-2030 forces a gas surge ≥ the AEMO projection
+anyway" itself the answer?
+
+### (h) Supply gap modest at all archetypes
 
 `supply_gap_pct` (total generation vs demand, positive = over-generation):
 
@@ -210,24 +301,29 @@ All under 4 % — no demand-side issues at production scale.
 
 ---
 
-## 5. Outstanding before Phase 6 closure
+## 5. Phase 6 closure status
 
-1. **gas_fleet_maintained rerun completion** (in progress; expected ~17 min from
-   relaunch). The gas mandate first binds at 2030; under rapid_coal_phaseout's
-   natural ~23 GW gas at 2030 the mandate is non-binding, but the same coal-out
-   schedule + gas mandate at 2035 (when natural gas declines) should bind.
+1. ✅ **gas_fleet_maintained complete** — 6/6 periods Optimal,
+   19.0 min wall, 2.0 GiB peak. Hypothesis "gas mandate should bind at
+   2035 when natural gas declines" REJECTED — gas stays ≥ 23 GW at 2035
+   under coal-by-2030, well above the 12,500 MW floor. See finding (g).
 
-2. **Re-extract granular outputs** including gas_fleet_maintained once its
-   rerun completes — the `outputs/phase6_granular/*` CSVs currently have
-   `NaN` for gas_fleet rows at 2030-2050.
+2. ✅ **Granular outputs re-extracted** with gas_fleet_maintained included.
+   `outputs/phase6_granular/*` is the full Phase 6 dataset.
 
-3. **Investigate the 2045 wind dip mechanism** before the team conversation.
-   The repowering overlay was a Pass-1 simplification; whether the residual
-   dip is a templater lifetime-arithmetic quirk or a real economic finding
-   needs verification.
+3. **Open for team conversation, not Phase 6 blocking:**
 
-4. **Phase 6 closure write-up** consolidating the headline outputs +
-   findings (a)-(e) above into the team-facing deliverable.
+   - The **2045 wind dip** (finding b): persists across 5 of 6 archetypes.
+     Phase 1 follow-up worth investigating: is this a templater lifetime
+     arithmetic interaction at exactly the 2045 milestone, or a real
+     economic finding?
+   - The **biomass dominance** (finding f): 96 % CF dispatch on 16 GW
+     biomass in three archetypes. NEM-wide diversity did not mitigate.
+     Team decision on whether to constrain or accept.
+   - The **gas_fleet ≡ rapid_coal collapse** (finding g): mandate as
+     designed doesn't differentiate. Team decision on whether to tighten
+     the mandate or accept the structural finding ("coal-out-by-2030
+     forces gas ≥ 23 GW regardless").
 
 ---
 
