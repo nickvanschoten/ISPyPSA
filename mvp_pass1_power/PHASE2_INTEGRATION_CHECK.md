@@ -188,7 +188,69 @@ unrelated to Phase 2.
 
 ---
 
-## 7. Smoke test diagnostic — verified pre-existing
+## 7. MVP smoke verification — PASSED end-to-end
+
+After the Phase 1 follow-ups (commit 862801d) landed, the MVP workflow
+script (`scripts/run_workflow.py`) runs end-to-end on the minimal config
+(NSW, single 2050 investment period, one representative week) for all six
+production archetypes. All solve to **Optimal**:
+
+| Archetype | Status | Wall-clock | Objective (AUD) | Mandate enforced at smoke scale? |
+|---|---|---:|---:|---|
+| `cost_optimal` | Optimal | 10.7 s | 7.833 × 10⁹ | n/a |
+| `rapid_coal_phaseout` | Optimal | 10.9 s | 7.833 × 10⁹ | n/a |
+| `gas_fleet_maintained` | Optimal | 10.7 s | 7.833 × 10⁹ | No — mandate years 2030 & 2035 filtered (minimal config has 2050 only) |
+| `storage_led` | Optimal | 9.0 s | 7.842 × 10⁹ | No — see finding (b) below |
+| `fossil_incumbent` | Optimal | 3.8 s | 8.036 × 10⁹ | n/a |
+| `nuclear_baseload` | Optimal | 13.2 s | 1.166 × 10¹⁰ | **Yes** — `nuclear_floor_2050 ≥ 4,000 MW` enforced and verified in custom_constraints CSV outputs |
+
+### Findings worth surfacing for the team
+
+**(a) Translator REZ-expansion path didn't anticipate non-REZ rhs entries.**
+The `_translate_custom_constraints_generators` and
+`_translate_custom_constraint_generators_to_lhs` functions in
+`src/ispypsa/translator/custom_constraints.py` raised `KeyError` when
+the `custom_constraints_rhs` table contained entries that didn't match
+any `rez_constraint_id` (the case for Phase 2's NEM-wide aggregate floors).
+Fixed in commit 862801d by short-circuiting both functions on empty input.
+This was a real bug exposed by Phase 2's mandate constraints — Phase 1's
+custom_constraints work assumed all manual rhs entries were
+REZ-transmission-expansion candidates. Worth a note for the team: any
+future manual constraint type that doesn't correspond to a REZ
+expansion will exercise this code path.
+
+**(b) `new_entrant_batteries` table is empty under the NSW filter.**
+The minimal config (filter_by_nem_regions=[NSW]) produces zero rows in
+`new_entrant_batteries.csv` even though `new_entrants_summary` in the
+cache contains 19 CNSW + 28 SNSW + 22 NNSW + 20 SNW battery deployment
+rows. The storage_led mandate constraint requires new-entrant batteries
+to satisfy the storage_floor, so my `_capacity_floor` helper logs a
+warning and skips constraint generation. The LP still runs to Optimal
+on the existing battery fleet alone. This is a **pre-existing Phase 1
+templater issue** — the v6.0-normalised → templater pipeline has a
+filtering step (or a missing one) that drops all sub-region new-entrant
+battery rows when the regional filter is applied. **Worth checking
+whether this issue persists at full-NEM Phase 6 scale.** If it does, the
+storage_led mandate won't bind in production runs either, and the
+archetype would degenerate to "no gas + repowering" — a meaningful but
+different finding.
+
+**(c) Three archetypes converging on identical objective at smoke scale.**
+At minimal config (NSW 2050 single period), `cost_optimal`,
+`rapid_coal_phaseout`, and `gas_fleet_maintained` all produce the same
+LP objective (7.833 × 10⁹). Expected: at 2050 NSW coal is already
+retired per the IASR closure schedule, so `rapid_coal_phaseout`'s
+coal-by-2030 clip is a no-op; `gas_fleet_maintained`'s mandate years
+(2030, 2035) are filtered out under minimal config's single-2050
+periods. **Full-NEM Phase 6 should differentiate these archetypes**
+through multi-period evolution where the coal-clip + gas-mandate
+levers actually bind. This is the same convergence pattern the team
+observed in the prior catalogue and Phase 2 is designed to resolve —
+but the resolution requires Phase 6 scale to demonstrate.
+
+---
+
+## 8. Smoke test diagnostic — verified pre-existing (pre-fix history)
 
 The Phase 2 closure originally surfaced the MVP smoke (via
 `mvp_pass1_power/scripts/run_workflow.py`) as blocked on a column-name
@@ -226,39 +288,55 @@ involved, not one.
 | (b) | Workflow script's sentinel `existing_generators_summary.csv` is consolidated away by Phase 1's normalisation, breaking the cache-existence check on subsequent runs | `mvp_pass1_power/scripts/run_workflow.py:85` | Switch sentinel to the v7.4-canonical `existing_committed_anticipated_additional_generator_summary.csv` (Phase 1 closure commit acknowledges fixing this in the bench runner; the MVP workflow script was missed) |
 | (c) | `_template_battery_properties` fails with a duplicate-column error on the v7.4-normalised consolidated summary + new_entrants_summary concat | `src/ispypsa/templater/storage.py:54` | Phase 1 follow-up: dedupe / disambiguate the snake-cased `technology_type` columns before filtering |
 
-### Implication for Phase 6 commissioning
+### Fixed in commit 862801d
 
-- **Phase 6 production runs use `mvp_pass1_power/bench/run_production.py`**,
-  which spawns `bench/run_myopic.py` subprocesses. Per Phase 1 closure,
-  the bench runner uses the corrected v7.4 sentinel and works end-to-end
-  (Phase 1's NSW 2-period PDLP smoke succeeded via this path).
-- **The MVP demonstration script (`scripts/run_workflow.py`) and the
-  MVP-postprocess pipeline (`scripts/run_all_archetypes.sh` which calls
-  the same workflow) will fail until the three Phase 1 issues above are
-  patched.** This is a documentation / demonstration impact, not a
-  production-run blocker.
+All three issues plus two surprises that surfaced during smoke verification:
 
-### Recommendation
-
-The three Phase 1 issues are independent of Phase 2 and small enough to
-fix as a Phase 1 follow-up in their own commit before Phase 6
-commissions. The minimum patch set:
-
-- Add v7.4 sentinel in `scripts/run_workflow.py` (1-line change).
-- Investigate and fix `templater/storage.py:54` duplicate-column.
-- Add a cache-invalidation marker (or document the "delete cache to
-  recover" workaround).
-
-None of these block Phase 6 production runs via the bench runner path.
+- **(b)** sentinel updated to v7.4-canonical filename (1-line change to
+  `scripts/run_workflow.py`).
+- **(a)** `Path.replace` instead of `Path.rename` in the table-rename
+  step makes normalisation idempotent.
+- **(c)** the duplicate-column issue resolved in two places: rename
+  v6.0's `Technology type` (lowercase) on `new_entrants_summary` to
+  `Technology category` so it doesn't collide; rename v6.0's lowercase
+  `Technology type` on the ECAA per-status summaries to `Technology
+  Type` (capital) inside `consolidate_v60_ecaa_generator_summaries` so
+  it aligns with v7.4 native and with `new_entrants_summary` for the
+  storage.py concat.
+- **(d)** NaN guard in `templater/storage.py:_get_storage_duration_for_battery_type`
+  so non-string `isp_resource_type` values flow through `re.search`
+  cleanly (returning None; downstream drops them).
+- **(e)** Translator REZ-expansion-generators path now short-circuits
+  on empty input, fixing a `KeyError` exposed by Phase 2's NEM-wide
+  mandate constraints not corresponding to any `rez_constraint_id`.
 
 ---
 
-## 8. Phase gate
+## 9. Phase gate
 
-This document surfaces the integrated state for team confirmation. Phase 6
-production runs (extended IASR v6.0 baseline, 6 milestone years × 6
-archetypes, PDLP at 1e-3) follow Phase 2 closure when authorised.
+The MVP smoke verification passes end-to-end for all six archetypes
+(see §7). Two findings worth team attention before commissioning Phase 6:
 
-**Phase 2 regression confirmed at 755/735 throughout the diagnostic work;
-no cache or code changes from this verification step land in the
-committed Phase 2 history.**
+1. The empty-`new_entrant_batteries`-under-NSW-filter issue is
+   pre-existing Phase 1 templater behaviour. **Worth checking whether
+   it persists at full-NEM Phase 6 scale.** If it does, `storage_led`'s
+   mandate won't bind and the archetype degenerates to "no gas +
+   repowering" — meaningful but not what the catalogue spec intends.
+2. The mandate-constraints-in-rhs-don't-match-REZ-expansion fix in
+   commit 862801d is a real interaction between Phase 2's constraint
+   design and Phase 1's translator code. Worth a code-review pass on
+   the surrounding logic to see whether any other downstream consumer
+   makes the same assumption.
+
+Phase 6 production runs (full-NEM IASR v6.0 baseline, 6 milestone years
+× 6 archetypes, PDLP at 1e-3) can commission with confidence that:
+
+- The MVP demo path works end-to-end (smoke confirmed).
+- The bench-runner production path was already working per Phase 1
+  closure and is unaffected by these follow-ups.
+- All six archetypes solve Optimal at smoke scale.
+- The nuclear mandate constraint flows correctly through the full
+  pipeline to the LP variables.
+
+**Regression preserved at 755/755 throughout all of Phase 2 + the
+Phase 1 follow-ups.**
