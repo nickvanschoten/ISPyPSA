@@ -39,6 +39,8 @@ def _launch_archetype(
     periods: list[int],
     budget_min: float,
     regions_filter: str | None,
+    use_pdlp: bool = False,
+    pdlp_tolerance: float | None = None,
 ) -> subprocess.Popen:
     """Spawn run_myopic.py for one archetype and return the process handle."""
     run_id = f"{run_id_prefix}__{archetype}"
@@ -51,6 +53,10 @@ def _launch_archetype(
     ]
     if regions_filter:
         cmd += ["--filter", regions_filter]
+    if use_pdlp:
+        cmd += ["--use-pdlp"]
+        if pdlp_tolerance is not None:
+            cmd += ["--pdlp-tolerance", str(pdlp_tolerance)]
     log_path = BENCH / "logs" / f"{run_id}_production.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_fh = open(log_path, "w")
@@ -170,6 +176,11 @@ def main():
                     help="NEM region filter (e.g. 'NSW'); omit for full NEM")
     ap.add_argument("--gurobi-fallback", action="store_true",
                     help="Print Gurobi fallback commands for failed periods")
+    ap.add_argument("--use-pdlp", action="store_true",
+                    help="Solve each period with HiGHS PDLP instead of simplex")
+    ap.add_argument("--pdlp-tolerance", type=float, default=None,
+                    help="PDLP tolerance (sets all three: pdlp_optimality, "
+                         "primal_feasibility, dual_feasibility); only with --use-pdlp")
     args = ap.parse_args()
 
     archetypes = args.archetypes or PRODUCTION_ARCHETYPES
@@ -182,11 +193,18 @@ def main():
     print(f"  Budget/period: {args.budget_min} min")
     print(f"  Filter: {args.filter or 'full NEM'}")
 
+    if args.use_pdlp:
+        tol = args.pdlp_tolerance if args.pdlp_tolerance is not None else "default"
+        print(f"  Solver: HiGHS PDLP (tolerance={tol})")
+    else:
+        print(f"  Solver: HiGHS default simplex")
+
     procs: dict[str, subprocess.Popen] = {}
     for arch in archetypes:
         print(f"  Launching {arch}...")
         procs[arch] = _launch_archetype(
-            arch, run_id_prefix, args.periods, args.budget_min, args.filter
+            arch, run_id_prefix, args.periods, args.budget_min, args.filter,
+            use_pdlp=args.use_pdlp, pdlp_tolerance=args.pdlp_tolerance,
         )
 
     wall_start = time.time()

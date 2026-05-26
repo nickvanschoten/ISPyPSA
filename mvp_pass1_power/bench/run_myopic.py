@@ -96,7 +96,14 @@ create_plots: False
     return cfg_path
 
 
-def _run_one_period(cfg: Path, run_id: str, budget_min: float, archetype: str) -> dict:
+def _run_one_period(
+    cfg: Path,
+    run_id: str,
+    budget_min: float,
+    archetype: str,
+    use_pdlp: bool = False,
+    pdlp_tolerance: float | None = None,
+) -> dict:
     """Run a single period via the instrumented runner and return its record."""
     log_path = LOGS / f"{run_id}.log"
     record_path = RECORDS / f"{run_id}.json"
@@ -105,9 +112,15 @@ def _run_one_period(cfg: Path, run_id: str, budget_min: float, archetype: str) -
     if log_path.exists():
         log_path.unlink()
 
+    solver_flags = ""
+    if use_pdlp:
+        solver_flags = " --use-pdlp"
+        if pdlp_tolerance is not None:
+            solver_flags += f" --pdlp-tolerance {pdlp_tolerance}"
+
     cmd_str = (
         f'"{sys.executable}" -u "{BENCH / "instrumented_runner.py"}" '
-        f'--config "{cfg}" --run-id "{run_id}" --archetype {archetype} '
+        f'--config "{cfg}" --run-id "{run_id}" --archetype {archetype}{solver_flags} '
         f'> "{log_path}" 2>&1'
     )
     env = {**os.environ, "PYTHONUNBUFFERED": "1"}
@@ -176,6 +189,11 @@ def main():
                     help="Archetype id to apply (default: cost_optimal)")
     ap.add_argument("--budget-min", type=float, default=720,
                     help="Per-period wall-clock budget (default 12h)")
+    ap.add_argument("--use-pdlp", action="store_true",
+                    help="Solve with HiGHS PDLP instead of default simplex.")
+    ap.add_argument("--pdlp-tolerance", type=float, default=None,
+                    help="Set pdlp_optimality_tolerance + primal/dual feasibility "
+                         "tolerances; only used with --use-pdlp.")
     args = ap.parse_args()
 
     regions = [args.filter] if args.filter else None
@@ -197,7 +215,10 @@ def main():
         print(f"\n=== Myopic period {year} ({sub_run_id}) archetype={args.archetype} ===")
         cfg = _write_period_config(sub_run_id, year, regions)
         per_started = time.time()
-        rec = _run_one_period(cfg, sub_run_id, args.budget_min, args.archetype)
+        rec = _run_one_period(
+            cfg, sub_run_id, args.budget_min, args.archetype,
+            use_pdlp=args.use_pdlp, pdlp_tolerance=args.pdlp_tolerance,
+        )
         per_wall = time.time() - per_started
         rec["per_period_wall_s"] = per_wall
         rec["per_period_peak_gib"] = rec.get("peak_rss_gib", 0)
