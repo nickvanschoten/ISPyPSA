@@ -82,7 +82,13 @@ def main():
     log.info(f"=== Running archetype '{args.archetype}' with config '{config_path}' ===")
 
     # 1. Workbook cache.
-    if not (parsed_workbook_cache / "existing_generators_summary.csv").exists():
+    # Sentinel is the v7.4-canonical consolidated generator+storage summary
+    # filename, which is what build_local_cache produces after normalisation
+    # for both v6.0 and v7.4 source workbooks. Earlier v6.0 sentinel
+    # (existing_generators_summary.csv) is consolidated away by the Phase 1
+    # normalisation pass and no longer exists on a freshly-built cache.
+    sentinel = parsed_workbook_cache / "existing_committed_anticipated_additional_generator_summary.csv"
+    if not sentinel.exists():
         log.info("Building local IASR workbook cache (first run only)")
         build_local_cache(parsed_workbook_cache, workbook_path, config.iasr_workbook_version)
     else:

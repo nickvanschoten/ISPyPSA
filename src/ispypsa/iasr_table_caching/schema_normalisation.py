@@ -177,8 +177,16 @@ _V60_TO_V74_COLUMN_RENAMES: dict[str, dict[str, str]] = {
     # lookup key and as the build_costs.technology merge key.
     # Also renames the connection-cost zone identifier (`Connection cost_REZ/Region`
     # → `Connection cost_Region`) — v7.4 dropped the `REZ/` prefix.
+    # v6.0's separate `Technology type` (lowercase 't') column held a broader
+    # category label (e.g. "Wind" where the deployment label is
+    # "Wind - offshore (fixed)") and would collide with `Technology Type`
+    # under snake_case (both → `technology_type`). v7.4 doesn't carry the
+    # category column at all. Renaming to `Technology category` keeps the
+    # data accessible for any future use while preventing the snake-case
+    # collision in storage.py and similar downstream consumers.
     "new_entrants_summary": {
         "New entrants": "Technology Type",
+        "Technology type": "Technology category",
         "Connection cost_REZ/Region": "Connection cost_Region",
     },
     # === Sweep 2026-05-24: v6.0 → v7.4 mechanical identifier renames ===
@@ -1054,7 +1062,14 @@ def consolidate_v60_ecaa_generator_summaries(cache_path: Path) -> None:
         if not source_path.exists():
             continue
         df = pd.read_csv(source_path)
-        df = df.rename(columns={name_col: "Power Station"})
+        # `Technology type` (lowercase 't') in v6.0 per-status summaries →
+        # `Technology Type` (capital 'T') to align with the v7.4 native
+        # consolidated table and with the rename applied to new_entrants_summary.
+        # Without this, the downstream concat of the ECAA consolidated table
+        # against new_entrants_summary in templater/storage.py produces two
+        # columns that both snake-case to `technology_type`, triggering an
+        # AttributeError when filtering on storage_summaries['technology_type'].
+        df = df.rename(columns={name_col: "Power Station", "Technology type": "Technology Type"})
         frames.append(df)
     if not frames:
         return

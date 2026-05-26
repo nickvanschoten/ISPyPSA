@@ -277,6 +277,17 @@ def _translate_custom_constraints_generators(
         asset_lifetime=asset_lifetime,
     )
 
+    # When `custom_constraints` contains no REZ-expansion constraint ids
+    # (e.g. when the only manual constraints are NEM-wide aggregate floors
+    # that don't correspond to any rez_constraint_id), the filtered cost
+    # table is empty and `_translate_time_varying_expansion_costs` returns
+    # a column-less empty DataFrame. The rename + `_format_expansion_generators`
+    # path then raises KeyError on `constraint_name`. Short-circuit here so
+    # the caller receives an empty DataFrame and skips the REZ-expansion-
+    # generators step entirely.
+    if expansion_generators.empty:
+        return pd.DataFrame()
+
     expansion_generators = expansion_generators.rename(
         columns={
             "rez_constraint_id": "constraint_name",
@@ -386,12 +397,6 @@ def _translate_custom_constraint_generators_to_lhs(
 
     Returns: pd.DataFrame
     """
-    custom_constraint_generators = custom_constraint_generators.rename(
-        columns={"isp_name": "constraint_name", "name": "variable_name"}
-    )
-    custom_constraint_generators["component"] = "Generator"
-    custom_constraint_generators["attribute"] = "p_nom"
-    custom_constraint_generators["coefficient"] = -1.0
     col_order = [
         "constraint_name",
         "variable_name",
@@ -399,6 +404,17 @@ def _translate_custom_constraint_generators_to_lhs(
         "attribute",
         "coefficient",
     ]
+    # Empty input (no REZ-expansion-generators produced — e.g. when the only
+    # manual constraints are NEM-wide aggregate floors). Return an empty
+    # DataFrame in the expected schema so the downstream concat is a no-op.
+    if custom_constraint_generators.empty:
+        return pd.DataFrame(columns=col_order)
+    custom_constraint_generators = custom_constraint_generators.rename(
+        columns={"isp_name": "constraint_name", "name": "variable_name"}
+    )
+    custom_constraint_generators["component"] = "Generator"
+    custom_constraint_generators["attribute"] = "p_nom"
+    custom_constraint_generators["coefficient"] = -1.0
     return custom_constraint_generators.loc[:, col_order]
 
 

@@ -387,7 +387,11 @@ def _normalise_cached_csvs_to_v74(
             df.to_csv(csv_path, index=False)
         new_table_name = _V60_TO_V74_TABLE_RENAMES.get(table_name)
         if new_table_name:
-            csv_path.rename(cache_path / f"{new_table_name}.csv")
+            # `replace` rather than `rename` so normalisation is idempotent:
+            # a partial-normalisation state (where both source and target
+            # already exist) overwrites the target with the freshly-extracted
+            # source rather than raising FileExistsError.
+            csv_path.replace(cache_path / f"{new_table_name}.csv")
 
     # Class (c1): concat v6.0's four per-status ECAA summary CSVs into the
     # v7.4 single-consolidated form, then delete the originals. Templater

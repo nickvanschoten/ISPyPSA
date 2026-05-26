@@ -737,7 +737,13 @@ def _add_isp_resource_type_column(df: pd.DataFrame):
             'isp_resource_type' that holds the descriptive string.
     """
 
-    def _get_storage_duration_for_battery_type(name: str) -> str | None:
+    def _get_storage_duration_for_battery_type(name) -> str | None:
+        # Non-string values (NaN / missing isp_resource_type for non-battery
+        # rows surviving from the v7.4 new_entrants_summary, or for v6.0 rows
+        # where the column is sparse) return None and are dropped downstream
+        # in _add_unique_new_entrant_storage_name_column.
+        if not isinstance(name, str):
+            return None
         duration_pattern = r"(?P<duration>\d+h)rs* storage"
         duration_string = re.search(duration_pattern, name, re.IGNORECASE)
 
