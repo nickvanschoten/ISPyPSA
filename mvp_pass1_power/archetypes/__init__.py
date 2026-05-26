@@ -25,6 +25,7 @@ read as alternative policy pathways relative to a public authoritative source.
 """
 
 from ._pumped_storage_fix import apply as _pumped_storage_fix_apply
+from ._maintenance_overlay import apply as _maintenance_overlay_apply
 from .cost_optimal import apply as cost_optimal_apply
 from .rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
 from .gas_fleet_maintained import apply as gas_fleet_maintained_apply
@@ -42,25 +43,37 @@ PRODUCTION_ARCHETYPES = [
 ]
 
 
-def _with_pumped_storage_fix(archetype_fn):
-    """Wrap an archetype mutation to first re-route the four NEM pumped storage
-    facilities (Wivenhoe, Shoalhaven, Borumba, Snowy 2.0) from ecaa_generators
-    to ecaa_batteries — i.e. model them as PyPSA StorageUnits, not unconstrained
-    Water-carrier generators. See _pumped_storage_fix.py for the data sources."""
+def _with_pre_passes(archetype_fn):
+    """Wrap an archetype mutation with two cross-archetype pre-passes:
+
+      1. Pumped-storage fix — re-route Wivenhoe / Shoalhaven / Borumba / Snowy 2.0
+         from ecaa_generators to ecaa_batteries so they are modelled as PyPSA
+         StorageUnits, not unconstrained Water-carrier generators.
+         See _pumped_storage_fix.py for the data sources.
+
+      2. Option B ageing-fleet maintenance overlay — adds a per-row ageing
+         premium to fom_$/kw/annum on ECAA thermal generators in their final
+         years of operation, anchored against published refurbishment cost
+         references. See _maintenance_overlay.py for sources and methodology.
+
+    Pre-passes run on EVERY archetype so all six see consistent baseline
+    accounting before per-archetype mutations are applied.
+    """
 
     def wrapped(ispypsa_tables, config):
         ispypsa_tables = _pumped_storage_fix_apply(ispypsa_tables, config)
+        ispypsa_tables = _maintenance_overlay_apply(ispypsa_tables, config)
         return archetype_fn(ispypsa_tables, config)
 
-    wrapped.__name__ = f"{archetype_fn.__name__}_with_pumped_storage_fix"
+    wrapped.__name__ = f"{archetype_fn.__name__}_with_pre_passes"
     return wrapped
 
 
 APPLY_ARCHETYPE = {
-    "cost_optimal":         _with_pumped_storage_fix(cost_optimal_apply),
-    "rapid_coal_phaseout":  _with_pumped_storage_fix(rapid_coal_phaseout_apply),
-    "gas_fleet_maintained": _with_pumped_storage_fix(gas_fleet_maintained_apply),
-    "storage_led":          _with_pumped_storage_fix(storage_led_apply),
-    "fossil_incumbent":     _with_pumped_storage_fix(fossil_incumbent_apply),
-    "nuclear_baseload":     _with_pumped_storage_fix(nuclear_baseload_apply),
+    "cost_optimal":         _with_pre_passes(cost_optimal_apply),
+    "rapid_coal_phaseout":  _with_pre_passes(rapid_coal_phaseout_apply),
+    "gas_fleet_maintained": _with_pre_passes(gas_fleet_maintained_apply),
+    "storage_led":          _with_pre_passes(storage_led_apply),
+    "fossil_incumbent":     _with_pre_passes(fossil_incumbent_apply),
+    "nuclear_baseload":     _with_pre_passes(nuclear_baseload_apply),
 }

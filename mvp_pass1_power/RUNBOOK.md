@@ -49,6 +49,41 @@ avoids circular dependency on the team's own modelling artifacts.
 - Interconnector reinforcement sensitivity. Transmission topology is IASR-fixed in all six.
 - Demand-side flexibility. Load is treated as inelastic in all six.
 
+### Option B: ageing-fleet maintenance cost overlay
+
+Applied as a pre-pass to every archetype (so cost_optimal, mandate
+archetypes, and fossil_incumbent all see consistent baseline ageing-fleet
+economics). Adds a per-row ageing premium to fom_$/kw/annum for ECAA
+thermal generators in their final years of operation.
+
+Methodology (full source list in
+[`archetypes/_maintenance_overlay.py`](archetypes/_maintenance_overlay.py)):
+For a plant with `years_to_closure = closure_year - first_investment_period`,
+premium = max(0, (eol_window − years_to_closure) / eol_window × max_premium).
+Plants further from EOL than `eol_window` see no change. New entrants are
+unaffected.
+
+| Fuel category | eol_window | max_premium |
+|---|---:|---:|
+| Black / Brown Coal | 10 yr | 50 AUD/kW/yr |
+| Gas (CCGT/OCGT) | 5 yr | 20 AUD/kW/yr |
+
+Sources: AEMO Bayswater refurbishment disclosure (Origin Energy 2022 ASX
+filing — ~A$1B / 5 yr / 2,640 MW ≈ 76 AUD/kW/yr, used as upper-bound for
+the coal premium); CSIRO GenCost 2024-25 Final Table 4.1 (coal O&M ranges);
+CSIRO Coal Plant Working Paper 2024 (aged-fleet opex multipliers); GenCost
+2024-25 §3.3 (gas O&M ranges).
+
+Expected impact: fossil_incumbent sees substantially higher costs because
+it extends ageing plant operation; cost_optimal sees a modest lift in
+early years; gas_fleet_maintained sees a lift in 2030-2035 where the
+mandate forces gas retention.
+
+Documented limitation: the linear ramp is a fleet-level simplification.
+Real refurbishment spend is lumpy and plant-specific. Pass 3 high-fidelity
+re-solves should use published per-plant refurbishment schedules where
+available.
+
 ---
 
 ## 2. Implementation files
@@ -61,7 +96,10 @@ avoids circular dependency on the team's own modelling artifacts.
 | `archetypes/storage_led.py` | Coal clip (2035) + all gas new-entrant drops + storage power floor per year |
 | `archetypes/fossil_incumbent.py` | Coal lifetime extension + renewable new-entrant thinning |
 | `archetypes/nuclear_baseload.py` | Advanced Nuclear injection from CCGT template + nuclear floor @ 2045/2050 |
-| `archetypes/__init__.py` | `PRODUCTION_ARCHETYPES`, `APPLY_ARCHETYPE` registry |
+| `archetypes/_capacity_floor.py` | Shared helper for AEMO-anchored mandate constraints |
+| `archetypes/_maintenance_overlay.py` | Option B ageing-fleet premium (pre-pass on every archetype) |
+| `archetypes/_pumped_storage_fix.py` | Pumped-storage re-routing (pre-pass on every archetype) |
+| `archetypes/__init__.py` | `PRODUCTION_ARCHETYPES`, `APPLY_ARCHETYPE` registry; `_with_pre_passes` wrapper |
 | `bench/run_myopic.py` | Sequential single-period solver with `--archetype` param |
 | `bench/run_production.py` | Parallel launcher (one subprocess per archetype) |
 | `postprocess/extract_granular_outputs.py` | Capacity, generation, storage, CF, renewable share CSVs |

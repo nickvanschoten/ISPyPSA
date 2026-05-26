@@ -574,6 +574,110 @@ def test_capacity_floor_warns_when_mandate_year_not_in_investment_periods(csv_st
     assert set(result["custom_constraints_rhs"]["constraint_id"]) == {"gas_floor_2030"}
 
 
+# ---------------------------------------------------------------------------
+# Option B maintenance overlay — adds ageing premium to fom_$/kw/annum for
+# ECAA thermal generators inside the EOL window. Applied as a pre-pass to all
+# six archetypes via the _with_pre_passes wrapper in __init__.py.
+# ---------------------------------------------------------------------------
+
+
+def test_maintenance_overlay_adds_premium_to_coal_within_eol_window(csv_str_to_df):
+    from mvp_pass1_power.archetypes._maintenance_overlay import apply as overlay_apply
+
+    # Coal closing in 5 years from first period 2030 -> closes 2035.
+    # Premium = (10 - 5) / 10 * 50 = 25.0 AUD/kW/yr.
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,    closure_year,  fom_$/kw/annum
+        CoalEOL,    Black__Coal,  2035,          60.0
+        CoalFar,    Black__Coal,  2050,          60.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030, 2040, 2050])
+
+    result = overlay_apply(tables, config)
+
+    expected = csv_str_to_df("""
+        generator,  fuel_type,    closure_year,  fom_$/kw/annum
+        CoalEOL,    Black__Coal,  2035,          85.0
+        CoalFar,    Black__Coal,  2050,          60.0
+    """)
+    pd.testing.assert_frame_equal(
+        result["ecaa_generators"].reset_index(drop=True),
+        expected.reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+def test_maintenance_overlay_uses_separate_gas_window_and_max(csv_str_to_df):
+    from mvp_pass1_power.archetypes._maintenance_overlay import apply as overlay_apply
+
+    # Gas closing 2 years from first period 2030 -> 2032.
+    # Premium = (5 - 2) / 5 * 20 = 12.0 AUD/kW/yr.
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,  closure_year,  fom_$/kw/annum
+        GasEOL,     Gas,        2032,          15.0
+        GasFar,     Gas,        2040,          15.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030])
+
+    result = overlay_apply(tables, config)
+
+    expected = csv_str_to_df("""
+        generator,  fuel_type,  closure_year,  fom_$/kw/annum
+        GasEOL,     Gas,        2032,          27.0
+        GasFar,     Gas,        2040,          15.0
+    """)
+    pd.testing.assert_frame_equal(
+        result["ecaa_generators"].reset_index(drop=True),
+        expected.reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+def test_maintenance_overlay_leaves_non_thermal_units_unchanged(csv_str_to_df):
+    from mvp_pass1_power.archetypes._maintenance_overlay import apply as overlay_apply
+
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,  closure_year,  fom_$/kw/annum
+        Wind1,      Wind,       2032,          25.0
+        Solar1,     Solar,      2032,          18.0
+        Hydro1,     Water,      2032,          15.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030])
+
+    result = overlay_apply(tables, config)
+
+    pd.testing.assert_frame_equal(
+        result["ecaa_generators"].reset_index(drop=True),
+        ecaa.reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+def test_maintenance_overlay_pre_pass_runs_for_every_archetype(csv_str_to_df):
+    # End-to-end: invoke the wrapped APPLY_ARCHETYPE entry for cost_optimal and
+    # confirm the overlay's coal premium has been applied before the archetype
+    # mutation runs.
+    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,    closure_year,  fom_$/kw/annum
+        CoalEOL,    Black__Coal,  2035,          60.0
+    """)
+    tables = {
+        "ecaa_generators": ecaa,
+        "ecaa_batteries": pd.DataFrame(columns=["storage_name"]),
+    }
+    config = _StubConfig(investment_periods=[2030, 2040, 2050])
+
+    result = APPLY_ARCHETYPE["cost_optimal"](tables, config)
+
+    # Premium 25.0 added (see test_maintenance_overlay_adds_premium_to_coal_within_eol_window).
+    assert float(result["ecaa_generators"].iloc[0]["fom_$/kw/annum"]) == 85.0
+
+
 def test_nuclear_baseload_adds_floor_at_2045_and_2050(csv_str_to_df):
     # The injected Advanced Nuclear rows must be the ones constrained by the
     # nuclear floor. Use a CCGT template so injection succeeds.
