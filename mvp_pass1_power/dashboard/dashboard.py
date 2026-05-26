@@ -918,6 +918,7 @@ def _render_methodology() -> None:
     _methodology_scenario()
     _methodology_solver_pdlp()
     _methodology_catalogue_framing()
+    _methodology_cost_intensity_separation()
     _methodology_capacity_factors()
     _methodology_costs()
     _methodology_financial()
@@ -970,6 +971,65 @@ and tells AEMO something real about transition dynamics under their own
 IASR Step Change inputs. The catalogue ends up with 5 truly distinct
 archetypes + 1 that confirms a structural finding about transition gas
 demand.
+""")
+
+
+def _methodology_cost_intensity_separation() -> None:
+    """Operator-controllable cost intensity vs fuel cost — architectural contract."""
+    with st.expander("Cost intensity — operator-controllable vs fuel-cost separation"):
+        st.markdown(r"""
+The cost intensity curves on the **Intensity Curves** tab are
+**operator-controllable-only**: capital + fixed O&M + non-fuel marginal
+costs. They **exclude fuel costs**.
+
+### Why the separation matters
+
+This is the Pass 1 ↔ Pass 2 contract. The simple-msm orchestrator
+prices fuel commodities (coal, gas, hydrogen, biomass) **endogenously**
+at Pass 2 scenario time — applying its own per-scenario fuel-price
+trajectories to the dispatch volumes Pass 1 produces. Embedding
+ISPyPSA's IASR-fuel-price assumptions in the displayed cost intensity
+would double-count fuel costs when the orchestrator overlays its own
+fuel pricing.
+
+### What this means concretely
+
+- **LP optimisation uses full economic cost** (capital + fuel + O&M +
+  marginal cost timeseries). Fuel costs DO enter the LP objective so
+  dispatch and capacity-build decisions are correct. The hydrogen fuel-
+  price fix (Phase 1 follow-up j) makes this calculation correct.
+- **Displayed cost intensity uses operator-controllable cost only**:
+
+  $$\text{output\_cost\_per\_unit} = \frac{\text{capex} + \text{non\_fuel\_opex}}{\text{annual MWh delivered}}$$
+
+  where `non_fuel_opex = bundled_opex − fuel_cost`.
+- **Bundled cost and fuel cost are exported as diagnostics** for
+  comparability with full-cost framings (see Configuration Notes tab
+  → diagnostics export).
+
+### Code reference
+
+`mvp_pass1_power/postprocess/extract_method_years.py:295-328` computes
+the three values from the solved PyPSA Network:
+
+  - `output_cost_per_unit` — what the Intensity Curves tab plots
+  - `bundled_cost_per_unit` — diagnostic; full cost including fuel
+  - `fuel_cost_per_unit` — diagnostic; fuel cost alone
+
+The corresponding simple-msm contract fields are
+`output_cost_per_unit_excl_fuel_AUD_per_MWh` (Pass 1 ↔ Pass 2 contract
+value), `diagnostic_bundled_cost_AUD_per_MWh`, and
+`diagnostic_fuel_cost_AUD_per_MWh` (diagnostics for QA).
+
+### When this could drift
+
+If future work changes `extract_method_years.py` to put fuel cost into
+`output_cost_per_unit`, or wires the Intensity Curves tab to plot
+`diagnostic_bundled_cost_AUD_per_MWh` instead of the
+`_excl_fuel` field, the separation breaks. The dashboard's Intensity
+Curves cost-intensity chart is currently wired to
+`output_cost_per_unit_excl_fuel_AUD_per_MWh` (see
+`_render_intensity_curves` line 368 in dashboard.py).
 """)
 
 
