@@ -136,10 +136,10 @@ the three coal-by-2030 variants (rapid_coal_phaseout / gas_fleet_maintained
 + biomass at 2030, storage_led builds storage instead, gas_fleet floors
 gas. Cost trajectories are differentiated 3-50 % apart.
 
-### (b) **2045 wind dip persists under the Pass-1 repowering treatment.**
+### (b) 2045 wind dip is a methodology artifact, NOT a templater bug. (DIAGNOSED)
 
 The 2045 wind capacity column shows a dip across every archetype except
-`fossil_incumbent` (which constrains wind builds anyway):
+`fossil_incumbent`:
 
 | Archetype | 2040 wind | **2045 wind** | 2050 wind |
 |---|---:|---:|---:|
@@ -148,25 +148,45 @@ The 2045 wind capacity column shows a dip across every archetype except
 | storage_led | 44.4 | **20.4** | 42.1 |
 | nuclear_baseload | 26.0 | **18.9** | 26.9 |
 
-The dip is **20-25 GW per archetype** — about half the surrounding-period
-capacity drops out at 2045 and rebuilds at 2050. The repowering overlay
-(closure_year +20 yr + annualised capex premium on `fom_$/kw/annum`)
-softened but did not eliminate this dip.
+Diagnostic results:
 
-**Why the dip persists** (hypothesis, Phase 6 didn't fully diagnose):
-the myopic per-period decomposition treats each year as an independent
-solve against the IASR baseline at that year. Even with my +20-yr
-closure extension, the 2045 LP sees a particular generator pool where
-many wind farms' lifetime arithmetic in the templater produces
-short remaining-life (`lifetime = closure_year - first_investment_period
-+ 1`) that may interact with PyPSA's annuitisation. Worth tracing per the
-team's earlier note: this finding now has Phase 6 evidence behind it.
+1. **ECAA wind fleet is stable across 2040-2050** (14.9 / 14.9 / 14.7 GW —
+   89 / 89 / 86 active generators). The dip is NOT in ECAA retirement.
+   My Pass-1 repowering overlay (closure_year +20 yr) is working as
+   designed — it keeps the existing fleet alive across the milestone
+   years. The repowering treatment didn't fail.
 
-**Possible v2 options for the team conversation:**
-1. Larger repowering closure extension (e.g. +30 yr instead of +20)
-2. True LP-decision repowering via new_entrant injection per existing site
-3. Investigate whether the dip is a templater lifetime-arithmetic artefact
-   rather than an economic finding
+2. **The dip is in NEW ENTRANT builds**: cost_optimal builds 11.1 GW new
+   wind at 2040, **4.0 GW at 2045**, 12.1 GW at 2050. The LP is choosing
+   to build less new wind at 2045 — not retiring existing wind.
+
+3. **Root cause: IASR Step Change demand has a kink at 2045.**
+   Annual demand (TWh, identical across archetypes by design):
+   2025: 200.5 / 2030: 229.3 / 2035: 252.0 / 2040: 277.9 /
+   **2045: 263.1 (−5 % vs 2040)** / 2050: 296.7 (+13 % vs 2045).
+   The LP at 2045 sees a 14.8 TWh demand drop and responds by building
+   less new VRE.
+
+4. **Wind capacity factor SPIKES at 2045** (cost_optimal: 0.30 → **0.37**
+   → 0.30). Solar CF similarly spikes (0.21 → **0.34** → 0.19). The LP
+   runs the existing/built capacity harder rather than building more.
+   This is the expected myopic-LP response to lower demand + single
+   "residual-peak-demand" representative week.
+
+5. **Not a templater lifetime-arithmetic bug**: the templater computes
+   lifetime correctly; ECAA fleet survives 2040-2050 as the repowering
+   overlay intends.
+
+**Verdict for Methodology tab**: documented as a real consequence of
+the IASR demand trajectory + myopic single-rep-week sampling. The team
+can mitigate in future iterations by:
+  - using a wider weekly sampling (multiple representative weeks)
+  - true cross-period perfect-foresight (or chained myopic with
+    capacity-carry-forward)
+  - sourcing a demand trajectory without the 2045 kink
+
+None of these are Phase 7.0 work; they're documented methodology
+exposure for the deliverable.
 
 ### (c) Biomass dominance pattern persists at NEM scale
 
