@@ -678,6 +678,91 @@ def test_maintenance_overlay_pre_pass_runs_for_every_archetype(csv_str_to_df):
     assert float(result["ecaa_generators"].iloc[0]["fom_$/kw/annum"]) == 85.0
 
 
+# ---------------------------------------------------------------------------
+# EOL renewable repowering — extends VRE closure_year by 20y and adds an
+# annualised repowering capex premium to fom_$/kw/annum. Applied as pre-pass.
+# ---------------------------------------------------------------------------
+
+
+def test_repowering_extends_wind_closure_year_by_20_years_and_adds_fom_premium(csv_str_to_df):
+    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+
+    # Wind closing 2045 — 15 years from first period 2030. After repowering:
+    # closure_year = 2065. fom premium = 1000 / (15 + 20) = 28.5714... AUD/kW/yr.
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,  closure_year,  fom_$/kw/annum
+        WindA,      Wind,       2045,          25.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030])
+
+    result = repowering_apply(tables, config)
+
+    result_row = result["ecaa_generators"].iloc[0]
+    assert int(result_row["closure_year"]) == 2065
+    expected_premium = 1000.0 / (15 + 20)
+    assert abs(float(result_row["fom_$/kw/annum"]) - (25.0 + expected_premium)) < 1e-6
+
+
+def test_repowering_uses_separate_solar_capex(csv_str_to_df):
+    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+
+    # Solar closing 2040 — 10 years from first period 2030.
+    # premium = 800 / (10 + 20) = 26.6667 AUD/kW/yr.
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,  closure_year,  fom_$/kw/annum
+        SolarA,     Solar,      2040,          12.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030])
+
+    result = repowering_apply(tables, config)
+
+    result_row = result["ecaa_generators"].iloc[0]
+    assert int(result_row["closure_year"]) == 2060
+    expected_premium = 800.0 / (10 + 20)
+    assert abs(float(result_row["fom_$/kw/annum"]) - (12.0 + expected_premium)) < 1e-6
+
+
+def test_repowering_leaves_thermal_and_hydro_unchanged(csv_str_to_df):
+    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,    closure_year,  fom_$/kw/annum
+        Coal1,      Black__Coal,  2040,          60.0
+        Gas1,       Gas,          2040,          15.0
+        Hydro1,     Water,        2040,          15.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030])
+
+    result = repowering_apply(tables, config)
+
+    pd.testing.assert_frame_equal(
+        result["ecaa_generators"].reset_index(drop=True),
+        ecaa.reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+def test_repowering_skips_already_retired_vre(csv_str_to_df):
+    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+
+    ecaa = csv_str_to_df("""
+        generator,  fuel_type,  closure_year,  fom_$/kw/annum
+        WindOld,    Wind,       2025,          25.0
+    """)
+    tables = {"ecaa_generators": ecaa}
+    config = _StubConfig(investment_periods=[2030])
+
+    result = repowering_apply(tables, config)
+
+    # Years to close = -5; no premium applied. (Closure year still extends by
+    # 20, but the asset has already retired before first_period — translator
+    # will filter it out via lifetime <= 0.)
+    assert float(result["ecaa_generators"].iloc[0]["fom_$/kw/annum"]) == 25.0
+
+
 def test_nuclear_baseload_adds_floor_at_2045_and_2050(csv_str_to_df):
     # The injected Advanced Nuclear rows must be the ones constrained by the
     # nuclear floor. Use a CCGT template so injection succeeds.

@@ -84,6 +84,49 @@ Real refurbishment spend is lumpy and plant-specific. Pass 3 high-fidelity
 re-solves should use published per-plant refurbishment schedules where
 available.
 
+### EOL renewable repowering
+
+Applied as a pre-pass to every archetype. Addresses the 2045 wind capacity
+dip observed in prior production runs — a cohort of mid-2040s-closing wind
+farms drop out faster than new entrants build to replace them; in reality
+they would be repowered.
+
+Methodology (full source list in
+[`archetypes/_repowering.py`](archetypes/_repowering.py)):
+For each ECAA wind / solar asset:
+  1. Extend `closure_year` by 20 years (one repowering cycle on typical
+     20-25 yr original turbine life).
+  2. Add annualised repowering capex premium to `fom_$/kw/annum`, computed
+     as `repowering_capex / (original_remaining_life + life_extension)`.
+
+| Fuel | repowering_capex | life_extension |
+|---|---:|---:|
+| Wind  | 1,000 AUD/kW | 20 yr |
+| Solar |   800 AUD/kW | 20 yr |
+
+Sources: CSIRO GenCost 2024-25 Final §3.5 (greenfield CapEx baselines);
+IRENA Renewable Power Generation Costs 2023 (repowering CapEx as 40-60%
+of greenfield); CSIRO renewable energy work (wind life-extension at modern
+turbine standards).
+
+Pass-1 limitations documented in the module:
+
+1. **No capacity-factor uplift.** Modern wind turbines deliver 2-3× the
+   CF of 2015-vintage; solar PV CF rises ~10-15% with bifacial / tracking.
+   ISPyPSA p_max_pu traces are sourced per the IASR vintage and cannot
+   be modulated per-asset without trace modification — out of MVP scope.
+2. **Not an LP investment decision.** Pass 1 treats repowering as a
+   fleet-wide default. Pass 3 should inject "repowered" rows into
+   `new_entrant_generators` tied to each ECAA wind / solar site so the
+   LP picks repowering vs greenfield as a true decision variable.
+3. **Single repowering cycle.** Real repowering can repeat. Phase 1
+   limits each asset to one cycle.
+
+Expected impact: softens the 2045 wind capacity dip without removing it
+entirely (the cost-side premium can still make greenfield-elsewhere
+preferable for some assets); the Phase 6 production run will quantify
+the residual dip after the overlay.
+
 ---
 
 ## 2. Implementation files
@@ -98,6 +141,7 @@ available.
 | `archetypes/nuclear_baseload.py` | Advanced Nuclear injection from CCGT template + nuclear floor @ 2045/2050 |
 | `archetypes/_capacity_floor.py` | Shared helper for AEMO-anchored mandate constraints |
 | `archetypes/_maintenance_overlay.py` | Option B ageing-fleet premium (pre-pass on every archetype) |
+| `archetypes/_repowering.py` | EOL wind/solar repowering — closure_year +20y + annualised capex (pre-pass) |
 | `archetypes/_pumped_storage_fix.py` | Pumped-storage re-routing (pre-pass on every archetype) |
 | `archetypes/__init__.py` | `PRODUCTION_ARCHETYPES`, `APPLY_ARCHETYPE` registry; `_with_pre_passes` wrapper |
 | `bench/run_myopic.py` | Sequential single-period solver with `--archetype` param |

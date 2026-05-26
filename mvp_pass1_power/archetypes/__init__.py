@@ -26,6 +26,7 @@ read as alternative policy pathways relative to a public authoritative source.
 
 from ._pumped_storage_fix import apply as _pumped_storage_fix_apply
 from ._maintenance_overlay import apply as _maintenance_overlay_apply
+from ._repowering import apply as _repowering_apply
 from .cost_optimal import apply as cost_optimal_apply
 from .rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
 from .gas_fleet_maintained import apply as gas_fleet_maintained_apply
@@ -44,7 +45,7 @@ PRODUCTION_ARCHETYPES = [
 
 
 def _with_pre_passes(archetype_fn):
-    """Wrap an archetype mutation with two cross-archetype pre-passes:
+    """Wrap an archetype mutation with three cross-archetype pre-passes:
 
       1. Pumped-storage fix — re-route Wivenhoe / Shoalhaven / Borumba / Snowy 2.0
          from ecaa_generators to ecaa_batteries so they are modelled as PyPSA
@@ -56,6 +57,12 @@ def _with_pre_passes(archetype_fn):
          years of operation, anchored against published refurbishment cost
          references. See _maintenance_overlay.py for sources and methodology.
 
+      3. EOL renewable repowering — extends ECAA wind / solar closure_year by
+         20 years and adds an annualised repowering capex premium to
+         fom_$/kw/annum. Addresses the 2045 wind capacity dip observed in
+         prior production runs. See _repowering.py for sources, methodology,
+         and Pass-1 limitations.
+
     Pre-passes run on EVERY archetype so all six see consistent baseline
     accounting before per-archetype mutations are applied.
     """
@@ -63,6 +70,7 @@ def _with_pre_passes(archetype_fn):
     def wrapped(ispypsa_tables, config):
         ispypsa_tables = _pumped_storage_fix_apply(ispypsa_tables, config)
         ispypsa_tables = _maintenance_overlay_apply(ispypsa_tables, config)
+        ispypsa_tables = _repowering_apply(ispypsa_tables, config)
         return archetype_fn(ispypsa_tables, config)
 
     wrapped.__name__ = f"{archetype_fn.__name__}_with_pre_passes"
