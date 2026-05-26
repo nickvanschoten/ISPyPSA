@@ -317,6 +317,7 @@ def _normalise_cached_csvs_to_v74(
         split_v74_maximum_capacity_commissioning_dates,
         synthesize_v60_new_entrants_power_station,
         transform_v60_battery_properties_to_wide,
+        backfill_early_fy_fuel_prices,
     )
 
     _strip_leading_underscore_columns(cache_path, table_names)
@@ -440,6 +441,18 @@ def _normalise_cached_csvs_to_v74(
     # (REZ names, Scenario). Non-REZ entries are renamed and folded in,
     # matching v7.4's promotion of non-REZ regions to first-class REZ IDs.
     consolidate_v60_connection_cost_forecasts_to_v74(cache_path)
+
+    # Backfill empty FY columns in fuel-price tables (Phase 1 follow-up j).
+    # v6.0 hydrogen_prices.csv has empty cells for FY 2022-23/23-24/24-25
+    # because AEMO didn't publish hydrogen prices before 2025-26 — the
+    # earliest populated FY is 2025-26 at $42.90/$/gj. Without backfill,
+    # the translator's downstream `.fillna(0.0)` produces free hydrogen
+    # at investment_period=2025 and the LP builds ~6 GW of H2 reciprocating
+    # engines dispatching 62 TWh of effectively-free hydrogen. Backfill
+    # row-wise from the earliest populated FY into the prior empty FY
+    # columns so the data contract is complete at the cache layer.
+    # See PHASE7_1_DIAGNOSTIC.md for the diagnostic trace.
+    backfill_early_fy_fuel_prices(cache_path)
 
 
 def _strip_leading_underscore_columns(

@@ -1056,6 +1056,74 @@ def expand_v60_auxiliary_load_to_per_generator(cache_path: Path) -> None:
     expanded.to_csv(aux_path, index=False)
 
 
+_FUEL_PRICE_TABLES_TO_BACKFILL = [
+    "hydrogen_prices",
+    "biomethane_prices",
+    "gas_prices_existing_generators",
+    "gas_prices_new_entrants",
+    "coal_fuel_price",
+    "biomass_fuel_price",
+    "liquid_fuel_prices",
+]
+
+
+def backfill_early_fy_fuel_prices(cache_path: Path) -> None:
+    """Backfill empty early-FY columns in fuel-price tables row-wise.
+
+    v6.0 IASR `hydrogen_prices` publishes per-scenario rows with empty
+    cells for FY 2022-23, 2023-24, 2024-25 (AEMO didn't publish hydrogen
+    prices before 2025-26). The translator's downstream `.fillna(0.0)`
+    in `_calculate_dynamic_marginal_costs_single_generator` converts
+    those NaN cells into zero fuel cost, and the LP at
+    `investment_period=2025` then treats hydrogen as free fuel,
+    building ~6 GW of H2 reciprocating engines and dispatching 62 TWh
+    of effectively-free hydrogen.
+
+    This step backfills empty FY columns row-wise from the earliest
+    populated FY in each row. Economic reading: "fuel prices in the
+    pre-published-data years approximate the earliest-published year"
+    — defensible as forward-fill rather than papering over the gap at
+    the translator layer.
+
+    No-op when a table has all FY columns populated (every other
+    fuel-price table in v6.0 is fully populated). The list of tables
+    is conservative — applies the same logic to all known fuel-price
+    tables to catch future gaps automatically without per-table edits.
+
+    See PHASE7_1_DIAGNOSTIC.md for the original diagnostic.
+    """
+    import re
+    fy_pattern = re.compile(r"^\d{4}-\d{2}$")
+    for name in _FUEL_PRICE_TABLES_TO_BACKFILL:
+        csv_path = cache_path / f"{name}.csv"
+        if not csv_path.exists():
+            continue
+        df = pd.read_csv(csv_path)
+        fy_cols = [c for c in df.columns if fy_pattern.match(str(c))]
+        if not fy_cols:
+            continue
+        before = df[fy_cols].isna().sum().sum()
+        if before == 0:
+            continue
+        # Row-wise bfill across FY columns: for each row, the first
+        # populated FY value back-fills earlier (NaN) FY columns. Trailing
+        # NaN (in years past the last populated FY) is left untouched —
+        # forward-fill in that direction is a separate decision and isn't
+        # needed for the current investment-period range.
+        df.loc[:, fy_cols] = df.loc[:, fy_cols].bfill(axis=1)
+        after = df[fy_cols].isna().sum().sum()
+        df.to_csv(csv_path, index=False)
+        # Log (best-effort — logger not imported in this module).
+        try:
+            import logging
+            logging.getLogger(__name__).info(
+                f"backfill_early_fy_fuel_prices: {name} — backfilled "
+                f"{before - after} of {before} empty FY cells via row-wise bfill"
+            )
+        except Exception:
+            pass
+
+
 def synthesize_v60_new_entrants_power_station(cache_path: Path) -> None:
     """Add a `Power Station` column to v6.0 `new_entrants_summary`.
 
