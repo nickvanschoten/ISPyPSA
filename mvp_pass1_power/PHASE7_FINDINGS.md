@@ -26,7 +26,7 @@ variance discussion in §3):
 | cost_optimal | 2.6 GW | 5.0 GW | +2.4 |
 | rapid_coal_phaseout | 16.1 GW | 5.0 GW | **−11.1** |
 | gas_fleet_maintained | (≡ rapid_coal) | 5.0 GW | **−11.1** |
-| storage_led | 2.6 GW | (pending) | (pending) |
+| storage_led | 2.6 GW | 5.0 GW | +2.4 |
 | fossil_incumbent | 10.0 GW | 5.0 GW | **−5.0** |
 | nuclear_baseload | 11.9 GW | 5.0 GW | **−6.9** |
 
@@ -114,19 +114,28 @@ the combined storage_floor + biomass_cap + other constraints.
 The biomass cap doesn't collapse the catalogue — archetypes remain
 structurally distinct:
 
-| Archetype | 2050 wind | 2050 solar | 2050 biomass | 2050 nuclear |
-|---|---:|---:|---:|---:|
-| cost_optimal | 29.7 | 26.6 | 5.0 | 0.0 |
-| rapid_coal_phaseout | 31.1 | 29.4 | 5.0 | 0.0 |
-| gas_fleet_maintained | 31.1 | 29.4 | 5.0 | 0.0 |
-| storage_led | (pending) | (pending) | (pending) | 0.0 |
-| fossil_incumbent | 20.2 | 12.8 | 5.0 | 0.0 |
-| nuclear_baseload | 28.8 | 24.6 | 5.0 | 4.0 |
+**Phase 7 final capacity at 2050 (GW, all six archetypes):**
 
-- `fossil_incumbent` distinct: lower wind/solar (renewable-constrained)
-- `nuclear_baseload` distinct: nuclear at mandate floor
-- `storage_led` will be distinct (mandate-driven storage build)
-- `rapid_coal_phaseout` ≡ `gas_fleet_maintained` still (per Phase 6 finding g)
+| Archetype | Wind | Solar | Storage | Biomass | Gas | Nuclear |
+|---|---:|---:|---:|---:|---:|---:|
+| cost_optimal | 29.7 | 26.6 | 15.4 | 5.0 | 13.2 | 0.0 |
+| rapid_coal_phaseout | 31.1 | 29.4 | 16.2 | 5.0 | 13.8 | 0.0 |
+| gas_fleet_maintained | 31.1 | 29.4 | 16.2 | 5.0 | 13.8 | 0.0 |
+| storage_led | **39.2** | **64.6** | **40.4** | 5.0 | **2.4** | 0.0 |
+| fossil_incumbent | 20.2 | 12.8 | 13.3 | 5.0 | 17.4 | 0.0 |
+| nuclear_baseload | 28.8 | 24.6 | 15.8 | 5.0 | 9.1 | **4.0** |
+
+Catalogue structurally differentiated:
+
+- `cost_optimal`: balanced wind+solar+gas+storage mix
+- `rapid_coal_phaseout`: gas surges to 13.8 GW (vs 13.2 cost_optimal)
+  with more wind+solar
+- `gas_fleet_maintained` ≡ `rapid_coal_phaseout` (Phase 6 finding g
+  confirmed in Phase 7; accepted per team decision)
+- `storage_led`: mandate-driven 40 GW storage; lowest gas (2.4 GW);
+  highest solar (64.6 GW)
+- `fossil_incumbent`: renewable-constrained; highest gas (17.4 GW)
+- `nuclear_baseload`: nuclear at mandate floor (4 GW); modest gas
 
 ---
 
@@ -160,19 +169,39 @@ structurally distinct:
 
 ---
 
-## 6. Phase 7 closure
+## 6. Phase 7 closure — COMPLETE
 
-Storage_led 2050 still solving at time of draft. Final closure pending
-that result.
+All 6 archetypes × 6 milestone years = **36 single-period LPs Optimal**
+under PDLP at 1e-3 with biomass cap pre-pass active.
 
-Phase 7 outputs:
-- `outputs/phase7_granular/*` — capacity / generation / storage /
-  CF / renewable share / supply gap CSVs
+| Archetype | Solved | Wall | Peak |
+|---|---:|---:|---:|
+| cost_optimal | 6/6 | 21.4 min | 2.1 GiB |
+| rapid_coal_phaseout | 6/6 | 24.6 min | 2.1 GiB |
+| gas_fleet_maintained | 6/6 | 24.5 min | 2.1 GiB |
+| storage_led | 6/6 | 55.7 min | 2.1 GiB |
+| fossil_incumbent | 6/6 | 14.0 min | 1.4 GiB |
+| nuclear_baseload | 6/6 | 19.6 min | 2.1 GiB |
+
+**Phase 7 wall-clock (parallel):** 0.93 h. Comparable to Phase 6 (0.96 h).
+The biomass cap added one LP constraint per archetype-year but no
+material runtime overhead.
+
+Phase 7 outputs (committed):
+
+- `outputs/phase7_granular/*` — capacity / generation / storage / CF
+  / renewable share / supply gap CSVs (all 6 archetypes × 6 periods)
 - `bench/records/20260526_161705__*.json` — per-archetype period records
 - `bench/runs_myopic/20260526_161705__*/outputs/capacity_expansion.nc` —
-  solved networks
+  solved PyPSA networks
 
-Phase 8 (dashboard regeneration) follows once storage_led 2050 completes
-and Phase 7 findings are reviewed.
+**Phase 7 deliverable headline:** biomass cap successfully bounds the
+problematic 88-136 TWh biomass dispatch finding from Phase 6 down to
+~42 TWh (5 GW × 96 % CF), within the defensible Pass-1 envelope.
+Catalogue produces 4 distinct trajectories plus 1 known collapse
+(gas_fleet ≡ rapid_coal per Phase 6 finding g).
+
+**Phase 8 (dashboard regeneration)** is the next major work stream
+once Phase 7 findings are reviewed by the team.
 
 Regression preserved at **757/757** throughout Phase 7.0 work.

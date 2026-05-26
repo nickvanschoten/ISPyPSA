@@ -819,3 +819,11 @@ storage_led,2045,Liquid Fuel,0.1035
 storage_led,2045,Solar,46.18528804683827
 storage_led,2045,Water,11.265389782414324
 storage_led,2045,Wind,20.1498466683532
+storage_led,2050,Biomass,5.000903313240916
+storage_led,2050,Gas,2.406
+storage_led,2050,Hyblend,0.4
+storage_led,2050,Hydrogen,0.002506151126621816
+storage_led,2050,Liquid Fuel,0.1035
+storage_led,2050,Solar,64.61310164461517
+storage_led,2050,Water,11.728683897681364
+storage_led,2050,Wind,39.242365165680106
