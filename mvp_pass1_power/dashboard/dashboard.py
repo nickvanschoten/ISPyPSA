@@ -11,7 +11,17 @@ Run:
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+# Ensure the repo root is on sys.path so `from mvp_pass1_power...` imports
+# resolve when streamlit launches this script via plain python (e.g. the
+# `.venv\Scripts\python.exe -m streamlit run ...` fallback in
+# run-dashboard.bat). Under `uv run streamlit ...` the editable install
+# already covers this; this guard makes both launch paths work.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 import pandas as pd
 import plotly.graph_objects as go
