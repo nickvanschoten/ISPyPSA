@@ -67,45 +67,80 @@ of replacing biomass with more expensive alternatives. The storage_led
 
 ---
 
-## 3. Methodological exposure: PDLP variance
+## 3. Methodological exposure: PDLP-at-1e-3 variance (ELEVATED)
 
-The Phase 6 vs Phase 7 capacity-mix comparisons show large swings that
-cannot be attributed solely to the biomass cap. Example: cost_optimal at
-2050:
+**This is the most consequential single finding from Phase 7.** It
+warrants explicit framing in the deliverable, in the dashboard, and
+in any team conversation about the catalogue's quantitative outputs.
+
+### What the variance looks like
+
+Phase 6 vs Phase 7 capacity comparisons show large swings that cannot
+be attributed solely to the biomass cap. Cost_optimal at 2050:
 
 | Carrier | P6 (GW) | P7 (GW) | Δ |
 |---|---:|---:|---:|
 | Wind | 40.9 | 29.7 | −11.2 |
 | Solar | 75.4 | 26.6 | **−48.8** |
-| Biomass | 2.6 | 5.0 | +2.4 |
-| Total | 118.9 | 61.3 | **−57.6** |
+| Biomass | 2.6 | 5.0 | +2.4 (cap) |
+| Total VRE | 118.9 | 61.3 | **−57.6** |
 
 Total generation delivered is essentially identical (P6: 304.1 TWh,
-P7: 302.9 TWh, against demand 296.7 TWh). The LP found a very different
-capacity vertex but with similar dispatch and similar objective (+2.6 %).
+P7: 302.9 TWh, against demand 296.7 TWh). Objective shifted +2.6 %.
+The LP found a very different capacity vertex with similar dispatch
+and similar objective.
 
-**This is PDLP-at-1e-3-tolerance variance.** When the relative duality
-gap is bounded at 0.1 %, the primal solution can move significantly
-along the polytope's near-optimal facets. For ISPyPSA's LP scale
-(700k+ rows × 330k cols × 1.3M nonzeros) and our chosen tolerance, this
-manifests as 10-50 GW capacity swings across runs that the team cannot
-treat as precise to GW resolution.
+### What this means
 
-**Implications for the deliverable:**
+The dashboard's capacity figures are showing **one of many near-optimal
+solutions, not THE cost-minimising solution**. Identical-input LP runs
+under PDLP at 1e-3 relative tolerance can produce capacity mixes that
+differ by tens of GW per carrier while all three convergence metrics
+(primal feasibility, dual feasibility, duality gap) remain below the
+requested threshold.
 
-- Capacity-mix tables should report ranges or be marked as "PDLP-tolerance
-  approximate" rather than point estimates.
-- Annual generation TWh and total objective are stable (< 3 % variance).
-- The biomass cap binding *direction* and the catalogue's *structural
-  differentiation* are robust to this variance.
+### Consequence for the deliverable
 
-**storage_led 2035/2040 +11-14 % objective shift** is the most extreme
-example. Phase 7 storage_led's biomass capacity (2.06 / 3.02 / 3.99 GW
-at 2035/2040/2045) is much higher than Phase 6's (0.10 / 0.52 / 0.56 GW)
-yet still under the cap. The LP found a different vertex using more
-biomass and less of something else. The pinf at storage_led 2035 = 0.999e-3
-sits right at the tolerance boundary; the LP is genuinely harder under
-the combined storage_floor + biomass_cap + other constraints.
+- **Capacity charts** in the dashboard need explicit tolerance framing
+  (footnote disclaimer + Methodology tab cross-reference). Point-estimate
+  capacity numbers are not robust within the chosen tolerance.
+- **Methodology tab** has a dedicated "Solver and PDLP tolerance" section
+  explaining why PDLP, what 1e-3 means, what tolerance-approximate means
+  for the user, and the v2 / Pass-3 paths if tighter precision becomes
+  necessary.
+- **Catalogue framing** for `gas_fleet_maintained` ≡ `rapid_coal_phaseout`:
+  this is a substantive structural finding (LP's natural gas response
+  to coal-by-2030 exceeds AEMO's projection by ~10 GW; mandate never
+  binds), NOT a designed catalogue differentiation. Phrasing updated
+  in dashboard Methodology and inline disclaimers.
+- **storage_led 2035** specifically had `pdlp_final_pinf_rel = 9.99e-4`,
+  sitting at the 1e-3 tolerance boundary. The combined storage_floor +
+  biomass_cap + other constraints tighten the polytope and reduce the
+  set of near-optimal vertices PDLP can land on. This archetype-year's
+  capacity-mix variance may exceed the general ±3 % envelope. Specific
+  inline disclaimer added in the dashboard `storage_led` view.
+
+### What IS robust
+
+- **Annual generation delivered** is stable within ~1 TWh per 300 TWh.
+  The LP meets demand regardless of which capacity vertex it lands on.
+- **Total objective** is stable within ~3 % across identical-input runs.
+- **Catalogue structural differentiation** — storage_led ≠
+  fossil_incumbent ≠ nuclear_baseload in their fundamental carrier
+  composition — survives. Differences between archetypes are larger
+  than within-archetype PDLP variance.
+- **Biomass cap binding direction** is robust.
+
+### v2 / Pass-3 paths if the team needs tighter capacity precision
+
+1. Tighten PDLP tolerance to 1e-4 or 1e-5. Expect 2–5× longer solves;
+   the `model_status: Unknown` reporting quirk becomes more prevalent.
+2. Run repeats with different random seeds and report empirical
+   capacity ranges. Substantial compute cost.
+3. Switch to commercial solver (Gurobi). Phase 1 8th-addendum found
+   Gurobi did not converge at 1e-3 on NEM 6-period in 8h.
+4. Perfect-foresight multi-period instead of myopic chained
+   single-period. Substantial LP scale increase.
 
 ---
 

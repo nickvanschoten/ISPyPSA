@@ -422,6 +422,20 @@ def _render_intensity_curves(data_dir: Path, gwp: dict) -> None:
 def _render_granular(data_dir: Path, selected_archetypes: list[str]) -> None:
     st.subheader("Section 2 — Granular Results")
 
+    st.warning(
+        "**Capacity figures are PDLP-tolerance approximate.** The solver "
+        "(HiGHS PDLP at 1e-3 relative tolerance) finds *a* near-optimal LP "
+        "vertex, not THE cost-minimising solution. Identical LPs can produce "
+        "different capacity mixes within ~3 % objective tolerance — example "
+        "from Phase 6 → Phase 7: cost_optimal 2050 solar shifted 75.4 → "
+        "26.6 GW and wind 40.9 → 29.7 GW between runs while total generation "
+        "delivered changed by only ~1 TWh (304.1 → 302.9). The catalogue's "
+        "*structural* differentiation (storage_led ≠ fossil_incumbent ≠ "
+        "nuclear_baseload by carrier composition) is robust; *point-estimate* "
+        "capacity values are not. See Methodology tab → \"Solver and PDLP "
+        "tolerance\" for full exposition."
+    )
+
     cap = _load_granular(data_dir, "capacity_gw.csv")
     gen = _load_granular(data_dir, "generation_twh.csv")
     sto = _load_granular(data_dir, "storage_capacity.csv")
@@ -430,6 +444,25 @@ def _render_granular(data_dir: Path, selected_archetypes: list[str]) -> None:
 
     for arch in selected_archetypes:
         st.markdown(f"**{arch}** — {ARCHETYPE_DESCRIPTIONS.get(arch, '')}")
+        if arch == "storage_led":
+            st.caption(
+                ":warning: storage_led 2035 hit the PDLP tolerance edge "
+                "(pinf = 9.99 × 10⁻⁴ at the 1 × 10⁻³ boundary). Capacity-mix "
+                "variance for this archetype-year may exceed the general "
+                "3 % objective tolerance — the combined storage_floor + "
+                "biomass_cap constraints tighten the polytope and reduce the "
+                "set of near-optimal vertices PDLP can land on."
+            )
+        if arch == "gas_fleet_maintained":
+            st.caption(
+                "ℹ️ `gas_fleet_maintained` produces **identical** LP results "
+                "to `rapid_coal_phaseout`. This is a substantive structural "
+                "finding, not a designed catalogue collapse: under coal-by-"
+                "2030, the LP's natural gas response (~23 GW at 2030) "
+                "exceeds AEMO's published Step Change gas trajectory "
+                "(~12 GW) by ~10 GW, so the 12,500 MW mandate never binds. "
+                "See Methodology tab → \"Catalogue framing\" for detail."
+            )
 
         if gen is not None:
             gen_arch = gen[gen["archetype_id"] == arch]
@@ -851,12 +884,160 @@ def _render_methodology() -> None:
     st.subheader("Section 5 — Methodology")
     st.caption("Quick reference for assumption sources and modelling choices.")
     _methodology_scenario()
+    _methodology_catalogue_framing()
+    _methodology_solver_pdlp()
     _methodology_capacity_factors()
     _methodology_costs()
     _methodology_financial()
     _methodology_emissions()
     _methodology_team_choices()
     _methodology_limitations()
+
+
+def _methodology_catalogue_framing() -> None:
+    """Catalogue framing — including the gas_fleet_maintained substantive finding."""
+    with st.expander("Catalogue framing — and the gas_fleet_maintained finding"):
+        st.markdown("""
+The six-archetype catalogue is **designed** to produce structurally
+distinct LP trajectories under different policy/mandate assumptions.
+Phase 7 production confirmed **5 distinct paths plus 1 substantive
+collapse**:
+
+| Archetype | What it explores | 2050 distinguishing feature |
+|---|---|---|
+| `cost_optimal` | Unconstrained least-cost reference | Balanced wind+solar+gas+storage mix |
+| `rapid_coal_phaseout` | Coal-by-2030, no other lever | Gas surges to 13.8 GW at 2030 to replace coal |
+| `gas_fleet_maintained` | Coal-by-2030 + 12,500 MW gas floor | **Identical** to rapid_coal_phaseout — see below |
+| `storage_led` | No gas + 1.25× AEMO storage trajectory | 40 GW storage at 2050 (mandate-driven); lowest gas |
+| `fossil_incumbent` | Coal life + 10y + 75 % wind drop | Highest gas (17.4 GW) and lowest renewables |
+| `nuclear_baseload` | Coalition 2024 nuclear phasing | 4 GW nuclear at 2050 (mandate floor) |
+
+### `gas_fleet_maintained` ≡ `rapid_coal_phaseout` — substantive finding, not design failure
+
+The 12,500 MW gas floor at 2030/2035 was anchored against **AEMO's
+published Step Change projection** (~11.9 GW at both years). The team's
+ISPyPSA LP under PDLP at NEM-wide multi-period myopic finds an
+**unconstrained gas response of ~23 GW at 2030** when coal is forced
+out by 2030 — well above AEMO's projection.
+
+The mandate therefore never binds. Two interpretations, both informative:
+
+1. **Modelling difference:** the team's LP produces a gas trajectory that
+   differs from AEMO's published projection by ~10 GW. Possible sources:
+   PDLP at 1e-3 finds a different cost vertex than AEMO's simplex run,
+   different cost convention, fuel-price snapshot variance, or genuine
+   methodological divergence.
+
+2. **Substantive structural finding:** "Under coal-by-2030, the LP's
+   natural gas response exceeds AEMO's gas trajectory by ~10 GW. The
+   12,500 MW mandate doesn't bind because the system's natural response
+   to coal phase-out already overshoots the mandate."
+
+The team's accepted framing is **(2)** — this is methodologically honest
+and tells AEMO something real about transition dynamics under their own
+IASR Step Change inputs. The catalogue ends up with 5 truly distinct
+archetypes + 1 that confirms a structural finding about transition gas
+demand.
+""")
+
+
+def _methodology_solver_pdlp() -> None:
+    """Solver choice — why PDLP, what 1e-3 tolerance means, capacity-variance exposure."""
+    with st.expander("Solver and PDLP tolerance — capacity figures are tolerance-approximate"):
+        st.markdown(r"""
+### Why HiGHS PDLP, not simplex
+
+Phase 1 bench characterisation (`mvp_pass1_power/bench/*_addendum.md`)
+established that:
+
+- **HiGHS default primal simplex** degenerates in Phase 2 on the
+  IASR v7.4 multi-period LP (`Pr` oscillates 1e7–1e11 across hundreds
+  of thousands of iterations on the production-shape problem;
+  >2 h wall on NEM 2-period with no convergence).
+- **HiGHS IPM (interior-point with crossover)** stalls at IPX
+  "Start factorization 7" during basis identification, both with and
+  without `run_crossover` enabled.
+- **HiGHS PDLP at default tolerance** approaches optimality but doesn't
+  converge in a tractable budget on NEM 2-period.
+- **HiGHS PDLP with three tolerance options set together** —
+  `pdlp_optimality_tolerance`, `primal_feasibility_tolerance`, and
+  `dual_feasibility_tolerance` — at $10^{-3}$ converges NEM 2-period in
+  ~31 min and NEM 6-period via myopic decomposition in ~1 h parallel.
+
+Phase 7 production therefore uses **PDLP at 1e-3 relative tolerance**.
+
+### What "1e-3 tolerance" means
+
+HiGHS PDLP reports three metrics; all three must satisfy the tolerance:
+
+- **Primal feasibility:** $\|Ax - b\| / (1 + \|b\|) < 10^{-3}$
+- **Dual feasibility:** $\|A^T y + s - c\| / (1 + \|c\|) < 10^{-3}$
+- **Duality gap:** $\|c^T x - b^T y\| / (1 + \|c^T x\| + \|b^T y\|) < 10^{-3}$
+
+When all three metrics are below the requested threshold, HiGHS calls
+the solution converged. The *primal solution* $x$ (capacity decisions,
+dispatch) is approximate within the tolerance.
+
+### What "tolerance-approximate" means for capacity figures
+
+For ISPyPSA's LP scale (~700k rows × ~330k cols × ~1.3M nonzeros at
+NEM single-period), the 1e-3 tolerance corresponds to:
+
+- **Objective accuracy:** within ~0.3 % of the true optimum
+- **Primal variable accuracy:** *much* larger swings possible. Phase 6
+  → Phase 7 produced **a 48.8 GW solar swing and 11.2 GW wind swing**
+  on cost_optimal 2050 while total objective changed only +2.6 % and
+  total generation delivered changed only −1.2 TWh (304.1 → 302.9).
+
+This is *not* a solver bug; it's an inherent property of first-order LP
+methods on near-degenerate constraint sets. Multiple primal solutions
+sit close to the optimum on the polytope's facets; PDLP terminates
+on whichever it reaches first under the tolerance.
+
+### Implications for reading the dashboard
+
+- **Capacity figures are tolerance-approximate.** Treat them as showing
+  *one* near-optimal solution, not THE cost-minimising solution.
+  Variance on the order of 10–50 GW per technology per period is
+  possible across identical-input solves.
+- **Objective values are stable** within ~3 %. Cost trajectories and
+  cost ranking across archetypes are robust.
+- **Annual generation delivered is stable** within ~1 TWh per
+  300 TWh — the LP meets demand regardless of which capacity vertex
+  it lands on.
+- **Catalogue structural differentiation is robust** — storage_led
+  ≠ fossil_incumbent ≠ nuclear_baseload in their fundamental carrier
+  composition. The differences between them are larger than the
+  within-archetype PDLP variance.
+- **Point-estimate capacity values are not** — don't quote
+  "rapid_coal_phaseout builds exactly 31.1 GW wind at 2050" as a
+  precise number. It's a sample from a ±10 GW band.
+
+### Specific variance flag — `storage_led` 2035
+
+`storage_led` 2035 had `pdlp_final_pinf_rel = 9.99 × 10⁻⁴`, sitting
+right at the 1e-3 tolerance boundary. The combined `storage_floor`
+mandate + `biomass_cap` + other constraints tighten the polytope and
+reduce the set of near-optimal vertices PDLP can land on. This
+archetype-year's capacity-mix variance may exceed the general ±3 %
+envelope. Treat its specific capacity figures with extra caution.
+
+### v2 / Pass-3 options
+
+If the team needs tighter capacity precision, paths are:
+
+1. **Tighten PDLP tolerance** to 1e-4 or 1e-5. Expect 2–5× longer
+   solves; the `model_status: Unknown` reporting quirk (per Phase 1
+   bench finding) becomes more prevalent.
+2. **Run repeats with different random seeds or warm-starts** and
+   report empirical capacity ranges. Substantial compute cost.
+3. **Switch to a commercial solver** (Gurobi at higher BarConvTol);
+   Phase 1 8th-addendum found Gurobi did not converge at 1e-3 on the
+   NEM 6-period LP in 8 h, so the v2 path here isn't obviously better.
+4. **Perfect-foresight multi-period** instead of myopic chained
+   single-period. Avoids per-year LP independence but adds substantial
+   LP scale; PDLP at 1e-3 already takes ~30 min for NEM 2-period.
+""")
 
 
 def _methodology_scenario() -> None:
