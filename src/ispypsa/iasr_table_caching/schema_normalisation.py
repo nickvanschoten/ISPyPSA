@@ -292,6 +292,19 @@ _V60_TO_V74_CELL_VALUE_RENAMES: dict[tuple[str, str], dict[str, str]] = {
         "Pumped Hydro (48 hrs storage)": "Pumped Hydro (48hrs storage)",
         "BOTN- Cethana": "BOTN - Cethana",
     },
+    # v6.0 new_entrants_summary has a single-row typo in the `Technology Type`
+    # column (post-rename from `New entrants`): one row uses lowercase "Battery
+    # storage" where the other 47 use capital "Battery Storage". This breaks
+    # the strict merge with new_entrant_build_costs (whose technology values
+    # canonicalise to capital S via `_standardise_storage_capitalisation`).
+    # Canonicalise here so the build-cost merge in
+    # `_add_new_entrant_battery_build_costs` succeeds.
+    ("new_entrants_summary", "Technology Type"): {
+        "Battery storage (1hr storage)": "Battery Storage (1hr storage)",
+        "Battery storage (2hrs storage)": "Battery Storage (2hrs storage)",
+        "Battery storage (4hrs storage)": "Battery Storage (4hrs storage)",
+        "Battery storage (8hrs storage)": "Battery Storage (8hrs storage)",
+    },
 }
 
 
