@@ -1,14 +1,14 @@
 archetype_id,year,technology,generation_twh
-cost_optimal,2025,Biomass,0.00031739411702791365
-cost_optimal,2025,Black Coal,41.406557051244405
-cost_optimal,2025,Brown Coal,25.195649277452155
-cost_optimal,2025,Gas,8.813568514373939
+cost_optimal,2025,Biomass,0.0003123045507232136
+cost_optimal,2025,Black Coal,75.14319788043012
+cost_optimal,2025,Brown Coal,36.43362033565035
+cost_optimal,2025,Gas,13.779768947431009
 cost_optimal,2025,Hyblend,0.0
-cost_optimal,2025,Hydrogen,62.64592256338768
+cost_optimal,2025,Hydrogen,0.0
 cost_optimal,2025,Liquid Fuel,0.0
-cost_optimal,2025,Solar,16.01442427686478
-cost_optimal,2025,Water,20.971232510719492
-cost_optimal,2025,Wind,26.67878264616089
+cost_optimal,2025,Solar,18.148609081730868
+cost_optimal,2025,Water,30.194411855122976
+cost_optimal,2025,Wind,28.197638970196532
 cost_optimal,2030,Biomass,0.00040828294502364223
 cost_optimal,2030,Black Coal,90.50386276661997
 cost_optimal,2030,Brown Coal,24.58404021059656
@@ -58,16 +58,16 @@ cost_optimal,2050,Liquid Fuel,0.0
 cost_optimal,2050,Solar,53.40958192548268
 cost_optimal,2050,Water,39.998603674346846
 cost_optimal,2050,Wind,79.0545538297505
-fossil_incumbent,2025,Biomass,0.0006323100039986701
-fossil_incumbent,2025,Black Coal,43.14949783776232
-fossil_incumbent,2025,Brown Coal,25.259409211710526
-fossil_incumbent,2025,Gas,8.819596912568679
+fossil_incumbent,2025,Biomass,0.0007223422084191492
+fossil_incumbent,2025,Black Coal,80.23859414449788
+fossil_incumbent,2025,Brown Coal,36.54483760595092
+fossil_incumbent,2025,Gas,11.614320346873546
 fossil_incumbent,2025,Hyblend,0.0
-fossil_incumbent,2025,Hydrogen,60.396064375272374
+fossil_incumbent,2025,Hydrogen,0.0
 fossil_incumbent,2025,Liquid Fuel,0.0
-fossil_incumbent,2025,Solar,16.29585842218573
-fossil_incumbent,2025,Water,20.99898262591336
-fossil_incumbent,2025,Wind,26.77407460699799
+fossil_incumbent,2025,Solar,18.090178463512338
+fossil_incumbent,2025,Water,28.097214795620346
+fossil_incumbent,2025,Wind,26.98438335158741
 fossil_incumbent,2030,Biomass,0.00045200217573203885
 fossil_incumbent,2030,Black Coal,100.10738564349585
 fossil_incumbent,2030,Brown Coal,34.07482931590256
@@ -118,16 +118,16 @@ fossil_incumbent,2050,Liquid Fuel,0.0
 fossil_incumbent,2050,Solar,22.149233614986596
 fossil_incumbent,2050,Water,39.99763417994463
 fossil_incumbent,2050,Wind,46.799140103639736
-gas_fleet_maintained,2025,Biomass,0.00031739411702791365
-gas_fleet_maintained,2025,Black Coal,41.406557051244405
-gas_fleet_maintained,2025,Brown Coal,25.195649277452155
-gas_fleet_maintained,2025,Gas,8.813568514373939
+gas_fleet_maintained,2025,Biomass,0.0003123045507232136
+gas_fleet_maintained,2025,Black Coal,75.14319788043012
+gas_fleet_maintained,2025,Brown Coal,36.43362033565035
+gas_fleet_maintained,2025,Gas,13.779768947431009
 gas_fleet_maintained,2025,Hyblend,0.0
-gas_fleet_maintained,2025,Hydrogen,62.64592256338768
+gas_fleet_maintained,2025,Hydrogen,0.0
 gas_fleet_maintained,2025,Liquid Fuel,0.0
-gas_fleet_maintained,2025,Solar,16.01442427686478
-gas_fleet_maintained,2025,Water,20.971232510719492
-gas_fleet_maintained,2025,Wind,26.67878264616089
+gas_fleet_maintained,2025,Solar,18.148609081730868
+gas_fleet_maintained,2025,Water,30.194411855122976
+gas_fleet_maintained,2025,Wind,28.197638970196532
 gas_fleet_maintained,2030,Biomass,0.0014197486013149889
 gas_fleet_maintained,2030,Black Coal,0.0
 gas_fleet_maintained,2030,Brown Coal,0.0
@@ -170,17 +170,17 @@ gas_fleet_maintained,2050,Liquid Fuel,0.0
 gas_fleet_maintained,2050,Solar,59.31389484853069
 gas_fleet_maintained,2050,Water,39.995579938343866
 gas_fleet_maintained,2050,Wind,83.08033162558495
-nuclear_baseload,2025,Biomass,0.0003096769416521144
-nuclear_baseload,2025,Black Coal,41.406678621955066
-nuclear_baseload,2025,Brown Coal,25.201679832021266
-nuclear_baseload,2025,Gas,8.813588944089387
+nuclear_baseload,2025,Biomass,0.0003197327425623889
+nuclear_baseload,2025,Black Coal,75.1293666075006
+nuclear_baseload,2025,Brown Coal,36.4150229428764
+nuclear_baseload,2025,Gas,13.789254515280229
 nuclear_baseload,2025,Hyblend,0.0
-nuclear_baseload,2025,Hydrogen,62.65054730575106
+nuclear_baseload,2025,Hydrogen,0.0
 nuclear_baseload,2025,Liquid Fuel,0.0
-nuclear_baseload,2025,Nuclear,0.0003259718215001912
-nuclear_baseload,2025,Solar,16.003031182910092
-nuclear_baseload,2025,Water,20.97202022202568
-nuclear_baseload,2025,Wind,26.68046559693783
+nuclear_baseload,2025,Nuclear,0.0002498457188876469
+nuclear_baseload,2025,Solar,18.14576087844564
+nuclear_baseload,2025,Water,30.196899161996512
+nuclear_baseload,2025,Wind,28.20014211165571
 nuclear_baseload,2030,Biomass,0.0005230176122097893
 nuclear_baseload,2030,Black Coal,90.49630175477697
 nuclear_baseload,2030,Brown Coal,24.58065439930592
@@ -235,16 +235,16 @@ nuclear_baseload,2050,Nuclear,35.028280694049535
 nuclear_baseload,2050,Solar,50.39483786370763
 nuclear_baseload,2050,Water,39.93678952945745
 nuclear_baseload,2050,Wind,77.37307954426008
-rapid_coal_phaseout,2025,Biomass,0.00031739411702791365
-rapid_coal_phaseout,2025,Black Coal,41.406557051244405
-rapid_coal_phaseout,2025,Brown Coal,25.195649277452155
-rapid_coal_phaseout,2025,Gas,8.813568514373939
+rapid_coal_phaseout,2025,Biomass,0.0003123045507232136
+rapid_coal_phaseout,2025,Black Coal,75.14319788043012
+rapid_coal_phaseout,2025,Brown Coal,36.43362033565035
+rapid_coal_phaseout,2025,Gas,13.779768947431009
 rapid_coal_phaseout,2025,Hyblend,0.0
-rapid_coal_phaseout,2025,Hydrogen,62.64592256338768
+rapid_coal_phaseout,2025,Hydrogen,0.0
 rapid_coal_phaseout,2025,Liquid Fuel,0.0
-rapid_coal_phaseout,2025,Solar,16.01442427686478
-rapid_coal_phaseout,2025,Water,20.971232510719492
-rapid_coal_phaseout,2025,Wind,26.67878264616089
+rapid_coal_phaseout,2025,Solar,18.148609081730868
+rapid_coal_phaseout,2025,Water,30.194411855122976
+rapid_coal_phaseout,2025,Wind,28.197638970196532
 rapid_coal_phaseout,2030,Biomass,0.00132508529093924
 rapid_coal_phaseout,2030,Black Coal,0.0
 rapid_coal_phaseout,2030,Brown Coal,0.0
@@ -287,16 +287,16 @@ rapid_coal_phaseout,2050,Liquid Fuel,0.0
 rapid_coal_phaseout,2050,Solar,59.31389484853069
 rapid_coal_phaseout,2050,Water,39.995579938343866
 rapid_coal_phaseout,2050,Wind,83.08033162558495
-storage_led,2025,Biomass,0.00024186357773536856
-storage_led,2025,Black Coal,41.40220252330992
-storage_led,2025,Brown Coal,25.251899049197725
-storage_led,2025,Gas,8.815317179061578
+storage_led,2025,Biomass,0.00012930294582425708
+storage_led,2025,Black Coal,75.22968965649555
+storage_led,2025,Brown Coal,36.373321011377946
+storage_led,2025,Gas,13.863639433165268
 storage_led,2025,Hyblend,0.0
-storage_led,2025,Hydrogen,62.57168820311462
+storage_led,2025,Hydrogen,0.0
 storage_led,2025,Liquid Fuel,0.0
-storage_led,2025,Solar,15.999716569418963
-storage_led,2025,Water,20.989649833149794
-storage_led,2025,Wind,26.675861160140066
+storage_led,2025,Solar,18.1535539125702
+storage_led,2025,Water,30.180208009151308
+storage_led,2025,Wind,28.059159849968488
 storage_led,2030,Biomass,0.18827409601167772
 storage_led,2030,Black Coal,90.65109772226775
 storage_led,2030,Brown Coal,25.772368321365914
