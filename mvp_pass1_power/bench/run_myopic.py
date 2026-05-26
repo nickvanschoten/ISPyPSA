@@ -90,8 +90,17 @@ temporal:
     reference_year_cycle: [2018]
     investment_periods: [{year}]
     aggregation:
-      representative_weeks: ~
-      named_representative_weeks: [residual-peak-demand]
+      # Phase 7.2: 4-week sampling (Option B — 2 named + 2 numbered).
+      # named: residual-peak-demand picks the demand-stress week (firm-
+      #   capacity bottleneck); residual-minimum-demand picks the
+      #   VRE-dominant week (curtailment / negative-residual scenarios).
+      # numbered: calendar weeks 3 (mid-January, peak Australian summer
+      #   — cooling load + max solar) and 29 (mid-July, peak winter —
+      #   heating load + low solar). Provides explicit seasonal coverage
+      #   the named-only set misses; addresses the VRE-suppression /
+      #   coal-over-dispatch findings from PHASE7_1_DIAGNOSTIC.md.
+      representative_weeks: [3, 29]
+      named_representative_weeks: [residual-peak-demand, residual-minimum-demand]
   operational:
     resolution_min: 30
     reference_year_cycle: [2018]
