@@ -39,15 +39,26 @@ CONFIG_TEMPLATE_DIR = BENCH / "configs"
 
 
 def _write_period_config(run_id: str, year: int, regions: list[str] | None) -> Path:
-    """Synthesise a single-period config for this milestone year."""
+    """Synthesise a single-period config for this milestone year.
+
+    Callers pass `run_id` already containing the year suffix (sub_run_id from
+    main()). We do NOT append the year again — earlier versions did, producing
+    paths like `..._gas_fleet_maintained_2025_2025__gas_fleet_maintained/...`
+    which exceeded Windows' 260-char MAX_PATH on the longer archetype names
+    (gas_fleet_maintained / rapid_coal_phaseout) when written under
+    `pypsa_friendly/capacity_expansion_timeseries/marginal_cost_timeseries/`
+    with the longest generator parquet name in the cache
+    (`morgan_to_whyalla_pipeline_no_1_ps_and_water_filtration_plant.parquet`,
+    66 chars).
+    """
     cfg_dir = BENCH / "configs_myopic"
     cfg_dir.mkdir(parents=True, exist_ok=True)
-    cfg_path = cfg_dir / f"{run_id}_{year}.yaml"
+    cfg_path = cfg_dir / f"{run_id}.yaml"
     filter_line = f"filter_by_nem_regions: {regions}\n" if regions else "# Full NEM\n"
     cfg_text = f"""# Auto-generated myopic config for {run_id} year {year}
 paths:
   run_directory: "mvp_pass1_power/bench/runs_myopic"
-  ispypsa_run_name: {run_id}_{year}
+  ispypsa_run_name: {run_id}
   parsed_traces_directory: "mvp_pass1_power/data/traces"
   workbook_path: "mvp_pass1_power/data/iasr_2024_v6.0.xlsx"
   parsed_workbook_cache: "mvp_pass1_power/data/workbook_cache"
