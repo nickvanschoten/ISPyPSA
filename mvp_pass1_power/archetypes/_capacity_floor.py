@@ -99,7 +99,7 @@ def _existing_capacity_at_year(
     if existing_table is None or existing_table not in ispypsa_tables:
         return 0.0
     df = ispypsa_tables[existing_table]
-    if df.empty:
+    if df.empty or "closure_year" not in df.columns or "maximum_capacity_mw" not in df.columns:
         return 0.0
     active = df[df.apply(existing_predicate, axis=1) & (df["closure_year"] > year)]
     return float(active["maximum_capacity_mw"].fillna(0).sum())
@@ -143,9 +143,51 @@ def _build_lhs(constraint_id: str, terms: pd.DataFrame, term_type: str) -> pd.Da
     })
 
 
-def _build_rhs(constraint_id: str, residual_mw: float) -> pd.DataFrame:
-    """Single RHS row: floor minus already-committed existing capacity."""
-    return pd.DataFrame([{"constraint_id": constraint_id, "constraint_type": ">=", "rhs": residual_mw}])
+def _build_rhs(constraint_id: str, residual_mw: float, constraint_type: str = ">=") -> pd.DataFrame:
+    """Single RHS row: residual capacity required (floor) or remaining (cap)."""
+    return pd.DataFrame([{"constraint_id": constraint_id, "constraint_type": constraint_type, "rhs": residual_mw}])
+
+
+def add_capacity_cap(
+    ispypsa_tables: dict[str, pd.DataFrame],
+    config,
+    constraint_prefix: str,
+    caps_by_year: dict[int, float],
+    new_entrant_table: str,
+    new_entrant_id_col: str,
+    new_entrant_predicate: Callable[[pd.Series], bool],
+    existing_table: str | None,
+    existing_predicate: Callable[[pd.Series], bool] | None,
+    term_type: str,
+) -> dict[str, pd.DataFrame]:
+    """Append per-year capacity ceiling rows to custom_constraints_lhs/rhs.
+
+    Mirror of `add_capacity_floor` but with constraint_type='<='. The
+    existing-asset capacity at year T is subtracted from the cap to derive
+    the cap on new-entrant builds. If existing already exceeds the cap the
+    constraint is logged as INFEASIBLE-at-data-load (caller should treat
+    as a configuration error rather than an LP outcome).
+    """
+    periods = _investment_periods(config)
+    binding = _filter_to_known_periods(caps_by_year, periods, constraint_prefix)
+    if not binding:
+        return ispypsa_tables
+
+    lhs_rows, rhs_rows = [], []
+    for year, cap_mw in binding.items():
+        existing_mw = _existing_capacity_at_year(ispypsa_tables, existing_table, existing_predicate, year)
+        residual = cap_mw - existing_mw
+        if residual < 0:
+            log.warning(f"{constraint_prefix}_{year}: existing {existing_mw:.0f} MW already exceeds cap {cap_mw:.0f} MW; constraint would be infeasible — skipping")
+            continue
+        ne_terms = _new_entrant_active_terms(ispypsa_tables, new_entrant_table, new_entrant_id_col, new_entrant_predicate, periods, year)
+        if ne_terms.empty:
+            log.info(f"{constraint_prefix}_{year}: no matching new entrants at year {year}; cap not needed")
+            continue
+        lhs_rows.append(_build_lhs(f"{constraint_prefix}_{year}", ne_terms, term_type))
+        rhs_rows.append(_build_rhs(f"{constraint_prefix}_{year}", residual, constraint_type="<="))
+
+    return _append_constraint_rows(ispypsa_tables, lhs_rows, rhs_rows)
 
 
 def _append_constraint_rows(

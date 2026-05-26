@@ -880,3 +880,95 @@ def test_nuclear_baseload_adds_floor_at_2045_and_2050(csv_str_to_df):
     lhs = result["custom_constraints_lhs"]
     assert (lhs["term_type"] == "generator_capacity").all()
     assert set(lhs["term_id"]).issubset({"Advanced Nuclear CNSW_2045", "Advanced Nuclear CNSW_2050"})
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.0 biomass availability cap — applied as a pre-pass on every
+# archetype. Methodology improvement post-Phase 6 surfacing of biomass
+# dispatch ~70x current Australian usage.
+# ---------------------------------------------------------------------------
+
+
+def test_biomass_cap_adds_ceiling_at_each_binding_year(csv_str_to_df):
+    from mvp_pass1_power.archetypes._biomass_cap import apply as cap_apply
+
+    ne = csv_str_to_df("""
+        generator,    fuel_type,  technology_type, lifetime
+        biomass_cnsw, Biomass,    Biomass,         30
+        biomass_vic,  Biomass,    Biomass,         30
+        ccgt_cnsw,    Gas,        CCGT,            40
+    """)
+    tables = {
+        "ecaa_generators": pd.DataFrame(columns=["fuel_type", "closure_year", "maximum_capacity_mw"]),
+        "new_entrant_generators": ne,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2025, 2030, 2050])
+
+    result = cap_apply(tables, config)
+
+    rhs = result["custom_constraints_rhs"].set_index("constraint_id")
+    # Per the cap dict: 2025=1000, 2030=1500, 2050=5000
+    assert float(rhs.loc["biomass_cap_2025", "rhs"]) == 1_000.0
+    assert float(rhs.loc["biomass_cap_2030", "rhs"]) == 1_500.0
+    assert float(rhs.loc["biomass_cap_2050", "rhs"]) == 5_000.0
+    assert (rhs["constraint_type"] == "<=").all()
+
+    # LHS targets only biomass new entrants. Each year's LHS sums every
+    # biomass cohort active at that year (build_year <= year < build_year
+    # + lifetime). With investment_periods=[2025, 2030, 2050] and biomass
+    # lifetime=30: year 2050 sees the 2025/2030/2050 build cohorts all
+    # still active (2025+30=2055, 2030+30=2060, 2050+30=2080, all > 2050).
+    lhs = result["custom_constraints_lhs"]
+    biomass_lhs = lhs[lhs["constraint_id"].str.startswith("biomass_cap_")]
+    assert (biomass_lhs["term_type"] == "generator_capacity").all()
+    # CCGT must NOT appear in any biomass_cap LHS.
+    assert not biomass_lhs["term_id"].str.contains("ccgt").any()
+    # 2025 cap: only 2025-build cohort active.
+    assert set(biomass_lhs[biomass_lhs.constraint_id == "biomass_cap_2025"]["term_id"]) == {
+        "biomass_cnsw_2025", "biomass_vic_2025",
+    }
+    # 2030 cap: 2025+2030 cohorts active.
+    assert set(biomass_lhs[biomass_lhs.constraint_id == "biomass_cap_2030"]["term_id"]) == {
+        "biomass_cnsw_2025", "biomass_vic_2025",
+        "biomass_cnsw_2030", "biomass_vic_2030",
+    }
+    # 2050 cap: all three cohorts active.
+    assert set(biomass_lhs[biomass_lhs.constraint_id == "biomass_cap_2050"]["term_id"]) == {
+        "biomass_cnsw_2025", "biomass_vic_2025",
+        "biomass_cnsw_2030", "biomass_vic_2030",
+        "biomass_cnsw_2050", "biomass_vic_2050",
+    }
+
+
+def test_biomass_cap_runs_under_every_wrapped_archetype(minimal_templater_output):
+    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+    # Add a biomass new-entrant row so the cap has something to constrain.
+    minimal_templater_output["new_entrant_generators"] = pd.concat([
+        minimal_templater_output["new_entrant_generators"],
+        pd.DataFrame([{
+            "generator": "biomass_cnsw",
+            "generator_name": "Biomass",
+            "technology_type": "Biomass",
+            "fuel_type": "Biomass",
+            "sub_region_id": "CNSW",
+            "fuel_cost_mapping": "Biomass",
+            "heat_rate_gj/mwh": 12.0,
+            "vom_$/mwh_sent_out": 8.0,
+            "lifetime": 30,
+            "minimum_stable_level_%": 50,
+            "connection_cost_technology": "",
+            "rez_id": "N3",
+        }])
+    ], ignore_index=True)
+    config = _StubConfig(investment_periods=[2030, 2040, 2050])
+
+    for arch in ["cost_optimal", "rapid_coal_phaseout", "gas_fleet_maintained",
+                 "storage_led", "fossil_incumbent", "nuclear_baseload"]:
+        tables = {k: v.copy() if hasattr(v, "copy") else v for k, v in minimal_templater_output.items()}
+        result = APPLY_ARCHETYPE[arch](tables, config)
+        rhs = result["custom_constraints_rhs"]
+        biomass_caps = rhs[rhs.constraint_id.str.startswith("biomass_cap_")]
+        assert not biomass_caps.empty, f"{arch}: biomass_cap_* not present in rhs"
+        assert set(biomass_caps.constraint_id) == {"biomass_cap_2030", "biomass_cap_2040", "biomass_cap_2050"}

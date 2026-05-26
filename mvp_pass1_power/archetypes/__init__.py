@@ -27,6 +27,7 @@ read as alternative policy pathways relative to a public authoritative source.
 from ._pumped_storage_fix import apply as _pumped_storage_fix_apply
 from ._maintenance_overlay import apply as _maintenance_overlay_apply
 from ._repowering import apply as _repowering_apply
+from ._biomass_cap import apply as _biomass_cap_apply
 from .cost_optimal import apply as cost_optimal_apply
 from .rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
 from .gas_fleet_maintained import apply as gas_fleet_maintained_apply
@@ -45,7 +46,7 @@ PRODUCTION_ARCHETYPES = [
 
 
 def _with_pre_passes(archetype_fn):
-    """Wrap an archetype mutation with three cross-archetype pre-passes:
+    """Wrap an archetype mutation with four cross-archetype pre-passes:
 
       1. Pumped-storage fix — re-route Wivenhoe / Shoalhaven / Borumba / Snowy 2.0
          from ecaa_generators to ecaa_batteries so they are modelled as PyPSA
@@ -63,6 +64,12 @@ def _with_pre_passes(archetype_fn):
          prior production runs. See _repowering.py for sources, methodology,
          and Pass-1 limitations.
 
+      4. Phase 7.0 biomass availability cap — adds a per-milestone-year
+         NEM-wide biomass capacity ceiling as a PyPSA custom_constraint.
+         Methodology refinement after Phase 6 surfaced biomass dispatch
+         ~70x current Australian usage. ARENA Bioenergy Roadmap 2021 +
+         AEMO ISP 2024 baseline. See _biomass_cap.py.
+
     Pre-passes run on EVERY archetype so all six see consistent baseline
     accounting before per-archetype mutations are applied.
     """
@@ -71,6 +78,7 @@ def _with_pre_passes(archetype_fn):
         ispypsa_tables = _pumped_storage_fix_apply(ispypsa_tables, config)
         ispypsa_tables = _maintenance_overlay_apply(ispypsa_tables, config)
         ispypsa_tables = _repowering_apply(ispypsa_tables, config)
+        ispypsa_tables = _biomass_cap_apply(ispypsa_tables, config)
         return archetype_fn(ispypsa_tables, config)
 
     wrapped.__name__ = f"{archetype_fn.__name__}_with_pre_passes"
