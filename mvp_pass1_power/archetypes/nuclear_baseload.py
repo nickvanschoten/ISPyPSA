@@ -7,7 +7,8 @@ all other IASR new-entrant options, subject to a phased deployment floor that
 anchors to the Coalition 2024 nuclear policy reference (AEMO does not model
 nuclear).
 
-Phased deployment floor (commit B will wire as PyPSA custom constraints):
+Phased deployment floor (wired as PyPSA custom_constraints on the injected
+Advanced Nuclear new-entrant rows):
   2025-2040: no nuclear mandate (LP unconstrained)
   2045: ≥ 2,000 MW total nuclear capacity NEM-wide
   2050: ≥ 4,000 MW total nuclear capacity NEM-wide
@@ -44,6 +45,8 @@ import logging
 import numpy as np
 import pandas as pd
 
+from mvp_pass1_power.archetypes._capacity_floor import add_capacity_floor
+
 log = logging.getLogger(__name__)
 
 _NUCLEAR_TECH = "Advanced Nuclear"
@@ -56,6 +59,8 @@ _VOM = 10.0
 _HEAT_RATE = 0.0
 _MIN_STABLE = 53.0
 _LIFETIME = 60
+
+_NUCLEAR_FLOOR_MW_BY_YEAR = {2045: 2_000, 2050: 4_000}
 
 _TEMPLATE_TECH_PREFERENCE = ["CCGT", "Hydrogen Reciprocating Engine", "Hyblend Reciprocating Engine"]
 
@@ -78,7 +83,19 @@ def apply(ispypsa_tables, config):
     ispypsa_tables["new_entrant_build_costs"] = pd.concat([bc, nuclear_bc_row], ignore_index=True)
 
     log.info(f"nuclear_baseload: added Advanced Nuclear to sub-regions: {sorted(nuclear_rows['sub_region_id'].tolist())}")
-    return ispypsa_tables
+
+    return add_capacity_floor(
+        ispypsa_tables,
+        config,
+        constraint_prefix="nuclear_floor",
+        floors_by_year=_NUCLEAR_FLOOR_MW_BY_YEAR,
+        new_entrant_table="new_entrant_generators",
+        new_entrant_id_col="generator",
+        new_entrant_predicate=lambda row: row.get("technology_type") == _NUCLEAR_TECH,
+        existing_table=None,
+        existing_predicate=None,
+        term_type="generator_capacity",
+    )
 
 
 def _get_new_entrant_generators(ispypsa_tables):

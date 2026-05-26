@@ -17,11 +17,16 @@ AEMO Step Change projections for reference:
   2040: 12,640 MW (mandate non-binding)
   2045+: ≥14,188 MW (mandate non-binding)
 
-Levers (commit A — renames + base coal logic):
+Levers:
   1. Clip every coal closure_year to 2030.
-
-Mandate constraints (gas ≥ 12,500 MW @ 2030, 2035) are wired in commit B.
+  2. PyPSA custom_constraints floor: total NEM gas capacity ≥ 12,500 MW at
+     2030 and 2035 (sum over all gas Generator components — existing
+     non-retired + new entrants active at the milestone year).
 """
+
+from mvp_pass1_power.archetypes._capacity_floor import add_capacity_floor
+
+_GAS_FLOOR_MW_BY_YEAR = {2030: 12_500, 2035: 12_500}
 
 
 def apply(ispypsa_tables, config):
@@ -30,4 +35,15 @@ def apply(ispypsa_tables, config):
     ecaa.loc[coal_mask, "closure_year"] = ecaa.loc[coal_mask, "closure_year"].clip(upper=2030)
     ispypsa_tables["ecaa_generators"] = ecaa
 
-    return ispypsa_tables
+    return add_capacity_floor(
+        ispypsa_tables,
+        config,
+        constraint_prefix="gas_floor",
+        floors_by_year=_GAS_FLOOR_MW_BY_YEAR,
+        new_entrant_table="new_entrant_generators",
+        new_entrant_id_col="generator",
+        new_entrant_predicate=lambda row: row.get("fuel_type") == "Gas",
+        existing_table="ecaa_generators",
+        existing_predicate=lambda row: row.get("fuel_type") == "Gas",
+        term_type="generator_capacity",
+    )

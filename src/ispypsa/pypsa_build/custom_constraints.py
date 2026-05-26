@@ -17,11 +17,12 @@ def _get_variables(
         component_name: str, the name given to the component when added by ISPyPSA to
             the `pypsa.Network`.
         component_type: str, the type of variable, should be one of
-            'Generator', 'Link', 'Load', or 'Storage
+            'Generator', 'Link', 'Load', 'Storage', or 'StorageUnit'.
         attribute_type: str, the type of variable, should be one of
             'p' or 'p_nom'
 
-    Returns: linopy.variables.Variable
+    Returns: linopy.variables.Variable, or None if the variable cannot be
+        resolved (e.g. component not in the model, or not extendable).
 
     """
     var = None
@@ -33,6 +34,15 @@ def _get_variables(
         var = model.variables.Link_p_nom.at[f"{component_name}"]
     elif component_type == "Generator" and attribute_type == "p":
         var = model.variables.Generator_p.loc[:, f"{component_name}"]
+    elif component_type == "StorageUnit" and attribute_type == "p_nom":
+        # Only extendable storage units have a StorageUnit_p_nom variable in
+        # linopy. Non-extendable units (fixed p_nom) contribute as constants
+        # and must be moved to the RHS by the caller; we return None here so
+        # the existing NaN-filtering in _add_custom_constraints drops them.
+        try:
+            var = model.variables.StorageUnit_p_nom.at[f"{component_name}"]
+        except (KeyError, AttributeError):
+            var = None
     elif component_type == "Load" and attribute_type == "p":
         logging.info(
             f"Load component {component_name} not added to custom constraint. "

@@ -153,6 +153,7 @@ _CUSTOM_CONSTRAINT_TERM_TYPE_TO_COMPONENT_TYPE = {
     "generator_output": "Generator",
     "load_consumption": "Load",
     "storage_output": "Storage",
+    "storage_capacity": "StorageUnit",
 }
 
 _CUSTOM_CONSTRAINT_TERM_TYPE_TO_ATTRIBUTE_TYPE = {
@@ -161,6 +162,7 @@ _CUSTOM_CONSTRAINT_TERM_TYPE_TO_ATTRIBUTE_TYPE = {
     "generator_output": "p",
     "load_consumption": "p",
     "storage_output": "p",
+    "storage_capacity": "p_nom",
 }
 
 _VRE_BUILD_LIMIT_CUSTOM_CONSTRAINT_GROUPS = {

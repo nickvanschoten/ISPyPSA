@@ -390,3 +390,212 @@ def test_nuclear_baseload_warns_and_skips_when_new_entrant_table_missing(caplog)
 
     assert result is tables
     assert "new_entrant_generators table missing" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# AEMO-anchored deployment-mandate constraints (custom_constraints rows).
+# Tests use _StubConfig to inject investment_periods without depending on the
+# full ModelConfig schema. Each test fixes minimal templater inputs so the
+# generated constraint rows can be asserted against a full expected DataFrame.
+# ---------------------------------------------------------------------------
+
+
+class _StubConfig:
+    """Minimal stand-in for ModelConfig — exposes only the chain the helper reads."""
+
+    def __init__(self, investment_periods):
+        self.temporal = type("T", (), {
+            "capacity_expansion": type("C", (), {"investment_periods": investment_periods})()
+        })()
+
+
+_EMPTY_CC_LHS = pd.DataFrame(columns=["constraint_id", "term_type", "term_id", "coefficient"])
+_EMPTY_CC_RHS = pd.DataFrame(columns=["constraint_id", "constraint_type", "rhs"])
+
+
+def test_gas_fleet_maintained_adds_floor_constraint_at_binding_year(csv_str_to_df):
+    # 2030 is in the investment periods AND there are no existing gas units;
+    # the entire 12,500 MW floor flows through to the new-entrant LHS.
+    ecaa = csv_str_to_df("""
+        generator, fuel_type,   closure_year, maximum_capacity_mw
+        GenA,      Wind,        2055,         2000
+    """)
+    ne = csv_str_to_df("""
+        generator,    fuel_type,   technology_type, lifetime
+        ccgt_cnsw,    Gas,         CCGT,            40
+        ocgt_nnsw,    Gas,         OCGT,            30
+        wind_cnsw,    Wind,        Wind,            25
+    """)
+    tables = {
+        "ecaa_generators": ecaa,
+        "new_entrant_generators": ne,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2030])
+
+    result = gas_fleet_maintained_apply(tables, config)
+
+    expected_lhs = csv_str_to_df("""
+        constraint_id,   term_type,            term_id,         coefficient
+        gas_floor_2030,  generator_capacity,   ccgt_cnsw_2030,  1.0
+        gas_floor_2030,  generator_capacity,   ocgt_nnsw_2030,  1.0
+    """)
+    expected_rhs = csv_str_to_df("""
+        constraint_id,   constraint_type, rhs
+        gas_floor_2030,  >=,              12500
+    """)
+    pd.testing.assert_frame_equal(
+        result["custom_constraints_lhs"].reset_index(drop=True),
+        expected_lhs.reset_index(drop=True),
+        check_dtype=False,
+    )
+    pd.testing.assert_frame_equal(
+        result["custom_constraints_rhs"].reset_index(drop=True),
+        expected_rhs.reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+def test_gas_fleet_maintained_subtracts_existing_gas_from_floor(csv_str_to_df):
+    # 5,000 MW of existing gas surviving past 2030 → residual on RHS is 7,500 MW.
+    ecaa = csv_str_to_df("""
+        generator, fuel_type, closure_year, maximum_capacity_mw
+        ExistGas1, Gas,       2035,         3000
+        ExistGas2, Gas,       2040,         2000
+        ExistGas3, Gas,       2029,         9999
+    """)
+    ne = csv_str_to_df("""
+        generator,    fuel_type, technology_type, lifetime
+        ccgt_cnsw,    Gas,       CCGT,            40
+    """)
+    tables = {
+        "ecaa_generators": ecaa,
+        "new_entrant_generators": ne,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2030])
+
+    result = gas_fleet_maintained_apply(tables, config)
+
+    # ExistGas3 closure_year 2029 — not active at 2030, excluded from existing total.
+    # ExistGas1 + ExistGas2 = 5,000 MW. Residual floor at 2030: 12,500 - 5,000 = 7,500.
+    assert float(result["custom_constraints_rhs"].iloc[0]["rhs"]) == 7500.0
+
+
+def test_gas_fleet_maintained_skips_year_when_existing_already_meets_floor(csv_str_to_df, caplog):
+    ecaa = csv_str_to_df("""
+        generator, fuel_type, closure_year, maximum_capacity_mw
+        ExistGas,  Gas,       2040,         13000
+    """)
+    ne = csv_str_to_df("""
+        generator,  fuel_type, technology_type, lifetime
+        ccgt_cnsw,  Gas,       CCGT,            40
+    """)
+    tables = {
+        "ecaa_generators": ecaa,
+        "new_entrant_generators": ne,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2030])
+
+    with caplog.at_level(logging.INFO, logger="mvp_pass1_power.archetypes._capacity_floor"):
+        result = gas_fleet_maintained_apply(tables, config)
+
+    assert result["custom_constraints_lhs"].empty
+    assert result["custom_constraints_rhs"].empty
+    assert (
+        "gas_floor_2030: existing 13000 MW already meets floor 12500 MW; skipping"
+        in caplog.text
+    )
+
+
+def test_storage_led_floor_uses_storage_capacity_term_type(csv_str_to_df):
+    # Storage mandate should produce storage_capacity term_type rows on batteries.
+    ecaa_batt = csv_str_to_df("""
+        storage_name,   closure_year, maximum_capacity_mw
+        ExistBatt,      2050,         500
+    """)
+    ne_batt = csv_str_to_df("""
+        storage_name,         lifetime
+        battery_1h_cnsw,      20
+        battery_8h_nnsw,      20
+    """)
+    tables = {
+        "ecaa_generators": _EMPTY_ECAA.copy(),
+        "new_entrant_generators": _EMPTY_NE_FUEL_TECH.copy(),
+        "ecaa_batteries": ecaa_batt,
+        "new_entrant_batteries": ne_batt,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2030])
+
+    result = storage_led_apply(tables, config)
+
+    # storage_floor_2030: floor 33,926 - existing 500 = 33,426 residual.
+    assert (result["custom_constraints_lhs"]["term_type"] == "storage_capacity").all()
+    assert set(result["custom_constraints_lhs"]["term_id"]) == {
+        "battery_1h_cnsw_2030",
+        "battery_8h_nnsw_2030",
+    }
+    assert float(result["custom_constraints_rhs"].iloc[0]["rhs"]) == 33_926 - 500
+
+
+def test_capacity_floor_warns_when_mandate_year_not_in_investment_periods(csv_str_to_df, caplog):
+    # 2035 is not in the configured investment periods; the helper logs a warning
+    # and skips that mandate year while still applying others.
+    ecaa = csv_str_to_df("""
+        generator, fuel_type, closure_year, maximum_capacity_mw
+        ExistGas,  Gas,       2050,         1000
+    """)
+    ne = csv_str_to_df("""
+        generator,  fuel_type, technology_type, lifetime
+        ccgt_cnsw,  Gas,       CCGT,            40
+    """)
+    tables = {
+        "ecaa_generators": ecaa,
+        "new_entrant_generators": ne,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2030])
+
+    with caplog.at_level(logging.WARNING, logger="mvp_pass1_power.archetypes._capacity_floor"):
+        result = gas_fleet_maintained_apply(tables, config)
+
+    assert (
+        "gas_floor: mandate years [2035] not in investment_periods [2030]; skipping those years"
+        in caplog.text
+    )
+    # 2030 floor still applied (one constraint id present).
+    assert set(result["custom_constraints_rhs"]["constraint_id"]) == {"gas_floor_2030"}
+
+
+def test_nuclear_baseload_adds_floor_at_2045_and_2050(csv_str_to_df):
+    # The injected Advanced Nuclear rows must be the ones constrained by the
+    # nuclear floor. Use a CCGT template so injection succeeds.
+    ne = csv_str_to_df("""
+        generator,    generator_name,  technology_type,  fuel_type,  sub_region_id,  heat_rate_gj/mwh,  vom_$/mwh_sent_out,  minimum_stable_level_%,  lifetime,  fuel_cost_mapping,  rez_id,  connection_cost_technology
+        ccgt_cnsw,    CCGT__plant,     CCGT,             Gas,        CNSW,           7.0,               4.0,                 46.0,                    40,        NSW__CCGT,          ,        CCGT
+    """)
+    bc = pd.DataFrame([{"technology": "CCGT", "2024_25_$/mw": 1_800_000}])
+    tables = {
+        "new_entrant_generators": ne,
+        "new_entrant_build_costs": bc,
+        "custom_constraints_lhs": _EMPTY_CC_LHS.copy(),
+        "custom_constraints_rhs": _EMPTY_CC_RHS.copy(),
+    }
+    config = _StubConfig(investment_periods=[2045, 2050])
+
+    result = nuclear_baseload_apply(tables, config)
+
+    rhs = result["custom_constraints_rhs"].set_index("constraint_id")
+    assert float(rhs.loc["nuclear_floor_2045", "rhs"]) == 2_000.0
+    assert float(rhs.loc["nuclear_floor_2050", "rhs"]) == 4_000.0
+    # All LHS terms reference the injected nuclear generator across build_years.
+    lhs = result["custom_constraints_lhs"]
+    assert (lhs["term_type"] == "generator_capacity").all()
+    assert set(lhs["term_id"]).issubset({"Advanced Nuclear CNSW_2045", "Advanced Nuclear CNSW_2050"})
