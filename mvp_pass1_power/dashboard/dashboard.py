@@ -347,6 +347,28 @@ def _render_intensity_curves(data_dir: Path, gwp: dict) -> None:
         "(Water/hydro excluded — see Methodology tab)."
     )
 
+    st.info(
+        "**Cost / carbon / renewable-share intensity curves are robust** under "
+        "PDLP at 1e-3 tolerance (objective and generation-delivered are "
+        "stable within ~3 % and ~1 TWh respectively across runs). "
+        "**Capacity-side comparisons** (e.g. \"archetype X builds Y GW of "
+        "tech Z\") on the Granular Results tab are PDLP-tolerance "
+        "approximate and can shift 10-50 GW per technology between runs at "
+        "near-identical objective. See Methodology tab → \"Solver and PDLP "
+        "tolerance\" for full exposition. The catalogue's *structural* "
+        "differentiation (visible in the line shapes below) is robust; "
+        "*point-estimate* capacity values are not."
+    )
+
+    st.caption(
+        "Note: `gas_fleet_maintained` traces will overlap exactly with "
+        "`rapid_coal_phaseout` — this is the substantive structural finding "
+        "that the LP's natural gas response to coal-by-2030 (~23 GW @ 2030) "
+        "exceeds AEMO's published Step Change gas trajectory by ~10 GW, so "
+        "the 12,500 MW mandate never binds. See Methodology → \"Catalogue "
+        "framing\"."
+    )
+
     my = _load_method_years(data_dir)
     diag = _load_csv(data_dir / "simple_msm" / "diagnostics.csv", "diagnostics.csv")
     ren = _load_csv(data_dir / "granular" / "renewable_share.csv", "renewable_share.csv")
