@@ -123,9 +123,43 @@ Pass-1 limitations documented in the module:
    limits each asset to one cycle.
 
 Expected impact: softens the 2045 wind capacity dip without removing it
-entirely (the cost-side premium can still make greenfield-elsewhere
-preferable for some assets); the Phase 6 production run will quantify
-the residual dip after the overlay.
+entirely. **Phase 6 production confirmed dip persists**; diagnostic (Phase 7.0
+follow-up) determined the dip is a methodology artifact of myopic
+decomposition × single representative week × an IASR Step Change demand
+kink at 2045 (263.1 TWh vs 277.9 at 2040 and 296.7 at 2050) — NOT a
+templater bug. The Pass-1 repowering overlay works as designed:
+ECAA wind fleet is stable across 2040-2050 (14.9 → 14.9 → 14.7 GW); the
+dip is in NEW ENTRANT builds and reflects a real LP response to lower
+2045 demand.
+
+### Phase 7.0 biomass availability cap
+
+Applied as a fourth pre-pass on every archetype. Methodology improvement
+after Phase 6 surfaced biomass dispatch ~70× current Australian usage
+(rapid_coal_phaseout 2050: 16 GW biomass / 135.9 TWh — implausible).
+
+Methodology (full source list in
+[`archetypes/_biomass_cap.py`](archetypes/_biomass_cap.py)):
+NEM-wide biomass new-entrant capacity ceiling per milestone year,
+applied as a PyPSA `custom_constraints_*` row with `constraint_type='<='`.
+
+| Year | Cap (MW) |
+|---|---:|
+| 2025 | 1,000 |
+| 2030 | 1,500 |
+| 2035 | 2,000 |
+| 2040 | 3,000 |
+| 2045 | 4,000 |
+| 2050 | 5,000 |
+
+Sources: ARENA Bioenergy Roadmap 2021 (4-7 GW upper bound for bioenergy-
+for-electricity by 2050); AEMO ISP 2024 Step Change technology projections
+(<1 GW baseline through 2050); Clean Energy Council 2024 Renewable Energy
+Investment Report (current ~1 GW baseline).
+
+Pass-1 limitations: capacity cap rather than strict fuel-availability
+(TWh) cap; uniform NEM-wide rather than per-region (real biomass supply
+differs by region). Both are Pass-3 refinements.
 
 ---
 
@@ -139,9 +173,10 @@ the residual dip after the overlay.
 | `archetypes/storage_led.py` | Coal clip (2035) + all gas new-entrant drops + storage power floor per year |
 | `archetypes/fossil_incumbent.py` | Coal lifetime extension + renewable new-entrant thinning |
 | `archetypes/nuclear_baseload.py` | Advanced Nuclear injection from CCGT template + nuclear floor @ 2045/2050 |
-| `archetypes/_capacity_floor.py` | Shared helper for AEMO-anchored mandate constraints |
+| `archetypes/_capacity_floor.py` | Shared helper for AEMO-anchored mandate constraints (floor and cap) |
 | `archetypes/_maintenance_overlay.py` | Option B ageing-fleet premium (pre-pass on every archetype) |
 | `archetypes/_repowering.py` | EOL wind/solar repowering — closure_year +20y + annualised capex (pre-pass) |
+| `archetypes/_biomass_cap.py` | Phase 7.0 biomass availability cap (pre-pass) |
 | `archetypes/_pumped_storage_fix.py` | Pumped-storage re-routing (pre-pass on every archetype) |
 | `archetypes/__init__.py` | `PRODUCTION_ARCHETYPES`, `APPLY_ARCHETYPE` registry; `_with_pre_passes` wrapper |
 | `bench/run_myopic.py` | Sequential single-period solver with `--archetype` param |
