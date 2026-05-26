@@ -188,21 +188,38 @@ unrelated to Phase 2.
 
 ---
 
-## 7. MVP smoke verification — PASSED end-to-end
+## 7. MVP smoke verification — PASSED end-to-end (post-fix)
 
-After the Phase 1 follow-ups (commit 862801d) landed, the MVP workflow
+After the Phase 1 follow-ups (commits 862801d and the synthesize_v60_
+new_entrants_power_station fix in this batch) landed, the MVP workflow
 script (`scripts/run_workflow.py`) runs end-to-end on the minimal config
 (NSW, single 2050 investment period, one representative week) for all six
 production archetypes. All solve to **Optimal**:
 
 | Archetype | Status | Wall-clock | Objective (AUD) | Mandate enforced at smoke scale? |
 |---|---|---:|---:|---|
-| `cost_optimal` | Optimal | 10.7 s | 7.833 × 10⁹ | n/a |
-| `rapid_coal_phaseout` | Optimal | 10.9 s | 7.833 × 10⁹ | n/a |
-| `gas_fleet_maintained` | Optimal | 10.7 s | 7.833 × 10⁹ | No — mandate years 2030 & 2035 filtered (minimal config has 2050 only) |
-| `storage_led` | Optimal | 9.0 s | 7.842 × 10⁹ | No — see finding (b) below |
-| `fossil_incumbent` | Optimal | 3.8 s | 8.036 × 10⁹ | n/a |
-| `nuclear_baseload` | Optimal | 13.2 s | 1.166 × 10¹⁰ | **Yes** — `nuclear_floor_2050 ≥ 4,000 MW` enforced and verified in custom_constraints CSV outputs |
+| `cost_optimal` | Optimal | 149 s | 7.717 × 10⁹ | n/a |
+| `rapid_coal_phaseout` | Optimal | 148 s | 7.717 × 10⁹ | n/a |
+| `gas_fleet_maintained` | Optimal | 147 s | 7.717 × 10⁹ | No — mandate years 2030 & 2035 filtered (minimal config has 2050 only) |
+| `storage_led` | Optimal | 93 s | 9.063 × 10⁹ | **Yes** — `storage_floor_2050 ≥ 36,294 MW` (40,350 floor − 4,056 existing) enforced and verified in custom_constraints CSVs |
+| `fossil_incumbent` | Optimal | 143 s | 7.921 × 10⁹ | n/a |
+| `nuclear_baseload` | Optimal | 214 s | 1.153 × 10¹⁰ | **Yes** — `nuclear_floor_2050 ≥ 4,000 MW` enforced |
+
+Nuclear_baseload's objective came down from 1.166 × 10¹⁰ pre-fix to
+1.153 × 10¹⁰ post-fix — cheaper storage build options let the LP rely
+slightly less on nuclear-as-firming. The mandate still binds; the
+catalogue still differentiates structurally.
+
+Wall-clock for the non-storage_led archetypes increased from ~10 s
+pre-fix to ~150 s post-fix because new-entrant batteries are now
+populated (48 rows at full NEM, 16 at NSW-only) — the LP has more
+investment options to consider. This is expected and reflects the
+fix working: the previously degenerate option set is now complete.
+
+The full-NEM templater diagnostic at NSW-filter-removed scope also
+produces 48 new-entrant battery rows with non-null lifetime values,
+spanning all 12 sub-regions and 4 duration classes (1h / 2h / 4h /
+8h) — verifying the fix at the scope Phase 6 will actually run.
 
 ### Findings worth surfacing for the team
 
@@ -219,27 +236,29 @@ REZ-transmission-expansion candidates. Worth a note for the team: any
 future manual constraint type that doesn't correspond to a REZ
 expansion will exercise this code path.
 
-**(b) `new_entrant_batteries` table is empty under the NSW filter.**
-The minimal config (filter_by_nem_regions=[NSW]) produces zero rows in
-`new_entrant_batteries.csv` even though `new_entrants_summary` in the
-cache contains 19 CNSW + 28 SNSW + 22 NNSW + 20 SNW battery deployment
-rows. The storage_led mandate constraint requires new-entrant batteries
-to satisfy the storage_floor, so my `_capacity_floor` helper logs a
-warning and skips constraint generation. The LP still runs to Optimal
-on the existing battery fleet alone. This is a **pre-existing Phase 1
-templater issue** — the v6.0-normalised → templater pipeline has a
-filtering step (or a missing one) that drops all sub-region new-entrant
-battery rows when the regional filter is applied. **Worth checking
-whether this issue persists at full-NEM Phase 6 scale.** If it does, the
-storage_led mandate won't bind in production runs either, and the
-archetype would degenerate to "no gas + repowering" — a meaningful but
-different finding.
+**(b) `new_entrant_batteries` table was empty under NSW filter AND full
+NEM — pre-existing Phase 1 issue. NOW FIXED.** Root cause: v6.0-normalised
+`new_entrants_summary` lacked the `Power Station` column that v7.4 native
+uses, breaking `storage.py`'s `Storage Name → isp_resource_type` chain.
+All 48 NEM-wide new-entrant battery rows were silently dropped at
+`_add_unique_new_entrant_storage_name_column`'s `dropna` step. Fixed by
+adding `synthesize_v60_new_entrants_power_station` to schema_normalisation,
+which copies `Technology Type` into `Power Station` so the downstream
+fuzzy-merge keys match the property tables exactly. Templater now
+produces 48 new-entrant battery rows at full NEM scope (CNSW/CQ/CSA/GG/
+NNSW/NQ/SESA/SNSW/SNW/SQ/TAS/VIC × four duration classes), with
+`lifetime` correctly merged from `lead_time_and_project_life`.
+
+Storage_led mandate now binds and the cost differentiation between
+archetypes is structural: storage_led 9.063 × 10⁹ vs cost_optimal
+7.717 × 10⁹ — a 17 % cost lift reflecting the 36 GW of new battery
+build forced by `storage_floor_2050 ≥ 36,294 MW`.
 
 **(c) Three archetypes converging on identical objective at smoke scale.**
 At minimal config (NSW 2050 single period), `cost_optimal`,
 `rapid_coal_phaseout`, and `gas_fleet_maintained` all produce the same
-LP objective (7.833 × 10⁹). Expected: at 2050 NSW coal is already
-retired per the IASR closure schedule, so `rapid_coal_phaseout`'s
+LP objective (7.717 × 10⁹ post-fix). Expected: at 2050 NSW coal is
+already retired per the IASR closure schedule, so `rapid_coal_phaseout`'s
 coal-by-2030 clip is a no-op; `gas_fleet_maintained`'s mandate years
 (2030, 2035) are filtered out under minimal config's single-2050
 periods. **Full-NEM Phase 6 should differentiate these archetypes**
@@ -315,28 +334,45 @@ All three issues plus two surprises that surfaced during smoke verification:
 ## 9. Phase gate
 
 The MVP smoke verification passes end-to-end for all six archetypes
-(see §7). Two findings worth team attention before commissioning Phase 6:
+(see §7). The pre-Phase-6 verification found three real issues; all
+three are now patched:
 
-1. The empty-`new_entrant_batteries`-under-NSW-filter issue is
-   pre-existing Phase 1 templater behaviour. **Worth checking whether
-   it persists at full-NEM Phase 6 scale.** If it does, `storage_led`'s
-   mandate won't bind and the archetype degenerates to "no gas +
-   repowering" — meaningful but not what the catalogue spec intends.
-2. The mandate-constraints-in-rhs-don't-match-REZ-expansion fix in
-   commit 862801d is a real interaction between Phase 2's constraint
-   design and Phase 1's translator code. Worth a code-review pass on
-   the surrounding logic to see whether any other downstream consumer
-   makes the same assumption.
+1. The MVP workflow sentinel pointed at a v6.0-only filename that
+   Phase 1 normalisation consolidates away. Fixed in 862801d.
+2. The translator REZ-expansion-generators path raised KeyError on
+   any rhs entry that didn't correspond to a `rez_constraint_id` —
+   broken by Phase 2's NEM-wide aggregate floors. Fixed in 862801d.
+3. The v6.0 cache lacked a `Power Station` column on
+   `new_entrants_summary`, silently dropping all 48 NEM-wide new-
+   entrant battery rows at `_add_unique_new_entrant_storage_name_column`'s
+   dropna step. This was the issue that would have degenerated
+   `storage_led` to "no gas + repowering" at Phase 6 scale.
+   Fixed by `synthesize_v60_new_entrants_power_station` in
+   schema_normalisation; verified at full-NEM templater scope
+   (48 rows, all 12 sub-regions, lifetime values populated).
 
-Phase 6 production runs (full-NEM IASR v6.0 baseline, 6 milestone years
-× 6 archetypes, PDLP at 1e-3) can commission with confidence that:
+With these patches:
 
-- The MVP demo path works end-to-end (smoke confirmed).
+- The MVP demo path works end-to-end (smoke confirmed for all six
+  archetypes; storage_led's mandate now binds at 9.063 × 10⁹,
+  17 % cost lift vs cost_optimal reflecting 36 GW of forced battery
+  build).
 - The bench-runner production path was already working per Phase 1
   closure and is unaffected by these follow-ups.
 - All six archetypes solve Optimal at smoke scale.
-- The nuclear mandate constraint flows correctly through the full
-  pipeline to the LP variables.
+- The nuclear and storage mandate constraints flow correctly through
+  the full pipeline to the LP variables (verified in
+  custom_constraints CSVs).
+- Full-NEM templater run produces 48 new-entrant battery rows,
+  giving the storage_led mandate the option set it needs to bind
+  at Phase 6 scale.
+
+Worth a code-review pass on adjacent translator logic for the same
+"all rhs entries are REZ-expansion candidates" latent assumption,
+but not blocking Phase 6.
 
 **Regression preserved at 755/755 throughout all of Phase 2 + the
-Phase 1 follow-ups.**
+Phase 1 follow-ups + the synthesize_v60_new_entrants_power_station
+fix.**
+
+**Phase 6 commissioning gate: CLEARED.**

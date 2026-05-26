@@ -315,6 +315,7 @@ def _normalise_cached_csvs_to_v74(
         strip_v74_rez_prefix_from_aug_cost_options,
         pivot_v74_other_outages_to_wide,
         split_v74_maximum_capacity_commissioning_dates,
+        synthesize_v60_new_entrants_power_station,
         transform_v60_battery_properties_to_wide,
     )
 
@@ -392,6 +393,14 @@ def _normalise_cached_csvs_to_v74(
             # already exist) overwrites the target with the freshly-extracted
             # source rather than raising FileExistsError.
             csv_path.replace(cache_path / f"{new_table_name}.csv")
+
+    # v6.0 new_entrants_summary doesn't have a Power Station column (the v6.0
+    # row identifier is Technology Type alone). v7.4 native publishes a
+    # composite Power Station column; templater/storage.py relies on it as
+    # the Storage Name source for new-entrant battery isp_resource_type
+    # derivation. Synthesize the column from Sub-region + Technology Type so
+    # the cache shape matches v7.4 native and storage.py stays version-naive.
+    synthesize_v60_new_entrants_power_station(cache_path)
 
     # Class (c1): concat v6.0's four per-status ECAA summary CSVs into the
     # v7.4 single-consolidated form, then delete the originals. Templater

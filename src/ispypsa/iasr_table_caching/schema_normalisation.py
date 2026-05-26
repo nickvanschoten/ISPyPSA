@@ -1043,6 +1043,41 @@ def expand_v60_auxiliary_load_to_per_generator(cache_path: Path) -> None:
     expanded.to_csv(aux_path, index=False)
 
 
+def synthesize_v60_new_entrants_power_station(cache_path: Path) -> None:
+    """Add a `Power Station` column to v6.0 `new_entrants_summary`.
+
+    v7.4 native `new_entrants_summary` publishes a `Power Station` column;
+    templater `storage.py` renames it to `Storage Name` and feeds it through
+    the static-property merge chain (lifetime / round-trip efficiency / ...)
+    keyed on `Technology` values in those property tables. Without
+    `Power Station`, v6.0 new-entrant battery rows acquire NaN `storage_name`
+    and are silently dropped at `dropna(subset=["isp_resource_type"])` in
+    `_add_unique_new_entrant_storage_name_command`.
+
+    Synthesis copies `Technology Type` into `Power Station` directly (rather
+    than v7.4's composite "{sub-region} {short tech label}" form) so that
+    downstream fuzzy-merge keys match the property tables' bare Technology
+    values exactly. Per-sub-region uniqueness of the templater's final
+    `storage_name` is restored in
+    `_add_unique_new_entrant_storage_name_column` line 778, which overwrites
+    `storage_name` as `{isp_resource_type}_{sub_region_id}` — independent of
+    the Power Station shape.
+
+    No-op if `Power Station` already exists (v7.4 native cache passes through
+    unchanged) or if the required source column is missing.
+    """
+    csv_path = cache_path / "new_entrants_summary.csv"
+    if not csv_path.exists():
+        return
+    df = pd.read_csv(csv_path)
+    if "Power Station" in df.columns:
+        return
+    if "Technology Type" not in df.columns:
+        return
+    df.insert(0, "Power Station", df["Technology Type"].astype(str))
+    df.to_csv(csv_path, index=False)
+
+
 def consolidate_v60_ecaa_generator_summaries(cache_path: Path) -> None:
     """Concat v6.0 per-status summary CSVs into the v7.4 consolidated form.
 
