@@ -1,7 +1,7 @@
 method_id,short_name,description,role,representation
 electricity__grid_supply__cost_optimal_baseline,Cost-optimal Step Change,Unconstrained least-cost expansion under AEMO 2024 IASR Step Change.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
-electricity__grid_supply__fast_fossil_exit,Fast fossil exit,All coal retired by 2030; no new unabated gas; firming via CCS/H2/biomass.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
-electricity__grid_supply__gas_bridge,Gas bridge,Coal retired by 2030; new gas available as transition bridge.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
-electricity__grid_supply__storage_led,Storage-led,Coal by 2035; all gas new-entrants excluded; storage+H2+biomass firm.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__rapid_coal_phaseout,Rapid coal phaseout,All coal retired by 2030; gas remains available; LP decides on cost.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__gas_fleet_maintained,Gas fleet maintained,"Coal retired by 2030; gas held ≥ 12,500 MW at 2030 and 2035.",supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__storage_led,Storage-led,Coal by 2035; no new gas (incl. CCS); storage ≥ 1.25× AEMO trajectory per year.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
 electricity__grid_supply__fossil_incumbent,Fossil-incumbent,Capped wind+solar build; existing thermal lifetime-extended where allowed.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
-electricity__grid_supply__nuclear_included,Nuclear included,IASR coal schedule unchanged; Advanced Nuclear available in all sub-regions.,supply_grid_electricity,supply_grid_electricity__pathway_bundle
+electricity__grid_supply__nuclear_baseload,Nuclear baseload,"Coalition 2024 phased nuclear: ≥ 2,000 MW @ 2045, ≥ 4,000 MW @ 2050.",supply_grid_electricity,supply_grid_electricity__pathway_bundle

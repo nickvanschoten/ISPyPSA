@@ -170,6 +170,7 @@ def emit_granular_outputs(
     workbook_cache: Path,
     out_dir: Path,
     archetype_catalogue: list[str],
+    run_id_prefix: str | None = None,
 ) -> None:
     """Scan runs_dir for per-period myopic networks, extract granular metrics, write CSVs.
 
@@ -178,7 +179,7 @@ def emit_granular_outputs(
       demand_generation.csv, capacity_factors.csv, renewable_share.csv.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    records = _scan_run_directories(runs_dir, archetype_catalogue)
+    records = _scan_run_directories(runs_dir, archetype_catalogue, run_id_prefix=run_id_prefix)
     all_metrics = [_load_and_extract(rec) for rec in records if rec is not None]
     all_metrics = [m for m in all_metrics if m is not None]
 
@@ -190,12 +191,23 @@ def emit_granular_outputs(
     _write_renewable_share_csv(all_metrics, out_dir)
 
 
-def _scan_run_directories(runs_dir: Path, archetype_catalogue: list[str]) -> list[dict]:
-    """Find all period-level run directories matching the naming convention."""
+def _scan_run_directories(
+    runs_dir: Path,
+    archetype_catalogue: list[str],
+    run_id_prefix: str | None = None,
+) -> list[dict]:
+    """Find all period-level run directories matching the naming convention.
+
+    Pass `run_id_prefix` (e.g. "20260526_161705") to filter to one production
+    run when multiple are present — without filtering, the deduplication in
+    downstream consumers may keep an arbitrary run's row per (archetype, year).
+    """
     pattern = re.compile(r"^(.+)_(\d{4})__(.+)$")
     found = []
     for d in runs_dir.iterdir():
         if not d.is_dir():
+            continue
+        if run_id_prefix is not None and not d.name.startswith(run_id_prefix):
             continue
         m = pattern.match(d.name)
         if not m:
@@ -297,6 +309,9 @@ def main() -> None:
     parser.add_argument("--runs-dir", required=True, type=Path)
     parser.add_argument("--workbook-cache", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--run-id-prefix", default=None,
+                        help="Filter run dirs to those starting with this prefix "
+                             "(e.g. '20260526_161705' for Phase 7).")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -305,7 +320,8 @@ def main() -> None:
         "storage_led", "fossil_incumbent", "nuclear_baseload",
     ]
     log.info(f"Scanning {args.runs_dir} for archetypes: {catalogue}")
-    emit_granular_outputs(args.runs_dir, args.workbook_cache, args.out, catalogue)
+    emit_granular_outputs(args.runs_dir, args.workbook_cache, args.out, catalogue,
+                          run_id_prefix=args.run_id_prefix)
     log.info(f"Granular outputs written to {args.out}")
 
 

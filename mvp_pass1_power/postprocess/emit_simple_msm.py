@@ -84,15 +84,23 @@ ARCHETYPE_CATALOGUE = {
 _ALL_KNOWN_ARCHETYPES = ARCHETYPE_CATALOGUE
 
 
-def _find_archetype_runs(runs_dir: Path) -> dict[str, list[Path]]:
+def _find_archetype_runs(runs_dir: Path, run_id_prefix: str | None = None) -> dict[str, list[Path]]:
     """Map archetype_id -> sorted list of period run directories.
 
     Myopic runs produce one directory per period per archetype; this collects all
     of them. Single-run directories (one directory covering all periods) are also
-    handled — they appear as a one-element list."""
+    handled — they appear as a one-element list.
+
+    Pass `run_id_prefix` (e.g. "20260526_161705") to filter to a specific
+    production run when multiple are present in the same `runs_dir` —
+    otherwise this function would aggregate across all runs and produce
+    inflated or duplicated counts.
+    """
     runs: dict[str, list[Path]] = {}
     for d in sorted(runs_dir.iterdir()):
         if not d.is_dir():
+            continue
+        if run_id_prefix is not None and not d.name.startswith(run_id_prefix):
             continue
         for arch_id in _ALL_KNOWN_ARCHETYPES:
             if d.name.endswith(f"__{arch_id}"):
@@ -216,12 +224,16 @@ def main():
     parser.add_argument("--runs-dir", required=True, type=Path)
     parser.add_argument("--workbook-cache", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--run-id-prefix", default=None,
+                        help="Filter run dirs to those starting with this prefix "
+                             "(e.g. '20260526_161705' for Phase 7). Required when "
+                             "runs_dir holds multiple production runs.")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args.out.mkdir(parents=True, exist_ok=True)
 
-    runs = _find_archetype_runs(args.runs_dir)
+    runs = _find_archetype_runs(args.runs_dir, run_id_prefix=args.run_id_prefix)
     log.info(f"Found archetype runs: {list(runs)}")
 
     all_rows: list[dict] = []
