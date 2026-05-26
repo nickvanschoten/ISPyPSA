@@ -185,15 +185,80 @@ unrelated to Phase 2.
 
 - **Tier 2 archetypes** (e.g. demand-flexibility, transmission sensitivity)
 - **Trace-coverage limitation** acknowledged but not addressed.
-- **End-to-end smoke run.** A pre-existing column-name mismatch in the
-  templater (`"ISP Sub-region"` cache header vs `"ISP sub-region"` expected
-  by `templater/nodes.py`) blocks fresh workflow runs; this predates Phase 2
-  and is filed as a v7.4 normalisation follow-up.
 
 ---
 
-## 7. Phase gate
+## 7. Smoke test diagnostic — verified pre-existing
+
+The Phase 2 closure originally surfaced the MVP smoke (via
+`mvp_pass1_power/scripts/run_workflow.py`) as blocked on a column-name
+mismatch. Diagnostic work has now verified the issue chain is **wholly
+pre-existing to Phase 2** — three distinct Phase 1 follow-up bugs are
+involved, not one.
+
+### Verification trace
+
+1. **Phase 2 commits don't touch the affected code paths.** `src/ispypsa/templater/`
+   and `src/ispypsa/iasr_table_caching/` were last modified by Phase 1
+   commits c14e7e0 / eb655ef. Phase 2 only touched `mvp_pass1_power/`,
+   `tests/`, and a controlled extension to `translator/mappings.py` +
+   `pypsa_build/custom_constraints.py` for the `storage_capacity` term
+   type — decoupled from the templater/cache code paths involved in the
+   smoke failure.
+
+2. **The normalisation function works.** Running
+   `_normalise_cached_csvs_to_v74` directly on the stale cache
+   transforms `'ISP Sub-region'` → `'ISP sub-region'` (and 142 other
+   v6.0→v7.4 normalisations) as designed.
+
+3. **Fresh cache rebuild advances past the column issue but reveals
+   downstream Phase 1 bugs.** A clean cache delete + rebuild gets the
+   workflow further into the templater and surfaces a second error at
+   `templater/storage.py:54` (`cleaned_storage_summaries["technology_type"]`
+   returns a DataFrame, implying duplicate columns after the ECAA +
+   new_entrants concat). Pre-existing.
+
+### Pre-existing Phase 1 issues blocking the MVP workflow smoke
+
+| # | Issue | Where | Fix path |
+|---|---|---|---|
+| (a) | Stale on-disk cache from before Phase 1; `build_local_cache` only runs when the sentinel file is missing, so the new normalisation pass never ran on it | `mvp_pass1_power/data/workbook_cache/` | Delete the cache and let `build_local_cache` rebuild from the workbook (slow but one-time) |
+| (b) | Workflow script's sentinel `existing_generators_summary.csv` is consolidated away by Phase 1's normalisation, breaking the cache-existence check on subsequent runs | `mvp_pass1_power/scripts/run_workflow.py:85` | Switch sentinel to the v7.4-canonical `existing_committed_anticipated_additional_generator_summary.csv` (Phase 1 closure commit acknowledges fixing this in the bench runner; the MVP workflow script was missed) |
+| (c) | `_template_battery_properties` fails with a duplicate-column error on the v7.4-normalised consolidated summary + new_entrants_summary concat | `src/ispypsa/templater/storage.py:54` | Phase 1 follow-up: dedupe / disambiguate the snake-cased `technology_type` columns before filtering |
+
+### Implication for Phase 6 commissioning
+
+- **Phase 6 production runs use `mvp_pass1_power/bench/run_production.py`**,
+  which spawns `bench/run_myopic.py` subprocesses. Per Phase 1 closure,
+  the bench runner uses the corrected v7.4 sentinel and works end-to-end
+  (Phase 1's NSW 2-period PDLP smoke succeeded via this path).
+- **The MVP demonstration script (`scripts/run_workflow.py`) and the
+  MVP-postprocess pipeline (`scripts/run_all_archetypes.sh` which calls
+  the same workflow) will fail until the three Phase 1 issues above are
+  patched.** This is a documentation / demonstration impact, not a
+  production-run blocker.
+
+### Recommendation
+
+The three Phase 1 issues are independent of Phase 2 and small enough to
+fix as a Phase 1 follow-up in their own commit before Phase 6
+commissions. The minimum patch set:
+
+- Add v7.4 sentinel in `scripts/run_workflow.py` (1-line change).
+- Investigate and fix `templater/storage.py:54` duplicate-column.
+- Add a cache-invalidation marker (or document the "delete cache to
+  recover" workaround).
+
+None of these block Phase 6 production runs via the bench runner path.
+
+---
+
+## 8. Phase gate
 
 This document surfaces the integrated state for team confirmation. Phase 6
 production runs (extended IASR v6.0 baseline, 6 milestone years × 6
 archetypes, PDLP at 1e-3) follow Phase 2 closure when authorised.
+
+**Phase 2 regression confirmed at 755/735 throughout the diagnostic work;
+no cache or code changes from this verification step land in the
+committed Phase 2 history.**
