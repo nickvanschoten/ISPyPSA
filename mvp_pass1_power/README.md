@@ -22,22 +22,24 @@ all four produce simple-msm CSVs.
 
 ### 2. Archetype-driven structural pathways
 
-Four archetypes (`cost_optimal`, `renewables_led`, `fossil_incumbent`,
-`deep_clean_firmed`) are defined as mutations to the ISPyPSA input CSVs between
-templater and translator. The archetype mechanism works:
+Six production archetypes are defined as mutations to the ISPyPSA input CSVs
+between templater and translator, with three of them additionally appending
+PyPSA `custom_constraints` rows to enforce AEMO-anchored deployment mandates
+per milestone year. See `RUNBOOK.md` §1 for the full catalogue spec.
 
-  - `cost_optimal` keeps all new-entrant rows (68 rows).
-  - `renewables_led` drops 12 thermal new-entrants (OCGT small, OCGT large, CCGT)
-    → 56 rows.
-  - `fossil_incumbent` drops all Solar new-entrants and 75% of Wind new-entrants,
-    extends existing coal closure_year by 10 years.
-  - `deep_clean_firmed` drops the same 12 thermal new-entrants AND caps coal
-    closure_year at 2035.
+  - `cost_optimal` — unmodified IASR Step Change baseline.
+  - `rapid_coal_phaseout` — coal retired by 2030; gas remains available.
+  - `gas_fleet_maintained` — coal retired by 2030; gas ≥ 12,500 MW @ 2030 & 2035.
+  - `storage_led` — coal by 2035; no new gas; storage ≥ 1.25× AEMO trajectory per year.
+  - `fossil_incumbent` — coal life +10y; constrained renewable build (MGA upper bound).
+  - `nuclear_baseload` — Coalition 2024 phased nuclear: ≥ 2,000 MW @ 2045, ≥ 4,000 MW @ 2050.
 
-The four mutated input table sets each produce a distinct PyPSA LP. Three of
-them (cost_optimal, renewables_led, deep_clean_firmed) solve to the same
-optimal mix — see [why three archetypes converge](#why-three-of-four-archetypes-converge).
-fossil_incumbent produces a clearly different mix.
+Deployment mandates anchor against AEMO's published 2024 ISP Step Change
+projections (Coalition 2024 policy reference for nuclear, which AEMO does not
+model), so the archetypes read as alternative policy pathways relative to a
+public authoritative source. The numerical results sections below reference the
+prior four-archetype catalogue and will be refreshed once Phase 6 production
+runs complete.
 
 ### 3. Cost decoupling done honestly
 

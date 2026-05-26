@@ -1,9 +1,22 @@
-"""Nuclear-included archetype.
+"""Nuclear-baseload archetype.
 
 Pathway: IASR coal schedule unchanged. Advanced nuclear is injected into
 new_entrant_generators (one row per NEM sub-region) and new_entrant_build_costs
 (one technology row, constant cost). The LP may then choose nuclear alongside
-all other IASR new-entrant options.
+all other IASR new-entrant options, subject to a phased deployment floor that
+anchors to the Coalition 2024 nuclear policy reference (AEMO does not model
+nuclear).
+
+Phased deployment floor (commit B will wire as PyPSA custom constraints):
+  2025-2040: no nuclear mandate (LP unconstrained)
+  2045: ≥ 2,000 MW total nuclear capacity NEM-wide
+  2050: ≥ 4,000 MW total nuclear capacity NEM-wide
+
+Documented methodological limitation: under myopic period decomposition the
+LP can treat nuclear capacity as commissionable in the mandate year (instant
+deployment). Real nuclear construction lead time is ~10 years. The cost
+trajectory under this archetype therefore represents the structural cost of
+"nuclear-included" rather than a realistic deployment forecast.
 
 Nuclear parameters (CSIRO GenCost 2024-25 Final, July 2025):
   - Build cost: 31,100,000 AUD/MW (SMR, derived from UAMPS CFPP USD 9.3bn ref;
@@ -55,7 +68,7 @@ def apply(ispypsa_tables, config):
 
     template_rows = _select_template_rows(ne)
     if template_rows.empty:
-        log.warning("nuclear_included: no non-VRE thermal template rows found; skipping nuclear injection")
+        log.warning("nuclear_baseload: no non-VRE thermal template rows found; skipping nuclear injection")
         return ispypsa_tables
 
     nuclear_rows = _build_nuclear_rows(template_rows, ne)
@@ -64,14 +77,14 @@ def apply(ispypsa_tables, config):
     nuclear_bc_row = _build_nuclear_cost_row(bc)
     ispypsa_tables["new_entrant_build_costs"] = pd.concat([bc, nuclear_bc_row], ignore_index=True)
 
-    log.info(f"nuclear_included: added Advanced Nuclear to sub-regions: {sorted(nuclear_rows['sub_region_id'].tolist())}")
+    log.info(f"nuclear_baseload: added Advanced Nuclear to sub-regions: {sorted(nuclear_rows['sub_region_id'].tolist())}")
     return ispypsa_tables
 
 
 def _get_new_entrant_generators(ispypsa_tables):
     """Return new_entrant_generators or None if missing."""
     if "new_entrant_generators" not in ispypsa_tables:
-        log.warning("nuclear_included: new_entrant_generators table missing; skipping")
+        log.warning("nuclear_baseload: new_entrant_generators table missing; skipping")
         return None
     return ispypsa_tables["new_entrant_generators"]
 
@@ -79,7 +92,7 @@ def _get_new_entrant_generators(ispypsa_tables):
 def _get_build_costs(ispypsa_tables):
     """Return new_entrant_build_costs or None if missing."""
     if "new_entrant_build_costs" not in ispypsa_tables:
-        log.warning("nuclear_included: new_entrant_build_costs table missing; skipping")
+        log.warning("nuclear_baseload: new_entrant_build_costs table missing; skipping")
         return None
     return ispypsa_tables["new_entrant_build_costs"]
 

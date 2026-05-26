@@ -1,11 +1,25 @@
 """Storage-led archetype.
 
-Pathway: coal retired by 2035; all new gas (including CCS) ruled out. The LP
-must meet reliability through renewable overbuild, long-duration storage,
-hydrogen and biomass. This is the most demanding reliability archetype for the
-storage and hydrogen sectors.
+Pathway: coal retired by 2035; all new gas (including CCS) ruled out; storage
+deployment held at 1.25× AEMO Step Change projection at each milestone year.
+The LP must meet reliability through renewable overbuild, accelerated
+long-duration storage, hydrogen and biomass.
 
-Levers:
+Primary structural differentiator vs cost_optimal is the no-gas exclusion.
+The 1.25× storage mandate provides modest acceleration relative to AEMO's
+projected trajectory while staying within realistic supply-chain and
+grid-integration limits.
+
+Storage power-capacity floors (NEM-wide, 1.25× AEMO Step Change projection;
+commit B will wire as PyPSA custom constraints):
+  2025: ≥  3,445 MW (AEMO projects  2,756 MW)
+  2030: ≥ 33,926 MW (AEMO projects 27,141 MW)
+  2035: ≥ 38,619 MW (AEMO projects 30,895 MW)
+  2040: ≥ 38,433 MW (AEMO projects 30,747 MW)
+  2045: ≥ 41,784 MW (AEMO projects 33,427 MW)
+  2050: ≥ 40,350 MW (AEMO projects 32,280 MW)
+
+Levers (commit A — coal + gas exclusion only):
   1. Clip every coal closure_year to 2035.
   2. Drop all gas new-entrants: OCGT (small GT), OCGT (large GT), CCGT, any
      row where technology_type contains "CCS", or fuel_type is "Gas".

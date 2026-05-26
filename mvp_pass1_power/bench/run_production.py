@@ -6,8 +6,8 @@ table. Any archetype with a failed period is flagged for manual Gurobi fallback.
 
 Usage:
     uv run python mvp_pass1_power/bench/run_production.py \\
-        --archetypes cost_optimal fast_fossil_exit gas_bridge \\
-                     storage_led fossil_incumbent nuclear_included \\
+        --archetypes cost_optimal rapid_coal_phaseout gas_fleet_maintained \\
+                     storage_led fossil_incumbent nuclear_baseload \\
         --periods 2025 2030 2035 2040 2045 2050 \\
         --budget-min 720 \\
         --gurobi-fallback

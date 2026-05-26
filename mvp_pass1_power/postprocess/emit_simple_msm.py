@@ -39,18 +39,18 @@ ARCHETYPE_CATALOGUE = {
         "default_min_share": 0.0,
         "default_max_activity": None,
     },
-    "fast_fossil_exit": {
-        "method_id": "electricity__grid_supply__fast_fossil_exit",
-        "short_name": "Fast fossil exit",
-        "description": "All coal retired by 2030; no new unabated gas; firming via CCS/H2/biomass.",
+    "rapid_coal_phaseout": {
+        "method_id": "electricity__grid_supply__rapid_coal_phaseout",
+        "short_name": "Rapid coal phaseout",
+        "description": "All coal retired by 2030; gas remains available; LP decides on cost.",
         "default_max_share": 1.0,
         "default_min_share": 0.0,
         "default_max_activity": None,
     },
-    "gas_bridge": {
-        "method_id": "electricity__grid_supply__gas_bridge",
-        "short_name": "Gas bridge",
-        "description": "Coal retired by 2030; new gas available as transition bridge.",
+    "gas_fleet_maintained": {
+        "method_id": "electricity__grid_supply__gas_fleet_maintained",
+        "short_name": "Gas fleet maintained",
+        "description": "Coal retired by 2030; gas held ≥ 12,500 MW at 2030 and 2035.",
         "default_max_share": 1.0,
         "default_min_share": 0.0,
         "default_max_activity": None,
@@ -58,7 +58,7 @@ ARCHETYPE_CATALOGUE = {
     "storage_led": {
         "method_id": "electricity__grid_supply__storage_led",
         "short_name": "Storage-led",
-        "description": "Coal by 2035; all gas new-entrants excluded; storage+H2+biomass firm.",
+        "description": "Coal by 2035; no new gas (incl. CCS); storage ≥ 1.25× AEMO trajectory per year.",
         "default_max_share": 1.0,
         "default_min_share": 0.0,
         "default_max_activity": None,
@@ -71,37 +71,17 @@ ARCHETYPE_CATALOGUE = {
         "default_min_share": 0.0,
         "default_max_activity": None,
     },
-    "nuclear_included": {
-        "method_id": "electricity__grid_supply__nuclear_included",
-        "short_name": "Nuclear included",
-        "description": "IASR coal schedule unchanged; Advanced Nuclear available in all sub-regions.",
+    "nuclear_baseload": {
+        "method_id": "electricity__grid_supply__nuclear_baseload",
+        "short_name": "Nuclear baseload",
+        "description": "Coalition 2024 phased nuclear: ≥ 2,000 MW @ 2045, ≥ 4,000 MW @ 2050.",
         "default_max_share": 1.0,
         "default_min_share": 0.0,
         "default_max_activity": None,
     },
 }
 
-# Legacy catalogue retained for backward compatibility with pre-production runs.
-LEGACY_ARCHETYPE_CATALOGUE = {
-    "renewables_led": {
-        "method_id": "electricity__grid_supply__renewables_led",
-        "short_name": "Renewables-led",
-        "description": "≥80% renewable share by 2040, ≥95% by 2050; no new coal.",
-        "default_max_share": 1.0,
-        "default_min_share": 0.0,
-        "default_max_activity": None,
-    },
-    "deep_clean_firmed": {
-        "method_id": "electricity__grid_supply__deep_clean_firmed",
-        "short_name": "Deep-clean firmed",
-        "description": "All coal retired by 2040; ≥90% low-carbon by 2050; no new unabated thermal.",
-        "default_max_share": 1.0,
-        "default_min_share": 0.0,
-        "default_max_activity": None,
-    },
-}
-
-_ALL_KNOWN_ARCHETYPES = {**ARCHETYPE_CATALOGUE, **LEGACY_ARCHETYPE_CATALOGUE}
+_ALL_KNOWN_ARCHETYPES = ARCHETYPE_CATALOGUE
 
 
 def _find_archetype_runs(runs_dir: Path) -> dict[str, list[Path]]:

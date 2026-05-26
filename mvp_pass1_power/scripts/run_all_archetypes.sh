@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run all four archetypes sequentially with the fast config, then emit
-# simple-msm CSVs and the calibration report.
+# Run all six production archetypes sequentially with the fast config, then
+# emit simple-msm CSVs and the calibration report.
 #
 # This is the demonstration entry point — what the team should run to
 # reproduce the MVP's outputs.
@@ -12,7 +12,7 @@ RUNS_DIR="mvp_pass1_power/runs"
 WORKBOOK_CACHE="mvp_pass1_power/data/workbook_cache"
 OUT_DIR="mvp_pass1_power/outputs/simple_msm"
 
-for arch in cost_optimal renewables_led fossil_incumbent deep_clean_firmed; do
+for arch in cost_optimal rapid_coal_phaseout gas_fleet_maintained storage_led fossil_incumbent nuclear_baseload; do
     echo "=== Running archetype: $arch ==="
     uv run python mvp_pass1_power/scripts/run_workflow.py \
         --config "$CONFIG" --archetype "$arch"

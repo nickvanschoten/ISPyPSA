@@ -301,8 +301,8 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     catalogue = [
-        "cost_optimal", "fast_fossil_exit", "gas_bridge",
-        "storage_led", "fossil_incumbent", "nuclear_included",
+        "cost_optimal", "rapid_coal_phaseout", "gas_fleet_maintained",
+        "storage_led", "fossil_incumbent", "nuclear_baseload",
     ]
     log.info(f"Scanning {args.runs_dir} for archetypes: {catalogue}")
     emit_granular_outputs(args.runs_dir, args.workbook_cache, args.out, catalogue)

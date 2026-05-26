@@ -75,23 +75,23 @@ _TOOLTIP_PEAK_OFFPEAK = (
 )
 
 ARCHETYPE_COLORS = {
-    "cost_optimal":     "#1f77b4",
-    "fast_fossil_exit": "#2ca02c",
-    "gas_bridge":       "#ff7f0e",
-    "storage_led":      "#9467bd",
-    "fossil_incumbent": "#d62728",
-    "nuclear_included": "#8c564b",
+    "cost_optimal":         "#1f77b4",
+    "rapid_coal_phaseout":  "#2ca02c",
+    "gas_fleet_maintained": "#ff7f0e",
+    "storage_led":          "#9467bd",
+    "fossil_incumbent":     "#d62728",
+    "nuclear_baseload":     "#8c564b",
 }
 
 PRODUCTION_ARCHETYPES = list(ARCHETYPE_COLORS.keys())
 
 ARCHETYPE_DESCRIPTIONS = {
-    "cost_optimal":     "Unconstrained least-cost expansion under AEMO 2024 IASR Step Change.",
-    "fast_fossil_exit": "Coal retired by 2030; no new unabated gas; firming via CCS/H2/biomass.",
-    "gas_bridge":       "Coal retired by 2030; new gas available as transition bridge.",
-    "storage_led":      "Coal by 2035; all gas new-entrants excluded; storage+H2+biomass firm.",
-    "fossil_incumbent": "Extended coal life; constrained renewable build pathway.",
-    "nuclear_included": "IASR coal schedule; Advanced Nuclear available in all sub-regions.",
+    "cost_optimal":         "Unconstrained least-cost expansion under AEMO 2024 IASR Step Change.",
+    "rapid_coal_phaseout":  "Coal retired by 2030; gas remains available; LP decides on cost.",
+    "gas_fleet_maintained": "Coal retired by 2030; gas held ≥ 12,500 MW at 2030 and 2035.",
+    "storage_led":          "Coal by 2035; no gas (incl. CCS); storage ≥ 1.25× AEMO trajectory per year.",
+    "fossil_incumbent":     "Extended coal life; constrained renewable build pathway (MGA upper bound).",
+    "nuclear_baseload":     "Coalition 2024 phased nuclear: ≥ 2,000 MW @ 2045, ≥ 4,000 MW @ 2050.",
 }
 
 TECHNOLOGY_COLORS = {
@@ -1033,7 +1033,7 @@ endogenous prices. Bundled cost is preserved as a diagnostic.
 
 **Over-generation invariant for archetype catalogue.** Six structurally distinct
 archetypes are exposed to Pass 2 even when an archetype's LP solution converges
-with another — e.g. `nuclear_included` builds zero nuclear in the corrected
+with another — e.g. `nuclear_baseload` builds zero nuclear in the corrected
 run, but stays in the catalogue. The orchestrator selects which archetype to
 use; Pass 1 over-generates structural options rather than pre-emptively pruning.
 
@@ -1083,16 +1083,21 @@ Gurobi fallback required. Previous run preserved at `outputs/*_prior_20260518/`.
 
 **GWP basis (current):** {selected_gwp_label} — CH4={gwp['CH4']}, N2O={gwp['N2O']}
 
-**Archetype constraints:**
+**Archetype constraints (Phase 2 redesigned catalogue, AEMO-anchored mandates):**
 
-| Archetype | Coal closure | New gas | Other |
+| Archetype | Coal closure | New gas | Deployment mandate |
 |---|---|---|---|
-| cost_optimal | IASR schedule | Available | Baseline |
-| fast_fossil_exit | ≤ 2030 | No unabated (OCGT/CCGT dropped) | CCS/H2/biomass kept |
-| gas_bridge | ≤ 2030 | Available as bridge | — |
-| storage_led | ≤ 2035 | All gas dropped (incl. CCS) | H2/biomass kept |
+| cost_optimal | IASR schedule | Available | None (baseline) |
+| rapid_coal_phaseout | ≤ 2030 | Available | None |
+| gas_fleet_maintained | ≤ 2030 | Available | Gas ≥ 12,500 MW @ 2030 & 2035 |
+| storage_led | ≤ 2035 | All gas dropped (incl. CCS) | Storage ≥ 1.25× AEMO trajectory per year |
 | fossil_incumbent | +10 yrs extension | Available | Solar dropped, 75% wind dropped |
-| nuclear_included | IASR schedule | Available | Advanced Nuclear added per sub-region |
+| nuclear_baseload | IASR schedule | Available | Nuclear ≥ 2,000 MW @ 2045, ≥ 4,000 MW @ 2050 |
+
+Deployment mandates anchor against AEMO's published 2024 ISP Step Change
+projections (Coalition 2024 policy reference for nuclear, which AEMO does not
+model). Narrative sections below still reference the prior catalogue's run
+results — they will be refreshed once Phase 6 production runs complete.
 
 **Renewable classification (for renewable_share):**
 Wind, Solar, Biomass. Water (hydro) and Hydrogen are excluded as a *methodology
@@ -1107,10 +1112,10 @@ author-supplied bounds in `ARCHETYPE_CATALOGUE` in `emit_simple_msm.py`, not der
 from the ISPyPSA LP. In the simple-msm framework, max_share bounds the fraction of
 total electricity supply this method can contribute. Setting 1.0 for all archetypes
 means the orchestrator may choose any single archetype as 100% of the electricity
-supply; differentiated bounds (e.g. fast_fossil_exit capped at 0.8 through 2030 to
+supply; differentiated bounds (e.g. rapid_coal_phaseout capped at 0.8 through 2030 to
 reflect deployment ramp constraints) are a v2 modelling decision not implemented here.
 
-**Implied abatement cost sense-check (all years, fast_fossil_exit vs cost_optimal).**
+**Implied abatement cost sense-check (all years, rapid_coal_phaseout vs cost_optimal).**
 Uses `output_cost_per_unit` (fuel-decoupled, post-Bug-1 fix). Values from the
 corrected production run (`20260521_155855`):
 
@@ -1127,7 +1132,7 @@ literature band (~80–150 AUD/tCO₂e). The hydro fix lifted the 2030 figure
 materially (~+31% vs the pre-fix value) because the system now has to build
 firming capacity to cover the load that the prior phantom-hydro dispatch was
 silently meeting. Outer-year deltas are within ~10% of the pre-fix values.
-gas_bridge and storage_led are identical to fast_fossil_exit at 2030+ (gas
+gas_fleet_maintained and storage_led are identical to rapid_coal_phaseout at 2030+ (gas
 bridge provides no additional flexibility under IASR Step Change; the LP
 never chooses new unabated gas even when it's available — confirmed
 structural under realistic hydro, not an artefact of the prior modelling).
@@ -1141,7 +1146,7 @@ gap widened from ~790 AUD/tCO₂e pre-fix because the constrained-renewable
 pathway now pays for PHES round-trip losses where the prior runs got hydro
 firming "for free". This widening is methodologically correct.
 
-**Nuclear (`nuclear_included`):** Now a first-class carrier in ISPyPSA (the
+**Nuclear (`nuclear_baseload`):** Now a first-class carrier in ISPyPSA (the
 prior KeyError workaround has been removed). Cost assumptions: CSIRO GenCost
 2024-25 Final (July 2025) — 31.1M AUD/MW capital cost, 53% min stable level,
 60-year lifetime. Heat rate held at 0 GJ/MWh (nuclear fuel cost not in IASR
@@ -1159,7 +1164,7 @@ per generator at ~59% coal share, consistent with sub-critical black coal),
 natural_gas 0.62 (→ ~8 GJ/MWh per OCGT-dominant new-gas mix). Values rose vs
 the prior run (4.37 / 0.45) because the corrected dispatch mix has more fossil
 output per MWh delivered — the prior runs' phantom hydro silently supplied
-~40 TWh/yr that fossil now has to cover. fast_fossil_exit 2030 fuel mix:
+~40 TWh/yr that fossil now has to cover. rapid_coal_phaseout 2030 fuel mix:
 natural_gas 1.96, hydrogen 0.66 GJ/MWh (gas grew under realistic hydro; H2
 dropped as gas is cheaper to dispatch). fossil_incumbent 2050 biomass: 5.16
 GJ/MWh — anomalously high (was 3.74); the constrained-build pathway leans

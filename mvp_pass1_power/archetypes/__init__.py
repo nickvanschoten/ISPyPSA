@@ -11,36 +11,34 @@ and translator) rather than the PyPSA-friendly layer. This keeps mutations
 expressed in ISP-domain units (technology names, REZ ids, financial-year shares)
 rather than PyPSA bus/generator names.
 
-Production archetypes (use these for Pass 1 runs):
-  cost_optimal     — unmodified Step Change baseline
-  fast_fossil_exit — coal by 2030, no new unabated gas
-  gas_bridge       — coal by 2030, gas available as bridge
-  storage_led      — coal by 2035, no new gas at all
-  fossil_incumbent — extended coal + constrained renewable build
-  nuclear_included — IASR schedule + Advanced Nuclear option
+Production archetypes (Phase 2 six-archetype catalogue):
+  cost_optimal         — unmodified Step Change baseline
+  rapid_coal_phaseout  — coal retired by 2030; gas remains available (no mandate)
+  gas_fleet_maintained — coal retired by 2030; gas ≥ 12,500 MW @ 2030 & 2035
+  storage_led          — coal retired by 2035; no gas; storage ≥ 1.25× AEMO per year
+  fossil_incumbent     — coal life +10y; constrained renewable build (structural upper bound)
+  nuclear_baseload     — Coalition 2024 phased nuclear ≥ 2,000 MW @ 2045, ≥ 4,000 MW @ 2050
 
-Legacy archetypes (kept for backward compatibility, not in production catalogue):
-  renewables_led   — superseded by fast_fossil_exit / storage_led
-  deep_clean_firmed — superseded by fast_fossil_exit
+Deployment mandates anchor against AEMO's published 2024 ISP Step Change
+projections rather than the team's own cost_optimal output, so the archetypes
+read as alternative policy pathways relative to a public authoritative source.
 """
 
 from ._pumped_storage_fix import apply as _pumped_storage_fix_apply
 from .cost_optimal import apply as cost_optimal_apply
-from .fast_fossil_exit import apply as fast_fossil_exit_apply
-from .gas_bridge import apply as gas_bridge_apply
+from .rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
+from .gas_fleet_maintained import apply as gas_fleet_maintained_apply
 from .storage_led import apply as storage_led_apply
 from .fossil_incumbent import apply as fossil_incumbent_apply
-from .nuclear_included import apply as nuclear_included_apply
-from .renewables_led import apply as renewables_led_apply
-from .deep_clean_firmed import apply as deep_clean_firmed_apply
+from .nuclear_baseload import apply as nuclear_baseload_apply
 
 PRODUCTION_ARCHETYPES = [
     "cost_optimal",
-    "fast_fossil_exit",
-    "gas_bridge",
+    "rapid_coal_phaseout",
+    "gas_fleet_maintained",
     "storage_led",
     "fossil_incumbent",
-    "nuclear_included",
+    "nuclear_baseload",
 ]
 
 
@@ -59,13 +57,10 @@ def _with_pumped_storage_fix(archetype_fn):
 
 
 APPLY_ARCHETYPE = {
-    "cost_optimal":     _with_pumped_storage_fix(cost_optimal_apply),
-    "fast_fossil_exit": _with_pumped_storage_fix(fast_fossil_exit_apply),
-    "gas_bridge":       _with_pumped_storage_fix(gas_bridge_apply),
-    "storage_led":      _with_pumped_storage_fix(storage_led_apply),
-    "fossil_incumbent": _with_pumped_storage_fix(fossil_incumbent_apply),
-    "nuclear_included": _with_pumped_storage_fix(nuclear_included_apply),
-    # Legacy — not in PRODUCTION_ARCHETYPES but still callable.
-    "renewables_led":    _with_pumped_storage_fix(renewables_led_apply),
-    "deep_clean_firmed": _with_pumped_storage_fix(deep_clean_firmed_apply),
+    "cost_optimal":         _with_pumped_storage_fix(cost_optimal_apply),
+    "rapid_coal_phaseout":  _with_pumped_storage_fix(rapid_coal_phaseout_apply),
+    "gas_fleet_maintained": _with_pumped_storage_fix(gas_fleet_maintained_apply),
+    "storage_led":          _with_pumped_storage_fix(storage_led_apply),
+    "fossil_incumbent":     _with_pumped_storage_fix(fossil_incumbent_apply),
+    "nuclear_baseload":     _with_pumped_storage_fix(nuclear_baseload_apply),
 }

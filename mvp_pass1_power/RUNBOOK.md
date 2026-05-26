@@ -9,39 +9,43 @@ instructions for the Pass 1 power-sector integration MVP.
 ## 1. Archetype catalogue
 
 All six archetypes use AEMO 2024 IASR **Step Change** as the base scenario.
-Differentiation is imposed entirely through ISPyPSA-input mutations (closure years,
-new-entrant option set). No custom_constraints rows are used in the production catalogue.
+Differentiation is imposed through ISPyPSA-input mutations (closure years,
+new-entrant option set) and — for the three mandate archetypes — through
+PyPSA custom_constraints rows that floor aggregate technology capacity per
+milestone year.
 
 | Archetype ID | Short name | Differentiation levers |
 |---|---|---|
 | `cost_optimal` | Cost-optimal Step Change | Unmodified IASR baseline; LP picks unconstrained least-cost mix |
-| `fast_fossil_exit` | Fast fossil exit | Coal closure ≤ 2030; drops OCGT (small GT), OCGT (large GT), CCGT from new entrants; CCGT-CCS + H2 + biomass remain as firm options |
-| `gas_bridge` | Gas bridge | Coal closure ≤ 2030; all gas new-entrant technologies retained; LP freely picks gas vs storage |
-| `storage_led` | Storage-led | Coal closure ≤ 2035; drops all gas new entrants including CCS variants; H2 and biomass remain |
-| `fossil_incumbent` | Fossil-incumbent | Coal closure pushed +10 years (AEMO schedule + 10); solar new entrants dropped, 75% of wind new entrants dropped (random_state=0 for reproducibility) |
-| `nuclear_included` | Nuclear included | IASR coal schedule unchanged; Advanced Nuclear injected into new_entrant_generators (one row per sub-region) at CSIRO GenCost 2024-25 cost (31.1M AUD/MW) |
+| `rapid_coal_phaseout` | Rapid coal phaseout | Coal closure ≤ 2030; gas remains available; LP decides on cost. No mandate. |
+| `gas_fleet_maintained` | Gas fleet maintained | Coal closure ≤ 2030; **gas ≥ 12,500 MW at 2030 and 2035** (AEMO projects 11,884 / 11,852 MW so the mandate binds). 2040+ unconstrained — AEMO's natural trajectory exceeds 12,500 MW |
+| `storage_led` | Storage-led | Coal closure ≤ 2035; all gas new entrants dropped (incl. CCS); **storage power ≥ 1.25× AEMO Step Change projection per milestone year** |
+| `fossil_incumbent` | Fossil-incumbent | Coal closure pushed +10 years; solar new entrants dropped, 75% of wind new entrants dropped (random_state=0 for reproducibility). Structural upper bound for MGA. |
+| `nuclear_baseload` | Nuclear baseload | IASR coal schedule unchanged; Advanced Nuclear injected at CSIRO GenCost 2024-25 cost (31.1M AUD/MW); **nuclear ≥ 2,000 MW @ 2045 and ≥ 4,000 MW @ 2050** (Coalition 2024 policy reference; AEMO does not model nuclear) |
 
 ### Design rationale
 
-The five non-baseline archetypes each test a qualitatively different hypothesis:
+Deployment mandates anchor against AEMO's published 2024 ISP Step Change
+projections (or Coalition 2024 policy for nuclear, which AEMO does not model),
+not against the team's own cost_optimal output. This frames archetypes as
+alternative policy pathways relative to a public authoritative source and
+avoids circular dependency on the team's own modelling artifacts.
 
-- **fast_fossil_exit / gas_bridge / storage_led** span the coal-exit-with-different-firming
-  spectrum. Isolating gas availability as the single lever makes the marginal cost of clean
-  firming visible across the three pathways.
-- **fossil_incumbent** provides a credible upper bound on carbon intensity for downstream
-  MGA near-optimal exploration without requiring a prescriptive fossil-share floor constraint.
-  (A floor constraint would require custom_constraints_rhs, which cannot constrain
-  storage_units directly in the current ISPyPSA schema.)
-- **nuclear_included** tests whether nuclear's high capital cost (≥ $31M/MW per CSIRO
-  GenCost 2024-25) is ever cost-competitive against renewables + storage under IASR
-  techno-economics. The corrected production run (`20260521_155855`) shows the LP
-  builds zero nuclear capacity in all six milestone years; the archetype is in the
-  catalogue as a structural option the LP rejects on economic grounds.
+- **rapid_coal_phaseout / gas_fleet_maintained / storage_led** span the
+  coal-exit-with-different-firming spectrum, now with explicit deployment
+  mandates rather than purely structural option-set differences.
+- **fossil_incumbent** provides a credible upper bound on carbon intensity
+  for downstream MGA near-optimal exploration.
+- **nuclear_baseload** tests the structural cost of including modest
+  meaningful nuclear deployment. Note the myopic-period decomposition can
+  treat nuclear as commissionable in the mandate year, ignoring the ~10-year
+  real construction lead time. The cost trajectory therefore represents
+  structural cost-of-nuclear-included rather than a realistic deployment
+  forecast.
 
 ### What archetypes do NOT capture
 
-- Year-by-year build-rate caps (e.g., "≤ 3 GW/year of wind"). These require
-  `custom_constraints_rhs` rows; not implemented in the production catalogue.
+- Year-by-year build-rate caps (e.g., "≤ 3 GW/year of wind").
 - Interconnector reinforcement sensitivity. Transmission topology is IASR-fixed in all six.
 - Demand-side flexibility. Load is treated as inelastic in all six.
 
@@ -52,11 +56,11 @@ The five non-baseline archetypes each test a qualitatively different hypothesis:
 | File | Role |
 |---|---|
 | `archetypes/cost_optimal.py` | Identity mutation |
-| `archetypes/fast_fossil_exit.py` | Coal clip + gas new-entrant drops |
-| `archetypes/gas_bridge.py` | Coal clip only |
-| `archetypes/storage_led.py` | Coal clip (2035) + all gas new-entrant drops |
+| `archetypes/rapid_coal_phaseout.py` | Coal clip to 2030 (no other change) |
+| `archetypes/gas_fleet_maintained.py` | Coal clip to 2030 + gas capacity floor at 2030/2035 |
+| `archetypes/storage_led.py` | Coal clip (2035) + all gas new-entrant drops + storage power floor per year |
 | `archetypes/fossil_incumbent.py` | Coal lifetime extension + renewable new-entrant thinning |
-| `archetypes/nuclear_included.py` | Advanced Nuclear injection from CCGT template |
+| `archetypes/nuclear_baseload.py` | Advanced Nuclear injection from CCGT template + nuclear floor @ 2045/2050 |
 | `archetypes/__init__.py` | `PRODUCTION_ARCHETYPES`, `APPLY_ARCHETYPE` registry |
 | `bench/run_myopic.py` | Sequential single-period solver with `--archetype` param |
 | `bench/run_production.py` | Parallel launcher (one subprocess per archetype) |
@@ -127,11 +131,11 @@ For single-period fallback, Gurobi barrier with default BarConvTol is recommende
 | Archetype | Periods solved (HiGHS) | Periods fallback (Gurobi) | Total wall-clock | Peak RSS (GiB) |
 |---|---|---|---|---|
 | cost_optimal | — | — | — | — |
-| fast_fossil_exit | — | — | — | — |
-| gas_bridge | — | — | — | — |
+| rapid_coal_phaseout | — | — | — | — |
+| gas_fleet_maintained | — | — | — | — |
 | storage_led | — | — | — | — |
 | fossil_incumbent | — | — | — | — |
-| nuclear_included | — | — | — | — |
+| nuclear_baseload | — | — | — | — |
 
 To populate this table after runs complete:
 

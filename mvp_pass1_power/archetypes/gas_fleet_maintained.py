@@ -1,0 +1,33 @@
+"""Gas-fleet-maintained archetype.
+
+Pathway: coal retired by 2030, AND total NEM gas capacity is held at or above
+12,500 MW at both the 2030 and 2035 milestone years. Beyond 2035 no mandate
+applies because AEMO's published Step Change trajectory naturally exceeds
+12,500 MW (12,640 MW @ 2040, 14,188 MW @ 2045+).
+
+Semantic: tests the cost of holding gas fleet stable through the transition
+decade rather than allowing the retirement-and-rebuild pattern AEMO's
+projection contains. The mandate concentrates in 2030-2035 where AEMO
+projects natural gas capacity decline; later years rely on AEMO's natural
+trajectory.
+
+AEMO Step Change projections for reference:
+  2030: 11,884 MW (mandate binds at +616 MW)
+  2035: 11,852 MW (mandate binds at +648 MW)
+  2040: 12,640 MW (mandate non-binding)
+  2045+: ≥14,188 MW (mandate non-binding)
+
+Levers (commit A — renames + base coal logic):
+  1. Clip every coal closure_year to 2030.
+
+Mandate constraints (gas ≥ 12,500 MW @ 2030, 2035) are wired in commit B.
+"""
+
+
+def apply(ispypsa_tables, config):
+    ecaa = ispypsa_tables["ecaa_generators"].copy()
+    coal_mask = ecaa["fuel_type"].isin(["Black Coal", "Brown Coal"])
+    ecaa.loc[coal_mask, "closure_year"] = ecaa.loc[coal_mask, "closure_year"].clip(upper=2030)
+    ispypsa_tables["ecaa_generators"] = ecaa
+
+    return ispypsa_tables
