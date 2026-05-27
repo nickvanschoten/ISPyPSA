@@ -97,6 +97,13 @@ per-year H2 fraction table.
 
 ### 5. Calibration against AEMO 2024 ISP Step Change
 
+> **Current calibration lives in the dashboard Calibration tab** (live, against
+> the current 3-week production data with year-aware framing). The static
+> `calibration/calibration_report.md` is *not yet regenerated* for the full-NEM
+> 3-week data — it will be produced once the methodology stabilises (after the
+> Phase 7.3 annual-CF work), covering all six archetypes, as part of final
+> deliverable packaging.
+
 The dashboard Calibration tab compares cost_optimal total generation against
 AEMO Overview headline figures. Full-NEM `cost_optimal` at 2050 vs AEMO NEM:
 
