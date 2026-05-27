@@ -13,6 +13,62 @@
   Change; CEC 2024.
 - (c) Phase 6 re-run with cap (this document).
 
+> **Phase 7.2 update (3-week sampling, run `nem_3week_v1`, 2026-05-27).**
+> The single-week Phase 7 run documented below was superseded by a 3-week
+> representative-sampling production run. Phase 7.2 also re-examined the
+> PDLP-variance concern this document originally elevated in §3 — with
+> controlled tests that **refuted** it. The corrected synthesis leads this
+> document; §3 below is retained with a correction notice for the record.
+
+---
+
+## 0. Four characterised methodological properties (Phase 7.2)
+
+Phase 7.2 closed with four *documented properties* of the methodology —
+each identified, diagnosed, and empirically bounded, rather than left as
+an acknowledged limitation.
+
+**1. Demand annualisation bias is consistent under 3-week.**
+The LP consumes POE50 OPSO_MODELLING operational demand (rooftop-PV
+netted out; true full-year 2050 = 255.3 TWh). 3-week representative
+sampling annualises this to a **consistent ~+8 % overstatement** every
+milestone year. Single-week produced a *variable* +5–19 % overstatement,
+and that variability — not the demand trace itself — caused year-to-year
+artifacts including the 2045 demand kink. The 276-vs-310 TWh gap to
+AEMO's headline is **definitional** (operational sent-out vs underlying
+consumption; ~121 TWh rooftop PV netted out), not a sampling artefact.
+Evidence: `bench/extracts/demand_diagnostic.py`.
+
+**2. The 2045 wind dip was a rep-week artefact; multi-week resolves it.**
+Under single-week every archetype showed a sharp 2045 wind collapse
+(e.g. cost_optimal 26.1 → 18.9 → 29.7 GW across 2040/45/50). Under
+3-week the dip vanishes (23.7 → 27.5 → 25.1 GW); 2045 is now a local
+maximum. Rep-week selection was the **dominant** contributor (acting
+through the under-sampled 2045 demand); the IASR demand kink was
+secondary. Evidence: `bench/extracts/extract_1week_baseline.py` vs
+`extract_3week_carriers.py`.
+
+**3. Gas direction is a year-and-archetype interaction, not monotone.**
+Two competing effects: the demand-annualisation correction pushes gas
+*down* (most archetypes at 2030/2040/2050), while peak-coincidence
+visibility under 3-week pushes gas *up* (concentrated at 2045, where the
+demand correction is largest). In `storage_led` gas is mandate-floored
+and flat. Net direction varies by year and archetype; the NSW smoke's
+"gas rises" did not generalise.
+
+**4. Capacity figures are PDLP-tolerance-robust (correction of §3).**
+Controlled tests — same inputs, same period, only the tolerance changed
+— show 1e-3 and 1e-4 agree within **0.5 % on every carrier** at
+near-identical objective (+0.037 % 3-week, −0.007 % 1-week), in *both*
+single-week and 3-week sampling. The "48.8 GW solar swing" elevated in
+§3 below was a **Phase 6 → Phase 7 model-correction effect** (hydro
+water-carrier, pumped-storage, biomass cap, nuclear/hydrogen fixes that
+landed between those runs), **not** solver variance. The one exception is
+`storage_led` 2035, where the 1e-4 re-solve does not converge in budget
+(duality gap plateaus ~2.6 × 10⁻⁴ at 120 min); its production 1e-3
+result is the practical tolerance floor. Evidence:
+`bench/extracts/variance_probe_compare.py`.
+
 ---
 
 ## 1. Biomass cap binding — primary methodology finding
@@ -67,11 +123,24 @@ of replacing biomass with more expensive alternatives. The storage_led
 
 ---
 
-## 3. Methodological exposure: PDLP-at-1e-3 variance (ELEVATED)
+## 3. Methodological exposure: PDLP-at-1e-3 variance (CORRECTED — see §0.4)
 
-**This is the most consequential single finding from Phase 7.** It
-warrants explicit framing in the deliverable, in the dashboard, and
-in any team conversation about the catalogue's quantitative outputs.
+> **Correction (Phase 7.2).** The framing in this section — that capacity
+> figures swing 10–50 GW per technology between identical-input runs due
+> to PDLP tolerance — was **refuted by controlled testing** (see §0
+> property 4). The Phase 6 → Phase 7 swing analysed below was a
+> *model-correction* effect (hydro / pumped-storage / biomass / nuclear /
+> hydrogen fixes landing between the two runs), not solver variance.
+> Controlled 1e-3-vs-1e-4 tests on identical inputs move every carrier by
+> <0.5 %. The section is retained unedited below for the record; read §0.4
+> for the corrected, evidence-backed framing. This is methodological
+> self-correction: the original caution was a responsible response to the
+> evidence available at the time, now superseded by controlled tests.
+
+**[Superseded] This was elevated as the most consequential Phase 7
+finding.** It warranted explicit framing in the deliverable, dashboard,
+and team conversation — under the evidence available before the Phase 7.2
+controlled tests.
 
 ### What the variance looks like
 

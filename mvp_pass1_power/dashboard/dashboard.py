@@ -359,15 +359,15 @@ def _render_intensity_curves(data_dir: Path, gwp: dict) -> None:
 
     st.info(
         "**Cost / carbon / renewable-share intensity curves are robust** under "
-        "PDLP at 1e-3 tolerance (objective and generation-delivered are "
-        "stable within ~3 % and ~1 TWh respectively across runs). "
-        "**Capacity-side comparisons** (e.g. \"archetype X builds Y GW of "
-        "tech Z\") on the Granular Results tab are PDLP-tolerance "
-        "approximate and can shift 10-50 GW per technology between runs at "
-        "near-identical objective. See Methodology tab → \"Solver and PDLP "
-        "tolerance\" for full exposition. The catalogue's *structural* "
-        "differentiation (visible in the line shapes below) is robust; "
-        "*point-estimate* capacity values are not."
+        "PDLP at 1e-3 tolerance (objective stable within ~0.04 %, "
+        "generation-delivered within ~1 TWh). **Capacity figures are also "
+        "tolerance-robust** — controlled tests (1e-3 vs 1e-4, identical "
+        "inputs) show every carrier agrees within 0.5 %, in both single-week "
+        "and 3-week sampling. The large Phase 6 → Phase 7 capacity shift "
+        "previously characterised as solver variance was actually a "
+        "model-correction effect (hydro / pumped-storage / biomass / nuclear "
+        "/ hydrogen fixes that landed between those runs). See Methodology "
+        "tab → \"Solver and PDLP tolerance\" for the controlled-test evidence."
     )
 
     st.caption(
@@ -454,18 +454,19 @@ def _render_intensity_curves(data_dir: Path, gwp: dict) -> None:
 def _render_granular(data_dir: Path, selected_archetypes: list[str]) -> None:
     st.subheader("Section 2 — Granular Results")
 
-    st.warning(
-        "**Capacity figures are PDLP-tolerance approximate.** The solver "
-        "(HiGHS PDLP at 1e-3 relative tolerance) finds *a* near-optimal LP "
-        "vertex, not THE cost-minimising solution. Identical LPs can produce "
-        "different capacity mixes within ~3 % objective tolerance — example "
-        "from Phase 6 → Phase 7: cost_optimal 2050 solar shifted 75.4 → "
-        "26.6 GW and wind 40.9 → 29.7 GW between runs while total generation "
-        "delivered changed by only ~1 TWh (304.1 → 302.9). The catalogue's "
-        "*structural* differentiation (storage_led ≠ fossil_incumbent ≠ "
-        "nuclear_baseload by carrier composition) is robust; *point-estimate* "
-        "capacity values are not. See Methodology tab → \"Solver and PDLP "
-        "tolerance\" for full exposition."
+    st.info(
+        "**Capacity figures are tolerance-robust.** Controlled tests "
+        "(cost_optimal 2050 at 1e-3 vs 1e-4, identical inputs) show the "
+        "capacity mix agrees within 0.5 % on every carrier at near-identical "
+        "objective (±0.04 %), in both single-week and 3-week sampling. The "
+        "large Phase 6 → Phase 7 shift previously characterised as solver "
+        "variance (solar 75.4 → 26.6 GW) was actually the cumulative effect "
+        "of model corrections (hydro water-carrier, pumped-storage, biomass "
+        "cap, nuclear / hydrogen fixes) that landed between those two runs. "
+        "One exception: `storage_led` 2035 is the single archetype-year where "
+        "the 1e-4 re-solve does not converge in budget (duality gap plateaus "
+        "at ~2.6 × 10⁻⁴); its production 1e-3 result is the practical floor. "
+        "See Methodology tab → \"Solver and PDLP tolerance\" for the evidence."
     )
 
     cap = _load_granular(data_dir, "capacity_gw.csv")
@@ -478,12 +479,15 @@ def _render_granular(data_dir: Path, selected_archetypes: list[str]) -> None:
         st.markdown(f"**{arch}** — {ARCHETYPE_DESCRIPTIONS.get(arch, '')}")
         if arch == "storage_led":
             st.caption(
-                ":warning: storage_led 2035 hit the PDLP tolerance edge "
-                "(pinf = 9.99 × 10⁻⁴ at the 1 × 10⁻³ boundary). Capacity-mix "
-                "variance for this archetype-year may exceed the general "
-                "3 % objective tolerance — the combined storage_floor + "
-                "biomass_cap constraints tighten the polytope and reduce the "
-                "set of near-optimal vertices PDLP can land on."
+                "ℹ️ storage_led 2035 is the one archetype-year where the 1e-4 "
+                "re-solve does not converge in budget — the PDLP duality gap "
+                "plateaus at ~2.6 × 10⁻⁴ (primal/dual feasibility already "
+                "tight) because the combined storage_floor + biomass_cap "
+                "constraints tighten the polytope. Its **production 1e-3 "
+                "result converges cleanly and is the practical tolerance "
+                "floor** for this archetype-year. All other archetype-years "
+                "are tolerance-robust (1e-3 vs 1e-4 within 0.5 %). See "
+                "Methodology tab → \"Solver and PDLP tolerance\"."
             )
         if arch == "gas_fleet_maintained":
             st.caption(
@@ -597,11 +601,27 @@ def _render_calibration(data_dir: Path) -> None:
             col_c.metric("Discrepancy", f"{diff_pct:+.1f}%",
                          delta_color="inverse" if diff_pct > 0 else "normal")
             if year == 2030:
-                st.error(
-                    f"2030 generation overshoot: {diff_pct:+.1f}% vs AEMO Overview. "
-                    "Known data-side discrepancy — established across three solvers "
-                    "(HiGHS simplex, PDLP, Gurobi). Likely due to IASR "
-                    "trace-representative-week scaling rather than solver choice."
+                st.info(
+                    f"2030 generation {diff_pct:+.1f}% vs AEMO Overview — a "
+                    "characterised data-side effect, not solver choice "
+                    "(consistent across HiGHS simplex, PDLP, and Gurobi). The "
+                    "representative-week annualisation oversamples high-demand "
+                    "weeks, overstating the operational trace (POE50 "
+                    "OPSO_MODELLING) by ~8–12 % in the near term. See "
+                    "Methodology tab → demand framing and "
+                    "`bench/extracts/demand_diagnostic.py`."
+                )
+            elif year == 2050:
+                st.info(
+                    f"2050 generation {diff_pct:+.1f}% vs AEMO Overview — a "
+                    "**definitional** gap, not under-build. The LP models POE50 "
+                    "OPSO_MODELLING operational demand (true full-year 2050 = "
+                    "255 TWh); AEMO's headline is *underlying* consumption "
+                    "(313 TWh) including ~121 TWh behind-the-meter rooftop PV "
+                    "that the operational trace nets out, plus electrification / "
+                    "new-load that diverges over the horizon. The 3-week "
+                    "annualisation (~+8 %) partially offsets but does not close "
+                    "the gap. See Methodology tab → demand framing."
                 )
         else:
             col_c.metric("Discrepancy", f"{diff_pct:+.1f}%")
@@ -1034,8 +1054,8 @@ Curves cost-intensity chart is currently wired to
 
 
 def _methodology_solver_pdlp() -> None:
-    """Solver choice — why PDLP, what 1e-3 tolerance means, capacity-variance exposure."""
-    with st.expander("Solver and PDLP tolerance — capacity figures are tolerance-approximate"):
+    """Solver choice — why PDLP, what 1e-3 tolerance means, controlled tolerance-robustness evidence."""
+    with st.expander("Solver and PDLP tolerance — capacity figures are tolerance-robust"):
         st.markdown(r"""
 ### Why HiGHS PDLP, not simplex
 
@@ -1070,63 +1090,71 @@ When all three metrics are below the requested threshold, HiGHS calls
 the solution converged. The *primal solution* $x$ (capacity decisions,
 dispatch) is approximate within the tolerance.
 
-### What "tolerance-approximate" means for capacity figures
+### Controlled tolerance test — capacity figures are robust
 
-For ISPyPSA's LP scale (~700k rows × ~330k cols × ~1.3M nonzeros at
-NEM single-period), the 1e-3 tolerance corresponds to:
+An earlier version of this deliverable warned that capacity figures were
+"tolerance-approximate" and could swing 10–50 GW per technology between
+identical-input runs. **Controlled testing has refuted that claim**, and
+this section documents the self-correction.
 
-- **Objective accuracy:** within ~0.3 % of the true optimum
-- **Primal variable accuracy:** *much* larger swings possible. Phase 6
-  → Phase 7 produced **a 48.8 GW solar swing and 11.2 GW wind swing**
-  on cost_optimal 2050 while total objective changed only +2.6 % and
-  total generation delivered changed only −1.2 TWh (304.1 → 302.9).
+The original concern was anchored on a Phase 6 → Phase 7 comparison in
+which cost_optimal 2050 solar shifted 75.4 → 26.6 GW (−48.8 GW) at a
+near-identical objective, attributed to PDLP landing on a different
+near-optimal vertex under the 1e-3 tolerance. But Phase 6 and Phase 7
+were **not** identical-input runs — between them landed the hydro
+water-carrier fix, the pumped-storage fix, the biomass cap, and the
+nuclear / hydrogen fixes. The 48.8 GW shift was the cumulative effect of
+those **model corrections**, not solver variance.
 
-This is *not* a solver bug; it's an inherent property of first-order LP
-methods on near-degenerate constraint sets. Multiple primal solutions
-sit close to the optimum on the polytope's facets; PDLP terminates
-on whichever it reaches first under the tolerance.
+A clean controlled test — same inputs, same period, *only* the tolerance
+changed — shows the opposite:
 
-### Implications for reading the dashboard
+| Config | 1e-3 → 1e-4 objective | Largest carrier shift |
+|---|---|---|
+| cost_optimal 2050, 3-week | +0.037 % | Battery +0.34 GW; Solar −0.13, Wind −0.03 |
+| cost_optimal 2050, 1-week | −0.007 % | Wind −0.14 GW; Solar −0.10 |
 
-- **Capacity figures are tolerance-approximate.** Treat them as showing
-  *one* near-optimal solution, not THE cost-minimising solution.
-  Variance on the order of 10–50 GW per technology per period is
-  possible across identical-input solves.
-- **Objective values are stable** within ~3 %. Cost trajectories and
-  cost ranking across archetypes are robust.
-- **Annual generation delivered is stable** within ~1 TWh per
-  300 TWh — the LP meets demand regardless of which capacity vertex
-  it lands on.
-- **Catalogue structural differentiation is robust** — storage_led
-  ≠ fossil_incumbent ≠ nuclear_baseload in their fundamental carrier
-  composition. The differences between them are larger than the
-  within-archetype PDLP variance.
-- **Point-estimate capacity values are not** — don't quote
-  "rapid_coal_phaseout builds exactly 31.1 GW wind at 2050" as a
-  precise number. It's a sample from a ±10 GW band.
+**Tightening from 1e-3 to 1e-4 moves every carrier by <0.5 %**, in both
+single-week and 3-week sampling. The capacity mix is tolerance-robust:
+point-estimate capacity values are meaningful, not a sample from a
+±10 GW band. (Minor conditioning note: single-week needed ~299k PDLP
+iterations to reach 1e-4 vs 3-week's ~132k on the same problem, so
+3-week is somewhat better-conditioned — but both land on stable
+solutions at the production 1e-3 tolerance.)
 
-### Specific variance flag — `storage_led` 2035
+### What IS approximate
 
-`storage_led` 2035 had `pdlp_final_pinf_rel = 9.99 × 10⁻⁴`, sitting
-right at the 1e-3 tolerance boundary. The combined `storage_floor`
-mandate + `biomass_cap` + other constraints tighten the polytope and
-reduce the set of near-optimal vertices PDLP can land on. This
-archetype-year's capacity-mix variance may exceed the general ±3 %
-envelope. Treat its specific capacity figures with extra caution.
+- **Objective:** within ~0.04 % of the true optimum at 1e-3 (bounded
+  directly by the controlled tests above).
+- **Annual generation delivered:** within ~1 TWh per ~280 TWh — the LP
+  meets demand regardless.
+- **Catalogue structural differentiation** — storage_led ≠
+  fossil_incumbent ≠ nuclear_baseload by carrier composition — is far
+  larger than any tolerance effect.
+
+### The one exception — `storage_led` 2035
+
+`storage_led` 2035 is the single archetype-year where the 1e-4 re-solve
+does **not** converge in budget: the duality gap plateaus at
+~2.6 × 10⁻⁴ after 356k iterations / 120 min, while primal and dual
+feasibility are already tight (2 × 10⁻⁸, 3 × 10⁻⁶). The combined
+`storage_floor` + `biomass_cap` constraints tighten the polytope enough
+that PDLP's first-order gap closes very slowly. Its **production 1e-3
+result converges cleanly and is the practical tolerance floor** for this
+archetype-year — sub-1e-3 capacity variance cannot be empirically bounded
+because the tighter solve does not finish.
 
 ### v2 / Pass-3 options
 
-If the team needs tighter capacity precision, paths are:
+If a future pass needs tighter precision than 1e-3 on a constrained
+archetype-year like `storage_led` 2035:
 
-1. **Tighten PDLP tolerance** to 1e-4 or 1e-5. Expect 2–5× longer
-   solves; the `model_status: Unknown` reporting quirk (per Phase 1
-   bench finding) becomes more prevalent.
-2. **Run repeats with different random seeds or warm-starts** and
-   report empirical capacity ranges. Substantial compute cost.
-3. **Switch to a commercial solver** (Gurobi at higher BarConvTol);
-   Phase 1 8th-addendum found Gurobi did not converge at 1e-3 on the
-   NEM 6-period LP in 8 h, so the v2 path here isn't obviously better.
-4. **Perfect-foresight multi-period** instead of myopic chained
+1. **Longer budget** for the 1e-4 solve — the gap was still descending
+   at 120 min and may converge given more time.
+2. **Switch to a commercial solver** (Gurobi); Phase 1 8th-addendum
+   found Gurobi did not converge at 1e-3 on the NEM 6-period LP in 8 h,
+   so this isn't obviously better for the constrained cases.
+3. **Perfect-foresight multi-period** instead of myopic chained
    single-period. Avoids per-year LP independence but adds substantial
    LP scale; PDLP at 1e-3 already takes ~30 min for NEM 2-period.
 """)

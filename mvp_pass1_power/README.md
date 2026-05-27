@@ -4,10 +4,14 @@ A working prototype that takes a small set of structurally distinct power-sector
 archetypes, runs each through ISPyPSA, and emits simple-msm-contract-compatible
 CSVs for Pass 2 consumption.
 
-**Status:** working end-to-end at smoke-test scale (NSW-only, single 2050
-investment period, one representative week). Architectural and pipeline
-elements all exercised on real AEMO IASR 2024 data; calibration is directional
-not definitive. See [Honest assessment](#honest-assessment) for the limits.
+**Status:** working end-to-end at full-NEM production scale — six archetypes ×
+six milestone years (2025–2050), sub-regional NEM with REZ discrete nodes,
+3-week representative sampling, solved with HiGHS PDLP at 1e-3 tolerance via
+myopic single-period decomposition (~3 h wall-clock for all 36 solves in
+parallel on the bench server). The deliverable supports **relative**
+archetype-to-archetype comparison under a documented methodology, not
+AEMO-absolute reproduction. See [Honest assessment](#honest-assessment) for
+what it does and does not claim.
 
 ---
 
@@ -17,8 +21,9 @@ not definitive. See [Honest assessment](#honest-assessment) for the limits.
 
 From the AEMO 2024 IASR workbook (v6.0), through the ISPyPSA
 templater/translator/PyPSA build/HiGHS solve, to per-archetype-per-milestone-year
-rows in the simple-msm `method_years.csv` schema. All four archetypes solve;
-all four produce simple-msm CSVs.
+rows in the simple-msm `method_years.csv` schema. All six archetypes solve at
+full-NEM scale across all six milestone years (36 single-period LPs); all
+produce simple-msm CSVs.
 
 ### 2. Archetype-driven structural pathways
 
@@ -47,16 +52,16 @@ The simple-msm contract requires `output_cost_per_unit` to exclude commodity
 costs the orchestrator prices separately. Our post-processor reads ISPyPSA's
 bundled marginal cost, subtracts dispatch-weighted fuel cost computed from
 `heat_rate × fuel_price`, and exposes both the decoupled number AND the bundled
-number as diagnostics. Real numbers from the cost-optimal run, NSW 2050:
+number as diagnostics. Real numbers from the full-NEM cost_optimal run, 2050:
 
 | metric                                    | value          |
 |-------------------------------------------|---------------:|
-| output_cost_per_unit (decoupled)          | 177.70 AUD/MWh |
-| diagnostic_bundled_cost_per_unit          | 179.21 AUD/MWh |
-| diagnostic_fuel_cost_per_unit             |   1.50 AUD/MWh |
-| fuel_share_of_total_cost                  |          0.8 % |
-| annual_mwh_delivered                      |     104.0 TWh  |
-| total_CO2e_t_per_MWh                      |          0.090 |
+| output_cost_per_unit (excl fuel)          |  40.0 AUD/MWh  |
+| diagnostic_bundled_cost_per_unit          |  65.4 AUD/MWh  |
+| diagnostic_fuel_cost_per_unit             |  25.4 AUD/MWh  |
+| fuel_share_of_total_cost                  |         38.9 % |
+| annual_mwh_delivered                      |    276.3 TWh   |
+| total_CO2e_t_per_MWh                      |          0.130 |
 
 The methodological consequence we accept and document: ISPyPSA's LP minimises
 the bundled cost. Pass 2 sees decoupled cost and prices fuels independently.
@@ -92,118 +97,124 @@ per-year H2 fraction table.
 
 ### 5. Calibration against AEMO 2024 ISP Step Change
 
-Side-by-side report at [`calibration/calibration_report.md`](calibration/calibration_report.md).
-Headline NSW vs AEMO NEM-wide:
+The dashboard Calibration tab compares cost_optimal total generation against
+AEMO Overview headline figures. Full-NEM `cost_optimal` at 2050 vs AEMO NEM:
 
-| Quantity        | ISPyPSA NSW 2050 | AEMO NEM 2050 | NSW share |
+| Quantity        | ISPyPSA NEM 2050 | AEMO NEM 2050 | ratio |
 |---|---:|---:|---:|
-| wind+solar (GW) | 30.5  | 127  | 24 % |
-| gas (GW)        |  1.8  |  15  | 12 % |
-| coal (GW)       |  0    |   0  | n/a  |
-| grid TWh        | 104   | 313  | 33 % |
+| wind+solar (GW) | 53.7  | ~127  | 42 % |
+| gas (GW)        | 12.1  | ~15   | 81 % |
+| coal (GW)       |  1.7  |   0   | n/a  |
+| grid TWh        | 284   | 313   | 91 % |
 
-NSW historically carries 28–32 % of NEM peak demand, so a 24–33 % NSW share is
-consistent with a credible model rather than a divergence signal. **This MVP
-does not evidence that ISPyPSA reproduces AEMO's Step Change LP solution at any
-specific tolerance** — see Honest assessment.
+VRE capacity sits well below AEMO's projection — a known methodology effect:
+representative-week sampling under-values daytime solar, and the demand the LP
+serves (POE50 OPSO_MODELLING operational, ~255 TWh true full-year 2050) is below
+AEMO's *underlying* consumption headline (313 TWh) by the ~121 TWh of
+behind-the-meter rooftop PV that the operational trace nets out (3-week
+annualisation adds ~8 %, narrowing the served-demand gap to ~9 %). **The
+deliverable supports relative archetype comparison, not AEMO-absolute
+reproduction** — see Honest assessment. Diagnostic scripts:
+[`bench/extracts/`](bench/extracts/).
 
 ---
 
-## Four archetypes — concrete results
+## Six archetypes — concrete results
 
-NSW, 2050 single investment period, one representative week:
+Full NEM, 2050 milestone year, 3-week sampling, PDLP 1e-3. Cost intensity is
+**operator-controllable only** (capex + non-fuel opex; fuel excluded for the
+Pass 1 ↔ Pass 2 contract — Pass 2 prices fuel endogenously). Bundled cost and
+carbon intensity shown alongside:
 
-| Archetype | Cost (decoupled) | Cost (bundled) | tCO2e/MWh | Biomass GJ/MWh | Gas GJ/MWh |
-|---|---:|---:|---:|---:|---:|
-| `cost_optimal`     | 177.70 | 179.21 | 0.0901 | 2.41 | 1.66 |
-| `renewables_led`   | 177.70 | 179.21 | 0.0901 | 2.41 | 1.66 |
-| `deep_clean_firmed`| 177.70 | 179.21 | 0.0901 | 2.41 | 1.66 |
-| `fossil_incumbent` | **323.73** | **328.31** | **0.0990** | **7.34** | 1.66 |
+| Archetype | Cost excl-fuel (AUD/MWh) | Cost bundled | tCO2e/MWh | Renewable share |
+|---|---:|---:|---:|---:|
+| `cost_optimal`        | 40.0 | 65.4 | 0.130 | 60 % |
+| `rapid_coal_phaseout` | 42.6 | 68.3 | 0.098 | 63 % |
+| `gas_fleet_maintained`| 42.6 | 68.3 | 0.098 | 63 % |
+| `storage_led`         | **66.8** | 76.1 | **0.022** | **84 %** |
+| `fossil_incumbent`    | **26.1** | 63.5 | **0.265** | 40 % |
+| `nuclear_baseload`    | 63.9 | 78.8 | 0.089 | 58 % |
 
-### Why three of four archetypes converge
+The catalogue produces five structurally distinct trajectories plus one
+substantive collapse:
 
-At NSW 2050 under AEMO IASR Step Change cost assumptions, the cost-optimal mix
-is already renewables-dominated (Solar 21.9 GW, Wind 8.6 GW, Battery 13.4 GW,
-Gas 1.8 GW, Biomass 1.6 GW). Removing thermal new-entrants (renewables_led,
-deep_clean_firmed) doesn't change the LP solution because the LP wasn't going
-to build them anyway. Forcing coal retirement to 2035 doesn't change 2050
-because NSW coal is already retired by 2050 in the IASR closure schedule.
+- **`gas_fleet_maintained` ≡ `rapid_coal_phaseout`** (identical to 3 d.p.).
+  Not a design failure: under coal-by-2030 the LP's natural gas response
+  already exceeds AEMO's Step Change gas trajectory, so the 12,500 MW gas
+  floor never binds. A real finding about transition gas demand.
+- **`storage_led`** — mandate-driven storage (~35 GW battery at 2050) displaces
+  gas to 2.4 GW; highest renewable share (84 %), lowest emissions, highest
+  operator-controllable cost (capital-heavy).
+- **`fossil_incumbent`** — leans on existing thermal, builds little new
+  capacity; *lowest* operator-controllable cost (26 AUD/MWh) but *highest*
+  emissions (0.265 tCO2e/MWh) — the cost-vs-carbon trade-off in sharp relief.
+- **`nuclear_baseload`** — nuclear at the mandate floor (4 GW at 2050); the
+  nuclear cost penalty shows as the highest bundled cost (78.8 AUD/MWh).
 
-**Differentiation between low-carbon archetypes requires:**
-
-- multi-period evolution (where coal retirement timing matters at 2030/2035),
-- earlier milestone years (2025/2030) where the cost economics still permit
-  thermal new-builds,
-- or stronger structural levers (capping renewables build aggressively, like
-  fossil_incumbent does).
-
-`fossil_incumbent` differentiates because it forbids most new wind/solar — the
-system reaches into biomass dispatch (jumping from 2.41 to 7.34 GJ/MWh-delivered)
-and runs existing thermal harder, with cost jumping from 178 to 324 AUD/MWh
-(+82 %) and emissions only rising from 0.090 to 0.099 tCO2e/MWh.
-
-This convergence is a real finding: the **archetype-design lever set matters
-more than the archetype mechanism itself**. The mechanism is wired and works;
-producing visibly different low-carbon archetypes is a design question for the
-catalogue, not a tool capability question.
+On an operator-controllable basis the ranking inverts the bundled one:
+capital-heavy decarbonised archetypes (storage_led, nuclear) cost most to
+build, fossil_incumbent least — exactly the signal Pass 2 needs when it layers
+its own fuel and carbon prices on top. The **relative cost–emission trade-offs
+across archetypes are the robust deliverable**; absolute capacity vs AEMO is
+methodology-conditional (see Honest assessment).
 
 ---
 
 ## Honest assessment of MVP scope
 
-This MVP was originally planned at sub-regional NEM-wide scale (16 sub-regions
-+ ~35 REZ discrete nodes, 3 representative weeks, 3 investment periods
-[2030, 2040, 2050]). That config produced an LP with **276 constraint groups**
-and the HiGHS solver consumed **~28 GB RAM** without converging within the
-session's time budget.
+Early scaling attempts stalled — full-NEM multi-period perfect-foresight LPs
+(~16M nonzeros) degenerated under HiGHS primal simplex and stalled under IPM.
+That envelope study is documented in
+[`bench/characterisation_report.md`](bench/characterisation_report.md) and its
+addenda. The production configuration that works combines **HiGHS PDLP at 1e-3
+tolerance** with **myopic single-period decomposition** (each milestone year
+solved independently from the IASR baseline): full NEM × 6 archetypes × 6 years
+solves in **~3 h wall-clock in parallel** on the bench server (dual Xeon
+Platinum 8260, 1024 GiB; per-solve peak RSS ~2.4 GiB, longest single solve
+~100 min).
 
-A second attempt at NSW-only + 2 periods + 1 representative week produced a
-**4.8 million-row × 2.25 million-column LP** that HiGHS could not solve within
-30 minutes either, primarily because multi-investment-period + REZ discrete
-nodes blows up the LP dimensions even at single-state scope.
+### What the deliverable claims
 
-The reported results are from a third configuration: NSW only, **single 2050
-investment period**, one representative week, which solves in **76 seconds**
-of HiGHS time. This is smoke-test scale.
+- **Relative cost–emission trade-offs across the six archetypes are robust** —
+  the ranking and the structural story (storage displaces gas; nuclear carries
+  a cost penalty; fossil_incumbent trades cost for carbon; gas_fleet collapses
+  into rapid_coal) survive the methodology's known biases.
+- **Implied abatement costs across archetypes are methodologically defensible.**
+- **Capacity point estimates are tolerance-robust** — 1e-3 vs 1e-4 agree within
+  0.5 % per carrier (controlled test; see dashboard Methodology tab).
 
-**Direct production implications:**
+### What it does NOT claim
 
-1. **Compute requirement is substantial.** Even at modest fidelity, ISPyPSA
-   solves consume tens of GB of memory. A production Pass-1 run for the full
-   NEM at AEMO-comparable fidelity will require a workstation with **≥64 GB
-   RAM** at minimum, possibly more.
-2. **Wall-clock per archetype is hours, not minutes.** The team should plan for
-   a Pass-1 run of N archetypes to take **N × several-hours** on appropriate
-   hardware. This affects how many archetypes are practical per MGA loop.
-3. **Multi-period investment is the cost driver.** Single-period solves in a
-   minute or two; multi-period solves blow up quickly. Architectural choice
-   between "one big multi-period solve per archetype" vs "six single-period
-   solves per archetype with capacity-fixing between periods" deserves
-   investigation. ISPyPSA's `fix_optimal_capacities` machinery supports the
-   latter pattern.
-4. **A commercial solver (Gurobi/CPLEX) would likely solve the full LP in
-   minutes** vs HiGHS's hours. If the team has access to a commercial solver,
-   the runtime story changes materially.
+- **Absolute capacity / dispatch comparable to AEMO.** VRE builds ~40–50 % of
+  AEMO's projection because representative-week sampling under-values daytime
+  solar and the operational demand trace (POE50 OPSO, rooftop-netted) sits
+  below AEMO's underlying-consumption headline.
+- **Specific milestone-year point estimates to high precision.**
+- **An alternative ISP modelling exercise** — this is a Pass-1 archetype menu,
+  not a replacement for AEMO's ISP.
 
-**Things this MVP DID work end-to-end on at smoke-test scale:**
-- AEMO 2024 IASR v6.0 workbook parsing
-- ISPyPSA templater (Step Change scenario)
-- Archetype-mutation injection between templater and translator
-- ISPyPSA translator (CSV → PyPSA-friendly tables)
-- PyPSA network construction with custom constraints
-- HiGHS LP solve to optimality
-- Result extraction (capacity, dispatch, flows, demand)
-- NGER emission-factor cross-walk
-- Cost decoupling (bundled → decoupled, with diagnostics)
-- simple-msm `methods.csv` and `method_years.csv` emission
-- AEMO calibration report generation
+### Documented methodology properties (not unexamined limitations)
 
-**Things this MVP did NOT do:**
-- Multi-period multi-milestone-year capacity expansion (couldn't complete in time budget)
-- Full NEM 16-sub-region geographic scope (couldn't complete in time budget)
-- Multi-reference-year stochastic dispatch (example trace dataset has only 2018)
-- Policy-target enforcement in the LP (ISPyPSA templates them but does not translate)
-- Pass 3 re-parameterisation, MGA, or orchestrator integration (out of scope)
+These were identified, diagnosed, and bounded (see
+[`PHASE7_FINDINGS.md`](PHASE7_FINDINGS.md) §0 and
+[`bench/extracts/`](bench/extracts/)):
+
+1. **Demand annualisation** — 3-week sampling overstates true operational
+   demand by a *consistent* ~8 %; single-week's *variable* 5–19 % overstatement
+   was what produced the spurious 2045 demand kink.
+2. **2045 wind dip** — a single-rep-week artefact; resolved under 3-week.
+3. **Gas direction** — a year/archetype interaction (annualisation-down vs
+   peak-coincidence-up), not a monotone effect.
+4. **PDLP tolerance-robustness** — the historical "48.8 GW solar swing" was a
+   Phase 6→7 *model-correction* effect, not solver variance.
+
+### Out of scope for this Pass-1 MVP
+
+- Multi-reference-year stochastic dispatch (example trace dataset is 2018 only).
+- True cross-period new-entrant chaining (myopic solves are independent
+  IASR-baseline-per-year, not state-passed).
+- Policy-target enforcement inside the LP beyond the archetype mandates.
+- Pass 3 re-parameterisation, MGA, and orchestrator integration.
 
 ---
 
@@ -211,21 +222,23 @@ of HiGHS time. This is smoke-test scale.
 
 ### Risk 1: ISPyPSA has no published AEMO benchmark
 
-**What we did.** Compared the cost-optimal Step Change run's headline figures
-to AEMO's 2024 ISP Step Change published numbers. NSW capacity is 24 % of
-AEMO's wind+solar NEM-wide and 33 % of AEMO's grid consumption — both
-consistent with NSW's ~30 % share of the NEM.
+**What we did.** Ran full-NEM cost_optimal across all six milestone years and
+compared headline generation/capacity to AEMO's 2024 ISP Step Change. At 2050,
+modelled grid generation is 284 TWh (~91 % of AEMO's 313 TWh) and wind+solar
+capacity is 53.7 GW (~42 % of AEMO's ~127 GW). The VRE gap is a *characterised*
+methodology effect (representative-week solar under-valuation + operational-vs-
+underlying demand definition), not an unexplained divergence.
 
-**What we did NOT do.** Detailed comparison at fuel-type × year resolution
-against AEMO's published scenario results workbook (which is downloadable but
-was not loaded in this MVP). The MVP runs single-period 2050 only, so there is
-no trajectory to compare.
+**What we did NOT do.** Reproduce AEMO's absolute capacity mix. The deliverable
+is reframed around **relative** archetype comparison rather than AEMO-absolute
+matching — see "What the deliverable claims" above.
 
-**Status of risk:** *partially resolved*. The architectural pipeline produces
-sensible-shape outputs at NSW-share-of-NEM. Definitive resolution requires
-running at full-NEM multi-period, against AEMO's full scenario workbook — that
-is a production task, not an MVP one. Time required: 1–2 person-weeks of
-modelling work plus the compute budget for full-scale runs.
+**Status of risk:** *resolved by reframing*. The pipeline produces internally
+consistent, structurally differentiated trajectories; the absolute-vs-AEMO gap
+is documented and attributed (see [`PHASE7_1_DIAGNOSTIC.md`](PHASE7_1_DIAGNOSTIC.md)
+and [`bench/extracts/`](bench/extracts/)). Closing the absolute gap (more
+solar-rich representative weeks, 8760-hour dispatch, underlying-demand basis)
+is a v2 / Pass-3 task.
 
 ### Risk 2: Fuel costs aren't separable from VOM in ISPyPSA's LP output
 
@@ -237,11 +250,19 @@ tables, then subtract from the bundled `marginal_cost × dispatch` to get
 non-fuel opex. Add to capex × p_nom_opt, divide by annual MWh delivered → the
 decoupled `output_cost_per_unit`.
 
-**Real numbers.** For the cost-optimal Step Change NSW 2050 mix, fuel is
-**0.8 % of total cost** (1.50 / 179.21 AUD/MWh) — small because the mix is
-mostly renewables. For `fossil_incumbent` (forced into more thermal), fuel
-rises to **1.4 %** (4.58 / 328.31 AUD/MWh). The decoupling is mechanically
+**Real numbers (full NEM, 2050).** Fuel is **39 % of bundled cost** for
+`cost_optimal` (25.4 / 65.4 AUD/MWh) and **59 %** for `fossil_incumbent`
+(37.4 / 63.5 AUD/MWh) — the operator-controllable `output_cost_per_unit` is the
+remainder (40.0 and 26.1 AUD/MWh respectively). The decoupling is mechanically
 correct and Pass 2-consumable.
+
+> **Note — fuel-cost lookup regression (Phase 1 follow-up l, fixed 2026-05-27).**
+> The v6.0→v7.4 cache schema rename silently broke the coal/gas/biomass
+> fuel-price lookup, collapsing computed fuel cost to ~0 (so `excl_fuel` ≈
+> bundled). Fixed by resolving the v7.4-canonical table names; the numbers
+> above are post-fix. Strict tests now assert the dominant fuels resolve to a
+> material price. The earlier "fuel > 0" verification check was too weak to
+> catch it — it passed on trace hydrogen while coal/gas were zero.
 
 **The methodological consequence.** ISPyPSA's LP minimises bundled cost. The
 simple-msm orchestrator sees decoupled cost. If Pass 2's endogenous fuel price
@@ -265,13 +286,13 @@ N2O components are exposed separately in the simple-msm output. The cross-walk
 table is emitted as a CSV alongside the simple-msm rows so the provenance is
 visible to Pass 2.
 
-**Real numbers.** For the cost-optimal Step Change NSW 2050:
+**Real numbers.** For full-NEM cost_optimal 2050:
 ```
 energy_emissions_by_pollutant:
-  CO2:       0.0856 tCO2e/MWh
-  CH4_CO2e:  0.0021 tCO2e/MWh
-  N2O_CO2e:  0.0025 tCO2e/MWh
-  total:     0.0901 tCO2e/MWh
+  CO2:       0.1252 tCO2e/MWh
+  CH4_CO2e:  0.0023 tCO2e/MWh
+  N2O_CO2e:  0.0027 tCO2e/MWh
+  total:     0.1302 tCO2e/MWh
 ```
 The total is dominated by combustion CO2; CH4/N2O are small but non-zero
 because biomass contributes meaningful CH4/N2O even with biogenic-zero CO2.
@@ -312,11 +333,14 @@ fetch_trace_data(dataset_type='example', dataset_src='isp_2024',
 curl -L -o mvp_pass1_power/data/NGA_Factors_2024.pdf \
      https://www.dcceew.gov.au/sites/default/files/documents/national-greenhouse-account-factors-2024.pdf
 
-# 4. Run each archetype — ~1.5 min each at minimal scale
-for arch in cost_optimal renewables_led fossil_incumbent deep_clean_firmed; do
+# 4. Quick smoke: run each archetype at minimal (NSW single-period) scale
+for arch in cost_optimal rapid_coal_phaseout gas_fleet_maintained \
+            storage_led fossil_incumbent nuclear_baseload; do
     uv run python mvp_pass1_power/scripts/run_workflow.py \
         --config mvp_pass1_power/configs/minimal.yaml --archetype $arch
 done
+# For the full-NEM 6-year production runs, use the myopic driver — see
+# CLAUDE.md "Reproduction" (mvp_pass1_power/bench/run_myopic.py).
 
 # 5. Emit simple-msm CSVs
 uv run python -m mvp_pass1_power.postprocess.emit_simple_msm \
@@ -362,17 +386,23 @@ uv run streamlit run mvp_pass1_power/dashboard/dashboard.py
 mvp_pass1_power/
 ├── README.md                         — this file
 ├── configs/
-│   ├── minimal.yaml                  — NSW, 2050 single period (used for results)
-│   ├── fast.yaml                     — NSW, [2030,2050] 2 periods (did not solve in budget)
-│   └── baseline.yaml                 — full NEM, 3 periods (did not solve in budget)
+│   ├── minimal.yaml                  — NSW, 2050 single period (quick smoke)
+│   ├── fast.yaml                     — NSW multi-period
+│   └── baseline.yaml                 — full NEM
+├── bench/
+│   ├── run_myopic.py                 — full-NEM myopic 6-year production driver
+│   └── extracts/                     — reproducible diagnostic scripts (demand,
+│                                       carrier, variance-probe comparisons)
 ├── archetypes/
 │   ├── cost_optimal.py               — no-op (Step Change reference)
-│   ├── renewables_led.py             — drop new gas, accelerate coal closures
+│   ├── rapid_coal_phaseout.py        — coal retired by 2030
+│   ├── gas_fleet_maintained.py       — coal by 2030 + 12.5 GW gas floor
+│   ├── storage_led.py                — no new gas + 1.25× AEMO storage
 │   ├── fossil_incumbent.py           — extend coal life, cap new VRE
-│   └── deep_clean_firmed.py          — coal out by 2035, no new unabated gas
+│   └── nuclear_baseload.py           — phased nuclear (2/4 GW @ 2045/2050)
 ├── scripts/
 │   ├── run_workflow.py               — runs one archetype end-to-end
-│   └── run_all_archetypes.sh         — sequences four archetypes + post-process
+│   └── run_all_archetypes.sh         — sequences six archetypes + post-process
 ├── postprocess/
 │   ├── nger_factors.py               — NGER cross-walk to ISPyPSA carriers
 │   ├── extract_method_years.py       — per-period aggregation, cost decoupling
@@ -411,49 +441,48 @@ driven by an emission-factor input table.
 
 > Calibrated against AEMO well enough to be credible?
 
-**Directional only at MVP scale.** NSW shares of AEMO NEM-wide quantities are
-in plausible ranges (24–33 % across capacity and consumption). Definitive
-calibration requires full-NEM multi-period runs against AEMO's published
-scenario workbook — a production task estimated at 1–2 person-weeks.
+**Credible as a relative-comparison tool, with the AEMO-absolute gap
+characterised.** Full-NEM cost_optimal 2050 generation is ~91 % of AEMO's
+headline; VRE capacity is ~42 %. The gap is diagnosed (representative-week
+solar valuation + operational-vs-underlying demand definition), not unexplained
+— see "What the deliverable claims" and [`PHASE7_1_DIAGNOSTIC.md`](PHASE7_1_DIAGNOSTIC.md).
+The deliverable is framed for relative archetype comparison, not AEMO
+reproduction.
 
 > Bounded enough in remaining work to be feasible within project constraints?
 
-**Yes, bounded by clear items rather than open questions**, but with one
-concrete unknown the team needs to confirm: *can we run ISPyPSA at full NEM /
-multi-period within an acceptable compute envelope?* The MVP showed that HiGHS
-at minimal config used 28 GB RAM and didn't converge in 30 minutes on a
-developer laptop — production-scale solves will need either a much more
-powerful workstation (≥64 GB RAM) or a commercial solver (Gurobi/CPLEX), and
-this affects how many archetypes × MGA iterations the project can budget.
+**Yes — and the compute-envelope unknown that dominated the early MVP is now
+resolved.** Full NEM × 6 archetypes × 6 years solves in ~3 h wall-clock in
+parallel via HiGHS PDLP (1e-3) + myopic decomposition; per-solve peak RSS is
+~2.4 GiB, well within the bench server. Perfect-foresight multi-period remains
+intractable under HiGHS, which is why myopic decomposition is the production
+pattern (see [`bench/characterisation_report.md`](bench/characterisation_report.md)).
 
-Production roadmap from this MVP:
+What's been delivered since the early MVP:
 
-1. **Confirm compute envelope.** Run one full-NEM 3-period solve on a powerful
-   workstation or with a commercial solver. **(1 day)**
-2. **Wire policy-target enforcement.** ISPyPSA reads renewable-share trajectories
-   from IASR but doesn't translate them. Add `custom_constraints_lhs/rhs` rows.
-   **(1–2 days)**
-3. **Multi-reference-year cycling.** Use the full trace dataset (~30 GB), enable
-   AEMO's reference-year cycle. **(0.5 day code, days of solve time)**
-4. **Tighter calibration against AEMO's scenario workbook.** Side-by-side
-   comparison of fuel-mix and capacity trajectories per AEMO-published
-   milestone year. **(2–3 days)**
-5. **Multi-period over six milestone years** `[2025, 2030, 2035, 2040, 2045, 2050]`
-   instead of three. **(0 days code; LP-time scales).**
-6. **Source-code patches in ISPyPSA core** (a) preserve `isp_*` columns into
-   PyPSA generators; (b) add per-carrier `co2_emissions`. **(0.5 day each;
-   could be upstreamed).**
-7. **Better archetype-design lever set.** Three of four MVP archetypes converge
-   at single-period 2050 because the IASR cost-optimal solution is already
-   renewables-dominated. Adding multi-period evolution and stronger structural
-   constraints (per-year build-rate caps, carbon caps, generation share
-   constraints) will produce visibly distinct archetypes. **(1 week of
-   archetype-catalogue design + verification).**
+1. **Compute envelope confirmed** — PDLP 1e-3 + myopic is production-viable at
+   full NEM scale.
+2. **Six-archetype catalogue** with AEMO-anchored mandates (gas floor, storage
+   floor, nuclear floor) enforced as PyPSA custom constraints.
+3. **Six milestone years** `[2025…2050]` via myopic single-period decomposition.
+4. **3-week representative sampling** with the demand-annualisation,
+   wind-dip-resolution, gas-direction, and PDLP-robustness properties
+   characterised (see [`PHASE7_FINDINGS.md`](PHASE7_FINDINGS.md) §0).
+5. **NGER emission cross-walk** and **cost decoupling** (fuel separated for the
+   Pass 2 contract; fixed in follow-up (l)).
 
-Estimated production work: **3–4 person-weeks of focused engineering plus a
-similar duration of model validation against AEMO**, contingent on AEMO data
-artefacts being available in the formats needed and on having sufficient
-compute access for full-scale runs.
+Remaining v2 / Pass-3 work (out of scope for this Pass-1 deliverable):
+
+- **Close the AEMO-absolute VRE gap** — more solar-rich representative weeks or
+  8760-hour dispatch; underlying-demand basis.
+- **True cross-period new-entrant chaining** (myopic solves are currently
+  independent IASR-baseline-per-year).
+- **Multi-reference-year cycling** (full trace dataset; 2018 only today).
+- **Systematic v6.0 → v7.4 schema audit** — one focused pass validating every
+  IASR-table-name reference against v7.4-canonical, since renames have surfaced
+  silent downstream breakages (follow-ups a–l).
+- **Source-code patches in ISPyPSA core**: (a) preserve `isp_*` columns into
+  PyPSA generators; (b) add per-carrier `co2_emissions`.
 
 ---
 

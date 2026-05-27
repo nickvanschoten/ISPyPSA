@@ -140,11 +140,20 @@ Capacity figures (retirement schedule) ARE comparable.
 
 ---
 
-### (3) Solar — B (methodology) + PDLP variance
+### (3) Solar — B (methodology)
 
-**Observation.** Cost_optimal solar capacity at 2050 = 26.6 GW vs
-AEMO Step Change ~120 GW. Generation = 53 TWh vs AEMO ~230 TWh.
-**Solar is ~22 % of AEMO's projection both in capacity and generation.**
+> **Phase 7.2 correction.** The "+ PDLP variance" originally in this
+> classification was misattributed and has been removed. Controlled
+> 1e-3-vs-1e-4 tests show solar capacity is tolerance-robust (<0.5 %);
+> the Phase 6 → Phase 7 solar shift cited below was a model-correction
+> effect, not solver variance. The B-methodology finding (single-rep-week
+> under-values daytime solar) stands and is the dominant cause. See
+> PHASE7_FINDINGS §0.4.
+
+**Observation.** Cost_optimal solar capacity at 2050 = 26.6 GW (single-
+week Phase 7; 28.7 GW under 3-week) vs AEMO Step Change ~120 GW.
+Generation ≈ 53–66 TWh vs AEMO ~230 TWh. **Solar is ~22–24 % of AEMO's
+projection in both capacity and generation.**
 
 **Evidence trace.**
 - **REZ build limits are not binding.** Sum of solar `*_build_limit`
@@ -156,31 +165,34 @@ AEMO Step Change ~120 GW. Generation = 53 TWh vs AEMO ~230 TWh.
 - Per-bus distribution shows LP picking Q8 (4.9 GW), N3 (1.9 GW),
   S5 (1.6 GW) — scattered builds, no specific REZ over-concentrated.
 
-**Classification.** B — methodology + PDLP variance.
+**Classification.** B — methodology.
 
 - Single representative week (residual-peak-demand) under-weights
   daytime solar contribution. The peak typically falls on evening
   hours when solar is zero. LP doesn't see the full annual solar
-  value.
-- PDLP at 1e-3 tolerance variance is a contributor: Phase 6
-  cost_optimal had solar 75.4 GW, Phase 7 has 26.6 GW, both within
-  ~3 % objective. Some of the "suppression" is solving to a different
-  near-optimal vertex, not a different optimum.
+  value. 3-week sampling (adding a summer peak-demand week + a spring
+  shoulder week) partially mitigates this — solar rises from 26.6 to
+  28.7 GW at 2050 — but the deeper structural undervaluation persists.
+- The Phase 6 → Phase 7 solar shift (75.4 → 26.6 GW) was **not** PDLP
+  variance, contrary to the original classification. It was the
+  cumulative effect of model corrections (hydro / pumped-storage /
+  biomass / nuclear / hydrogen) landing between those runs. Controlled
+  1e-3-vs-1e-4 tests confirm solar capacity is tolerance-robust
+  (<0.5 % shift). See PHASE7_FINDINGS §0.4.
 
-**Affects:** Every archetype × every year. The methodology
-× PDLP variance interaction is uniform across the catalogue.
+**Affects:** Every archetype × every year — the rep-week solar
+valuation effect is uniform across the catalogue.
 
-**Recommended response:** documented in Methodology tab (the PDLP
-exposition added in Phase 8 covers half of this; needs additional
-note about single-rep-week's poor solar valuation). For quantitative
-solar-capacity comparison to AEMO, a v2 mitigation is the team's
-choice (add solar-rich rep weeks, switch to 8760, etc.).
+**Recommended response:** documented in Methodology tab (single-rep-week's
+poor solar valuation; 3-week partial mitigation). For quantitative
+solar-capacity comparison to AEMO, a v2 mitigation is the team's choice
+(add more solar-rich rep weeks, switch to 8760, etc.).
 
 **Scope:** Methodology tab text. No code.
 
 ---
 
-### (4) Wind — B (methodology) + PDLP variance
+### (4) Wind — B (methodology)
 
 **Observation.** Cost_optimal wind 2050 = 29.7 GW / 79 TWh vs AEMO
 Step Change ~60 GW / 175 TWh. Wind is ~50 % of AEMO's projection.
@@ -189,12 +201,16 @@ Step Change ~60 GW / 175 TWh. Wind is ~50 % of AEMO's projection.
 - Wind build limits: sum of `*_Wind_build_limit` RHS = 173 GW NEM-wide;
   LP builds 14.9 GW new (~9 %). Headroom available.
 - Wind CF 23-30 % across years — within Australian onshore wind range.
-- 2045 dip diagnosed separately in Phase 7.0 (a) — IASR demand kink
-  × myopic single-period. Not a wind-specific issue.
+- 2045 dip diagnosed separately in Phase 7.0 (a). **Phase 7.2 resolved
+  it:** under 3-week sampling the dip vanishes (2040/45/50 = 23.7 / 27.5
+  / 25.1 GW; 2045 is now a local maximum). Rep-week selection was the
+  dominant contributor; the IASR demand kink was secondary. See
+  PHASE7_FINDINGS §0.2.
 
 **Classification.** B — same as solar. Single rep week × myopic
-single-period × PDLP-tolerance variance. The 2045 dip is a documented
-sub-finding (Phase 7.0 (a)) — methodology artefact, not bug.
+single-period. (The "PDLP-tolerance variance" originally listed here was
+misattributed — see §(3) correction and PHASE7_FINDINGS §0.4.) The 2045
+dip is a methodology artefact, not a bug, and is resolved under 3-week.
 
 **Affects:** Same as solar — every archetype × every year.
 
@@ -343,8 +359,8 @@ rep-week artefact.
 |---|---|---|---|---|---|
 | 1 | Hydrogen | **A (bug)** | All archetypes × 2025 (62 TWh spurious) | Backfill FY 2022-24 from earliest populated FY, OR fail-fast at templater | **Yes, 2025 period (~10 min × 6 archetypes)** |
 | 2 | Coal | B (methodology) | All archetypes × all years | Methodology tab text | No |
-| 3 | Solar | B + PDLP variance | All archetypes × all years | Methodology tab text | No |
-| 4 | Wind | B + PDLP variance | All archetypes × all years | Methodology tab text | No |
+| 3 | Solar | B (methodology) | All archetypes × all years | Methodology tab text (rep-week solar valuation; "PDLP variance" retracted — see §0.4 of PHASE7_FINDINGS) | No |
+| 4 | Wind | B (methodology) | All archetypes × all years | Methodology tab text (2045 dip resolved under 3-week) | No |
 | 5 | Gas | B + C | Non-storage_led archetypes | Methodology tab text — storage-mandate-displaces-gas is the substantive finding | No |
 | 6 | Hyblend | A (folded into Hydrogen fix) | Tiny dispatch — low priority | Included in §1 fix | (with §1 re-run) |
 | 7 | Liquid Fuel | C (correct) | N/A | None | No |
@@ -355,8 +371,9 @@ rep-week artefact.
 ## What this means for the deliverable
 
 **Quantitative comparison to AEMO Step Change is methodologically
-constrained** by the single-rep-week × myopic × PDLP-1e-3
-combination. The model:
+constrained** by the representative-week × myopic single-period
+combination. (PDLP at 1e-3 is *not* a contributor — controlled tests
+show capacity is tolerance-robust; see PHASE7_FINDINGS §0.4.) The model:
 
 - **Respects retirement schedules** (coal capacity matches IASR).
 - **Respects build limits** (REZ caps have headroom; LP isn't
@@ -369,8 +386,10 @@ combination. The model:
 
 **Capacity figures and dispatch shares should be reported as
 "methodology-conditional"** in the Methodology tab — the LP under
-single-rep-week + myopic single-period + PDLP at 1e-3 produces a
-defensible but not directly-comparable-to-AEMO picture.
+representative-week + myopic single-period produces a defensible but not
+directly-comparable-to-AEMO picture. The capacity *point estimates* are
+themselves tolerance-robust (PHASE7_FINDINGS §0.4); the gap to AEMO is a
+sampling/horizon effect, not solver noise.
 
 **The one genuine bug to fix is hydrogen 2025** (finding 1). The
 other anomalies are real but methodology-driven; the team may or may
