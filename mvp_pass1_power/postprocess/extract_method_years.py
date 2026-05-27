@@ -98,15 +98,24 @@ def _load_pypsa_friendly_generators(pypsa_friendly_dir: Path) -> pd.DataFrame:
 def _load_fuel_price_tables(workbook_cache: Path) -> dict[str, pd.DataFrame]:
     """Load all IASR fuel-price tables relevant to ISPyPSA carriers.
 
-    Coal and gas tables are scenario-specific; try the Step Change variant
-    first (the only scenario used in Pass 1 runs).
+    The v6.0 → v7.4 schema normalisation renamed the coal/gas/biomass price
+    tables (Phase 1 follow-up l). We try the v7.4-canonical names first and
+    fall back to the older v6.0 names, so the post-processor works against
+    either cache vintage:
+
+      - coal:    coal_fuel_price           (v6.0: coal_prices_step_change)
+      - gas:     gas_prices_existing_generators + gas_prices_new_entrants
+                                            (v6.0: gas_prices_step_change)
+      - biomass: biomass_fuel_price        (v6.0: biomass_prices)
+
+    The keys in the returned dict are the logical names used by
+    `_carrier_to_price_table` and stay constant across cache vintages.
     """
     tables = {}
     _CANDIDATES = {
-        "coal_prices":        ("coal_prices_step_change", "coal_prices"),
-        "gas_prices":         ("gas_prices_step_change",  "gas_prices"),
+        "coal_prices":        ("coal_fuel_price", "coal_prices_step_change", "coal_prices"),
         "liquid_fuel_prices": ("liquid_fuel_prices",),
-        "biomass_prices":     ("biomass_prices",),
+        "biomass_prices":     ("biomass_fuel_price", "biomass_prices"),
         "hydrogen_prices":    ("hydrogen_prices",),
         "biomethane_prices":  ("biomethane_prices",),
     }
@@ -115,6 +124,22 @@ def _load_fuel_price_tables(workbook_cache: Path) -> dict[str, pd.DataFrame]:
             path = workbook_cache / f"{candidate}.csv"
             if path.exists():
                 tables[name] = pd.read_csv(path)
+                break
+    # Gas: v7.4 splits existing-generator and new-entrant prices into two
+    # tables; concatenate so the representative median spans the whole fleet.
+    # Fall back to the v6.0 single table when the split pair isn't present.
+    gas_frames = [
+        pd.read_csv(workbook_cache / f"{c}.csv")
+        for c in ("gas_prices_existing_generators", "gas_prices_new_entrants")
+        if (workbook_cache / f"{c}.csv").exists()
+    ]
+    if gas_frames:
+        tables["gas_prices"] = pd.concat(gas_frames, ignore_index=True)
+    else:
+        for candidate in ("gas_prices_step_change", "gas_prices"):
+            path = workbook_cache / f"{candidate}.csv"
+            if path.exists():
+                tables["gas_prices"] = pd.read_csv(path)
                 break
     return tables
 
@@ -271,6 +296,13 @@ def _fuel_price_per_mwh(
     if table_name not in fuel_tables:
         return 0.0
     df = fuel_tables[table_name]
+    # v7.4 price tables carry multiple scenarios in a scenario column
+    # ("Scenario" for coal/biomass, "Gas price scenario" for gas); restrict to
+    # Step Change before taking the representative median. v6.0 tables had no
+    # such column, so this is a no-op there.
+    scenario_cols = [c for c in df.columns if "scenario" in str(c).lower()]
+    if scenario_cols:
+        df = df[df[scenario_cols[0]].astype(str).str.strip() == "Step Change"]
     fy_label = f"{_financial_year_start(period)}-{str(period)[-2:]}"
     # Find the right FY column (formats vary: "2029-30", "FY2029-30", etc.)
     candidates = [c for c in df.columns if fy_label.replace(" ", "") in str(c).replace(" ", "")]
