@@ -1,0 +1,1178 @@
+{
+  "cost_optimal": {
+    "2025": {
+      "gen_twh": {
+        "Black Coal": 65.79,
+        "Brown Coal": 30.59,
+        "Gas": 12.43,
+        "Solar": 20.66,
+        "Water": 24.03,
+        "Wind": 29.88
+      },
+      "storage_discharge_twh": {
+        "Battery": 2.77,
+        "Water": 1.77
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 11.874,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.663,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 7.906,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 10.008,
+        "Water": 5.015
+      },
+      "load_twh": 182.2,
+      "n_snapshots": 672
+    },
+    "2030": {
+      "gen_twh": {
+        "Black Coal": 86.25,
+        "Brown Coal": 25.07,
+        "Gas": 18.24,
+        "Solar": 21.76,
+        "Water": 28.81,
+        "Wind": 35.79
+      },
+      "storage_discharge_twh": {
+        "Battery": 8.29,
+        "Water": 6.81
+      },
+      "gen_cap_gw": {
+        "Black Coal": 12.855,
+        "Brown Coal": 3.37,
+        "Gas": 11.545,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.527,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 9.161,
+        "Wind": 15.336
+      },
+      "storage_cap_gw": {
+        "Battery": 10.014,
+        "Water": 5.015
+      },
+      "load_twh": 212.1,
+      "n_snapshots": 1008
+    },
+    "2035": {
+      "gen_twh": {
+        "Biomass": 1.52,
+        "Black Coal": 54.05,
+        "Brown Coal": 8.79,
+        "Gas": 63.14,
+        "Solar": 25.64,
+        "Water": 34.99,
+        "Wind": 46.04
+      },
+      "storage_discharge_twh": {
+        "Battery": 9.0,
+        "Water": 11.53
+      },
+      "gen_cap_gw": {
+        "": 1.267,
+        "Biomass": 0.173,
+        "Black Coal": 8.82,
+        "Brown Coal": 3.37,
+        "Gas": 16.928,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 13.256,
+        "Unserved Energy": 1200.0,
+        "Water": 11.496,
+        "Wind": 19.768
+      },
+      "storage_cap_gw": {
+        "Battery": 10.162,
+        "Water": 5.015
+      },
+      "load_twh": 228.9,
+      "n_snapshots": 672
+    },
+    "2040": {
+      "gen_twh": {
+        "Biomass": 16.2,
+        "Black Coal": 29.57,
+        "Brown Coal": 8.9,
+        "Gas": 80.01,
+        "Solar": 30.19,
+        "Water": 35.07,
+        "Wind": 58.96
+      },
+      "storage_discharge_twh": {
+        "Battery": 11.57,
+        "Water": 11.76
+      },
+      "gen_cap_gw": {
+        "": 1.384,
+        "Biomass": 1.909,
+        "Black Coal": 5.29,
+        "Brown Coal": 1.16,
+        "Gas": 17.431,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 15.048,
+        "Unserved Energy": 1200.0,
+        "Water": 11.469,
+        "Wind": 23.673
+      },
+      "storage_cap_gw": {
+        "Battery": 11.215,
+        "Water": 5.015
+      },
+      "load_twh": 253.0,
+      "n_snapshots": 672
+    },
+    "2045": {
+      "gen_twh": {
+        "Biomass": 28.81,
+        "Black Coal": 12.93,
+        "Brown Coal": 8.82,
+        "Gas": 55.28,
+        "Hyblend": 0.02,
+        "Liquid Fuel": 0.01,
+        "Solar": 55.49,
+        "Water": 36.23,
+        "Wind": 79.12
+      },
+      "storage_discharge_twh": {
+        "Battery": 16.58,
+        "Water": 11.25
+      },
+      "gen_cap_gw": {
+        "": 4.391,
+        "Biomass": 3.588,
+        "Black Coal": 1.696,
+        "Brown Coal": 1.16,
+        "Gas": 14.731,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 22.498,
+        "Unserved Energy": 1200.0,
+        "Water": 11.677,
+        "Wind": 27.462
+      },
+      "storage_cap_gw": {
+        "Battery": 11.369,
+        "Water": 5.015
+      },
+      "load_twh": 269.9,
+      "n_snapshots": 1008
+    },
+    "2050": {
+      "gen_twh": {
+        "Biomass": 41.43,
+        "Black Coal": 12.22,
+        "Gas": 64.87,
+        "Hyblend": 0.01,
+        "Solar": 66.1,
+        "Water": 36.16,
+        "Wind": 62.8
+      },
+      "storage_discharge_twh": {
+        "Battery": 19.25,
+        "Water": 11.5
+      },
+      "gen_cap_gw": {
+        "": 3.742,
+        "Biomass": 5.063,
+        "Black Coal": 1.696,
+        "Gas": 12.937,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 28.743,
+        "Unserved Energy": 1200.0,
+        "Water": 11.764,
+        "Wind": 25.058
+      },
+      "storage_cap_gw": {
+        "Battery": 10.742,
+        "Water": 5.015
+      },
+      "load_twh": 276.3,
+      "n_snapshots": 672
+    }
+  },
+  "rapid_coal_phaseout": {
+    "2025": {
+      "gen_twh": {
+        "Black Coal": 65.79,
+        "Brown Coal": 30.59,
+        "Gas": 12.43,
+        "Solar": 20.66,
+        "Water": 24.03,
+        "Wind": 29.88
+      },
+      "storage_discharge_twh": {
+        "Battery": 2.77,
+        "Water": 1.77
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 11.874,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.663,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 7.906,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 10.008,
+        "Water": 5.015
+      },
+      "load_twh": 182.2,
+      "n_snapshots": 672
+    },
+    "2030": {
+      "gen_twh": {
+        "Gas": 101.79,
+        "Hyblend": 0.04,
+        "Solar": 20.73,
+        "Water": 27.56,
+        "Wind": 65.99
+      },
+      "storage_discharge_twh": {
+        "Battery": 8.94,
+        "Water": 6.94
+      },
+      "gen_cap_gw": {
+        "": 1.448,
+        "Black Coal": 12.855,
+        "Brown Coal": 3.37,
+        "Gas": 21.957,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.527,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 9.229,
+        "Wind": 24.922
+      },
+      "storage_cap_gw": {
+        "Battery": 10.444,
+        "Water": 5.015
+      },
+      "load_twh": 212.1,
+      "n_snapshots": 1008
+    },
+    "2035": {
+      "gen_twh": {
+        "Biomass": 3.31,
+        "Gas": 97.3,
+        "Solar": 27.19,
+        "Water": 34.38,
+        "Wind": 71.71
+      },
+      "storage_discharge_twh": {
+        "Battery": 9.02,
+        "Water": 10.77
+      },
+      "gen_cap_gw": {
+        "": 4.51,
+        "Biomass": 0.378,
+        "Gas": 20.916,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 14.016,
+        "Unserved Energy": 1200.0,
+        "Water": 11.506,
+        "Wind": 28.972
+      },
+      "storage_cap_gw": {
+        "Battery": 10.251,
+        "Water": 5.015
+      },
+      "load_twh": 228.9,
+      "n_snapshots": 672
+    },
+    "2040": {
+      "gen_twh": {
+        "Biomass": 20.07,
+        "Gas": 93.73,
+        "Solar": 40.14,
+        "Water": 34.59,
+        "Wind": 70.48
+      },
+      "storage_discharge_twh": {
+        "Battery": 11.87,
+        "Water": 11.83
+      },
+      "gen_cap_gw": {
+        "": 5.449,
+        "Biomass": 2.49,
+        "Gas": 19.627,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 18.632,
+        "Unserved Energy": 1200.0,
+        "Water": 11.473,
+        "Wind": 27.98
+      },
+      "storage_cap_gw": {
+        "Battery": 11.355,
+        "Water": 5.015
+      },
+      "load_twh": 253.0,
+      "n_snapshots": 672
+    },
+    "2045": {
+      "gen_twh": {
+        "Biomass": 31.72,
+        "Gas": 66.01,
+        "Hyblend": 0.02,
+        "Liquid Fuel": 0.01,
+        "Solar": 60.91,
+        "Water": 36.04,
+        "Wind": 82.3
+      },
+      "storage_discharge_twh": {
+        "Battery": 17.79,
+        "Water": 11.19
+      },
+      "gen_cap_gw": {
+        "": 5.862,
+        "Biomass": 3.987,
+        "Gas": 16.258,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 25.345,
+        "Unserved Energy": 1200.0,
+        "Water": 11.675,
+        "Wind": 29.038
+      },
+      "storage_cap_gw": {
+        "Battery": 11.84,
+        "Water": 5.015
+      },
+      "load_twh": 269.9,
+      "n_snapshots": 1008
+    },
+    "2050": {
+      "gen_twh": {
+        "Biomass": 40.59,
+        "Gas": 68.72,
+        "Solar": 71.83,
+        "Water": 36.16,
+        "Wind": 66.77
+      },
+      "storage_discharge_twh": {
+        "Battery": 21.65,
+        "Water": 11.3
+      },
+      "gen_cap_gw": {
+        "": 5.152,
+        "Biomass": 5.01,
+        "Gas": 13.787,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 31.809,
+        "Unserved Energy": 1200.0,
+        "Water": 11.755,
+        "Wind": 26.615
+      },
+      "storage_cap_gw": {
+        "Battery": 11.774,
+        "Water": 5.015
+      },
+      "load_twh": 276.3,
+      "n_snapshots": 672
+    }
+  },
+  "gas_fleet_maintained": {
+    "2025": {
+      "gen_twh": {
+        "Black Coal": 65.79,
+        "Brown Coal": 30.59,
+        "Gas": 12.43,
+        "Solar": 20.66,
+        "Water": 24.03,
+        "Wind": 29.88
+      },
+      "storage_discharge_twh": {
+        "Battery": 2.77,
+        "Water": 1.77
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 11.874,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.663,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 7.906,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 10.008,
+        "Water": 5.015
+      },
+      "load_twh": 182.2,
+      "n_snapshots": 672
+    },
+    "2030": {
+      "gen_twh": {
+        "Gas": 101.82,
+        "Hyblend": 0.04,
+        "Solar": 20.7,
+        "Water": 27.55,
+        "Wind": 65.96
+      },
+      "storage_discharge_twh": {
+        "Battery": 8.9,
+        "Water": 6.88
+      },
+      "gen_cap_gw": {
+        "": 1.476,
+        "Black Coal": 12.855,
+        "Brown Coal": 3.37,
+        "Gas": 21.98,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.527,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 9.215,
+        "Wind": 24.895
+      },
+      "storage_cap_gw": {
+        "Battery": 10.414,
+        "Water": 5.015
+      },
+      "load_twh": 212.1,
+      "n_snapshots": 1008
+    },
+    "2035": {
+      "gen_twh": {
+        "Biomass": 3.21,
+        "Gas": 97.99,
+        "Solar": 26.77,
+        "Water": 34.35,
+        "Wind": 71.62
+      },
+      "storage_discharge_twh": {
+        "Battery": 8.76,
+        "Water": 10.92
+      },
+      "gen_cap_gw": {
+        "": 4.532,
+        "Biomass": 0.366,
+        "Gas": 20.933,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 13.906,
+        "Unserved Energy": 1200.0,
+        "Water": 11.49,
+        "Wind": 28.962
+      },
+      "storage_cap_gw": {
+        "Battery": 10.155,
+        "Water": 5.015
+      },
+      "load_twh": 228.9,
+      "n_snapshots": 672
+    },
+    "2040": {
+      "gen_twh": {
+        "Biomass": 20.07,
+        "Gas": 93.73,
+        "Solar": 40.14,
+        "Water": 34.59,
+        "Wind": 70.48
+      },
+      "storage_discharge_twh": {
+        "Battery": 11.87,
+        "Water": 11.83
+      },
+      "gen_cap_gw": {
+        "": 5.449,
+        "Biomass": 2.49,
+        "Gas": 19.627,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 18.632,
+        "Unserved Energy": 1200.0,
+        "Water": 11.473,
+        "Wind": 27.98
+      },
+      "storage_cap_gw": {
+        "Battery": 11.355,
+        "Water": 5.015
+      },
+      "load_twh": 253.0,
+      "n_snapshots": 672
+    },
+    "2045": {
+      "gen_twh": {
+        "Biomass": 31.72,
+        "Gas": 66.01,
+        "Hyblend": 0.02,
+        "Liquid Fuel": 0.01,
+        "Solar": 60.91,
+        "Water": 36.04,
+        "Wind": 82.3
+      },
+      "storage_discharge_twh": {
+        "Battery": 17.79,
+        "Water": 11.19
+      },
+      "gen_cap_gw": {
+        "": 5.862,
+        "Biomass": 3.987,
+        "Gas": 16.258,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 25.345,
+        "Unserved Energy": 1200.0,
+        "Water": 11.675,
+        "Wind": 29.038
+      },
+      "storage_cap_gw": {
+        "Battery": 11.84,
+        "Water": 5.015
+      },
+      "load_twh": 269.9,
+      "n_snapshots": 1008
+    },
+    "2050": {
+      "gen_twh": {
+        "Biomass": 40.59,
+        "Gas": 68.72,
+        "Solar": 71.83,
+        "Water": 36.16,
+        "Wind": 66.77
+      },
+      "storage_discharge_twh": {
+        "Battery": 21.65,
+        "Water": 11.3
+      },
+      "gen_cap_gw": {
+        "": 5.152,
+        "Biomass": 5.01,
+        "Gas": 13.787,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 31.809,
+        "Unserved Energy": 1200.0,
+        "Water": 11.755,
+        "Wind": 26.615
+      },
+      "storage_cap_gw": {
+        "Battery": 11.774,
+        "Water": 5.015
+      },
+      "load_twh": 276.3,
+      "n_snapshots": 672
+    }
+  },
+  "storage_led": {
+    "2025": {
+      "gen_twh": {
+        "Black Coal": 65.77,
+        "Brown Coal": 30.61,
+        "Gas": 12.44,
+        "Solar": 20.65,
+        "Water": 24.0,
+        "Wind": 29.87
+      },
+      "storage_discharge_twh": {
+        "Battery": 2.77,
+        "Water": 1.76
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 11.874,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.663,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 7.889,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 10.007,
+        "Water": 5.015
+      },
+      "load_twh": 182.2,
+      "n_snapshots": 672
+    },
+    "2030": {
+      "gen_twh": {
+        "Black Coal": 86.3,
+        "Brown Coal": 25.85,
+        "Gas": 15.11,
+        "Solar": 22.93,
+        "Water": 29.73,
+        "Wind": 36.67
+      },
+      "storage_discharge_twh": {
+        "Battery": 12.08,
+        "Water": 6.42
+      },
+      "gen_cap_gw": {
+        "Black Coal": 12.855,
+        "Brown Coal": 3.37,
+        "Gas": 10.894,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.527,
+        "Solar": 13.058,
+        "Unserved Energy": 1200.0,
+        "Water": 9.14,
+        "Wind": 15.373
+      },
+      "storage_cap_gw": {
+        "Battery": 28.906,
+        "Water": 5.015
+      },
+      "load_twh": 212.1,
+      "n_snapshots": 1008
+    },
+    "2035": {
+      "gen_twh": {
+        "Biomass": 16.88,
+        "Gas": 32.05,
+        "Liquid Fuel": 0.02,
+        "Solar": 72.41,
+        "Water": 36.11,
+        "Wind": 79.34
+      },
+      "storage_discharge_twh": {
+        "Battery": 25.79,
+        "Water": 10.38
+      },
+      "gen_cap_gw": {
+        "": 6.599,
+        "Biomass": 1.988,
+        "Black Coal": 8.82,
+        "Brown Coal": 3.37,
+        "Gas": 10.084,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 33.786,
+        "Unserved Energy": 1200.0,
+        "Water": 11.575,
+        "Wind": 33.83
+      },
+      "storage_cap_gw": {
+        "Battery": 33.604,
+        "Water": 5.015
+      },
+      "load_twh": 228.9,
+      "n_snapshots": 672
+    },
+    "2040": {
+      "gen_twh": {
+        "Biomass": 24.53,
+        "Gas": 23.49,
+        "Hyblend": 0.21,
+        "Hydrogen": 0.08,
+        "Liquid Fuel": 0.08,
+        "Solar": 105.06,
+        "Water": 34.59,
+        "Wind": 75.85
+      },
+      "storage_discharge_twh": {
+        "Battery": 39.99,
+        "Water": 10.95
+      },
+      "gen_cap_gw": {
+        "": 10.503,
+        "Biomass": 3.003,
+        "Gas": 8.006,
+        "Hyblend": 0.4,
+        "Hydrogen": 0.073,
+        "Liquid Fuel": 0.103,
+        "Solar": 50.076,
+        "Unserved Energy": 1200.0,
+        "Water": 11.434,
+        "Wind": 33.135
+      },
+      "storage_cap_gw": {
+        "Battery": 33.419,
+        "Water": 5.015
+      },
+      "load_twh": 253.0,
+      "n_snapshots": 672
+    },
+    "2045": {
+      "gen_twh": {
+        "Biomass": 33.26,
+        "Gas": 13.8,
+        "Hyblend": 0.22,
+        "Hydrogen": 0.04,
+        "Liquid Fuel": 0.04,
+        "Solar": 105.5,
+        "Water": 34.09,
+        "Wind": 96.31
+      },
+      "storage_discharge_twh": {
+        "Battery": 51.32,
+        "Water": 10.12
+      },
+      "gen_cap_gw": {
+        "": 24.827,
+        "Biomass": 3.993,
+        "Gas": 6.031,
+        "Hyblend": 0.4,
+        "Hydrogen": 0.054,
+        "Liquid Fuel": 0.103,
+        "Solar": 55.701,
+        "Unserved Energy": 1200.0,
+        "Water": 11.645,
+        "Wind": 35.863
+      },
+      "storage_cap_gw": {
+        "Battery": 36.773,
+        "Water": 5.015
+      },
+      "load_twh": 269.9,
+      "n_snapshots": 1008
+    },
+    "2050": {
+      "gen_twh": {
+        "Biomass": 41.89,
+        "Gas": 7.62,
+        "Hyblend": 0.22,
+        "Hydrogen": 3.89,
+        "Liquid Fuel": 0.08,
+        "Solar": 128.83,
+        "Water": 34.83,
+        "Wind": 70.56
+      },
+      "storage_discharge_twh": {
+        "Battery": 45.11,
+        "Water": 10.58
+      },
+      "gen_cap_gw": {
+        "": 15.164,
+        "Biomass": 5.0,
+        "Gas": 3.198,
+        "Hyblend": 0.4,
+        "Hydrogen": 1.902,
+        "Liquid Fuel": 0.103,
+        "Solar": 61.645,
+        "Unserved Energy": 1200.0,
+        "Water": 11.737,
+        "Wind": 30.863
+      },
+      "storage_cap_gw": {
+        "Battery": 35.335,
+        "Water": 5.015
+      },
+      "load_twh": 276.3,
+      "n_snapshots": 672
+    }
+  },
+  "fossil_incumbent": {
+    "2025": {
+      "gen_twh": {
+        "Black Coal": 68.95,
+        "Brown Coal": 32.43,
+        "Gas": 10.65,
+        "Solar": 20.33,
+        "Water": 20.85,
+        "Wind": 30.0
+      },
+      "storage_discharge_twh": {
+        "Battery": 2.67,
+        "Water": 1.66
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 11.874,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.663,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 6.837,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 10.007,
+        "Water": 5.015
+      },
+      "load_twh": 182.2,
+      "n_snapshots": 672
+    },
+    "2030": {
+      "gen_twh": {
+        "Black Coal": 85.2,
+        "Brown Coal": 33.55,
+        "Gas": 12.03,
+        "Solar": 21.75,
+        "Water": 28.13,
+        "Wind": 33.62
+      },
+      "storage_discharge_twh": {
+        "Battery": 6.77,
+        "Water": 2.35
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 10.894,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.527,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 8.851,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 9.977,
+        "Water": 5.015
+      },
+      "load_twh": 212.1,
+      "n_snapshots": 1008
+    },
+    "2035": {
+      "gen_twh": {
+        "Black Coal": 94.45,
+        "Brown Coal": 37.22,
+        "Gas": 15.76,
+        "Hyblend": 0.03,
+        "Liquid Fuel": 0.01,
+        "Solar": 24.88,
+        "Water": 30.47,
+        "Wind": 31.29
+      },
+      "storage_discharge_twh": {
+        "Battery": 10.85,
+        "Water": 10.24
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 10.5,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 9.505,
+        "Wind": 15.418
+      },
+      "storage_cap_gw": {
+        "Battery": 10.899,
+        "Water": 5.015
+      },
+      "load_twh": 228.9,
+      "n_snapshots": 672
+    },
+    "2040": {
+      "gen_twh": {
+        "Black Coal": 100.87,
+        "Brown Coal": 25.36,
+        "Gas": 35.51,
+        "Solar": 25.2,
+        "Water": 36.35,
+        "Wind": 35.74
+      },
+      "storage_discharge_twh": {
+        "Battery": 11.98,
+        "Water": 11.96
+      },
+      "gen_cap_gw": {
+        "": 0.926,
+        "Black Coal": 12.855,
+        "Brown Coal": 3.37,
+        "Gas": 11.572,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 11.463,
+        "Wind": 17.046
+      },
+      "storage_cap_gw": {
+        "Battery": 11.148,
+        "Water": 5.015
+      },
+      "load_twh": 253.0,
+      "n_snapshots": 672
+    },
+    "2045": {
+      "gen_twh": {
+        "Biomass": 33.76,
+        "Black Coal": 55.54,
+        "Brown Coal": 8.89,
+        "Gas": 64.21,
+        "Hyblend": 0.02,
+        "Liquid Fuel": 0.01,
+        "Solar": 25.67,
+        "Water": 37.4,
+        "Wind": 50.92
+      },
+      "storage_discharge_twh": {
+        "Battery": 15.23,
+        "Water": 11.42
+      },
+      "gen_cap_gw": {
+        "": 1.097,
+        "Biomass": 4.004,
+        "Black Coal": 8.82,
+        "Brown Coal": 3.37,
+        "Gas": 15.21,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 11.696,
+        "Wind": 18.38
+      },
+      "storage_cap_gw": {
+        "Battery": 10.687,
+        "Water": 5.015
+      },
+      "load_twh": 269.9,
+      "n_snapshots": 1008
+    },
+    "2050": {
+      "gen_twh": {
+        "Biomass": 41.89,
+        "Black Coal": 32.3,
+        "Brown Coal": 9.16,
+        "Gas": 92.06,
+        "Hyblend": 0.01,
+        "Solar": 25.25,
+        "Water": 36.93,
+        "Wind": 44.93
+      },
+      "storage_discharge_twh": {
+        "Battery": 14.69,
+        "Water": 11.32
+      },
+      "gen_cap_gw": {
+        "": 3.308,
+        "Biomass": 5.037,
+        "Black Coal": 5.29,
+        "Brown Coal": 1.16,
+        "Gas": 16.506,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 11.767,
+        "Wind": 20.536
+      },
+      "storage_cap_gw": {
+        "Battery": 8.689,
+        "Water": 5.015
+      },
+      "load_twh": 276.3,
+      "n_snapshots": 672
+    }
+  },
+  "nuclear_baseload": {
+    "2025": {
+      "gen_twh": {
+        "Black Coal": 65.79,
+        "Brown Coal": 30.6,
+        "Gas": 12.43,
+        "Solar": 20.64,
+        "Water": 24.02,
+        "Wind": 29.89
+      },
+      "storage_discharge_twh": {
+        "Battery": 2.77,
+        "Water": 1.77
+      },
+      "gen_cap_gw": {
+        "Black Coal": 16.435,
+        "Brown Coal": 4.82,
+        "Gas": 11.874,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.663,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 7.904,
+        "Wind": 14.918
+      },
+      "storage_cap_gw": {
+        "Battery": 10.008,
+        "Water": 5.015
+      },
+      "load_twh": 182.2,
+      "n_snapshots": 672
+    },
+    "2030": {
+      "gen_twh": {
+        "Black Coal": 86.26,
+        "Brown Coal": 25.08,
+        "Gas": 18.21,
+        "Solar": 21.78,
+        "Water": 28.82,
+        "Wind": 35.77
+      },
+      "storage_discharge_twh": {
+        "Battery": 8.29,
+        "Water": 6.79
+      },
+      "gen_cap_gw": {
+        "Black Coal": 12.855,
+        "Brown Coal": 3.37,
+        "Gas": 11.532,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.527,
+        "Solar": 12.789,
+        "Unserved Energy": 1200.0,
+        "Water": 9.164,
+        "Wind": 15.33
+      },
+      "storage_cap_gw": {
+        "Battery": 10.015,
+        "Water": 5.015
+      },
+      "load_twh": 212.1,
+      "n_snapshots": 1008
+    },
+    "2035": {
+      "gen_twh": {
+        "Biomass": 1.52,
+        "Black Coal": 54.05,
+        "Brown Coal": 8.79,
+        "Gas": 63.13,
+        "Solar": 25.65,
+        "Water": 34.99,
+        "Wind": 46.06
+      },
+      "storage_discharge_twh": {
+        "Battery": 8.98,
+        "Water": 11.52
+      },
+      "gen_cap_gw": {
+        "": 1.265,
+        "Biomass": 0.173,
+        "Black Coal": 8.82,
+        "Brown Coal": 3.37,
+        "Gas": 16.927,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 13.259,
+        "Unserved Energy": 1200.0,
+        "Water": 11.496,
+        "Wind": 19.773
+      },
+      "storage_cap_gw": {
+        "Battery": 10.156,
+        "Water": 5.015
+      },
+      "load_twh": 228.9,
+      "n_snapshots": 672
+    },
+    "2040": {
+      "gen_twh": {
+        "Biomass": 13.93,
+        "Black Coal": 29.71,
+        "Brown Coal": 8.9,
+        "Gas": 81.75,
+        "Solar": 30.26,
+        "Water": 35.05,
+        "Wind": 59.33
+      },
+      "storage_discharge_twh": {
+        "Battery": 11.6,
+        "Water": 11.79
+      },
+      "gen_cap_gw": {
+        "": 1.436,
+        "Biomass": 1.638,
+        "Black Coal": 5.29,
+        "Brown Coal": 1.16,
+        "Gas": 17.631,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Solar": 15.091,
+        "Unserved Energy": 1200.0,
+        "Water": 11.47,
+        "Wind": 23.806
+      },
+      "storage_cap_gw": {
+        "Battery": 11.24,
+        "Water": 5.015
+      },
+      "load_twh": 253.0,
+      "n_snapshots": 672
+    },
+    "2045": {
+      "gen_twh": {
+        "Biomass": 14.67,
+        "Black Coal": 12.86,
+        "Brown Coal": 8.69,
+        "Gas": 53.09,
+        "Hyblend": 0.02,
+        "Liquid Fuel": 0.01,
+        "Nuclear": 16.74,
+        "Solar": 55.45,
+        "Water": 36.24,
+        "Wind": 79.02
+      },
+      "storage_discharge_twh": {
+        "Battery": 16.7,
+        "Water": 11.32
+      },
+      "gen_cap_gw": {
+        "": 4.323,
+        "Biomass": 1.86,
+        "Black Coal": 1.696,
+        "Brown Coal": 1.16,
+        "Gas": 14.404,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Nuclear": 1.998,
+        "Solar": 22.42,
+        "Unserved Energy": 1200.0,
+        "Water": 11.698,
+        "Wind": 27.455
+      },
+      "storage_cap_gw": {
+        "Battery": 11.416,
+        "Water": 5.015
+      },
+      "load_twh": 269.9,
+      "n_snapshots": 1008
+    },
+    "2050": {
+      "gen_twh": {
+        "Biomass": 40.05,
+        "Black Coal": 12.12,
+        "Gas": 34.78,
+        "Nuclear": 34.83,
+        "Solar": 64.14,
+        "Water": 36.6,
+        "Wind": 61.59
+      },
+      "storage_discharge_twh": {
+        "Battery": 21.99,
+        "Water": 11.29
+      },
+      "gen_cap_gw": {
+        "": 3.625,
+        "Biomass": 5.01,
+        "Black Coal": 1.696,
+        "Gas": 8.739,
+        "Hyblend": 0.4,
+        "Liquid Fuel": 0.103,
+        "Nuclear": 4.009,
+        "Solar": 27.618,
+        "Unserved Energy": 1200.0,
+        "Water": 11.749,
+        "Wind": 24.512
+      },
+      "storage_cap_gw": {
+        "Battery": 11.749,
+        "Water": 5.015
+      },
+      "load_twh": 276.3,
+      "n_snapshots": 672
+    }
+  }
+}

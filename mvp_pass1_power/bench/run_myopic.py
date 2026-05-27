@@ -90,17 +90,26 @@ temporal:
     reference_year_cycle: [2018]
     investment_periods: [{year}]
     aggregation:
-      # Phase 7.2: 4-week sampling (Option B — 2 named + 2 numbered).
-      # named: residual-peak-demand picks the demand-stress week (firm-
-      #   capacity bottleneck); residual-minimum-demand picks the
-      #   VRE-dominant week (curtailment / negative-residual scenarios).
-      # numbered: calendar weeks 3 (mid-January, peak Australian summer
-      #   — cooling load + max solar) and 29 (mid-July, peak winter —
-      #   heating load + low solar). Provides explicit seasonal coverage
-      #   the named-only set misses; addresses the VRE-suppression /
-      #   coal-over-dispatch findings from PHASE7_1_DIAGNOSTIC.md.
-      representative_weeks: [3, 29]
-      named_representative_weeks: [residual-peak-demand, residual-minimum-demand]
+      # Phase 7.2 (revised): 3-week sampling. Reduced from 4 to 3 weeks
+      # after the 4-week smoke landed PDLP duality gap at 1.5e-3
+      # (asymptoting above the 1e-3 tolerance target). 3-week LP is
+      # ~25 % smaller in nonzeros, which should improve PDLP gap
+      # convergence while still providing seasonal coverage. Off-peak
+      # week dropped as least informative (largely a scaled-down
+      # shoulder).
+      #
+      # Selection:
+      #   peak winter (named residual-peak-demand): mid-June for 2018
+      #     reference data — heating-driven evening residual peak, low
+      #     solar resource. Team's existing single-rep-week pattern.
+      #   peak summer (named peak-demand): data-driven highest
+      #     instantaneous demand — Australia's summer afternoon cooling
+      #     peak with high solar resource.
+      #   spring shoulder (numbered week 42): mid-October — rising
+      #     solar resource, moderate demand. Captures the VRE-favouring
+      #     economic regime that single-rep-week sampling misses.
+      representative_weeks: [42]
+      named_representative_weeks: [residual-peak-demand, peak-demand]
   operational:
     resolution_min: 30
     reference_year_cycle: [2018]
