@@ -1,0 +1,68 @@
+{
+  "run_id": "p81t1_gurobi_v2",
+  "kind": "myopic_sequential",
+  "archetype": "cost_optimal",
+  "regions_filter": null,
+  "periods": [
+    2040
+  ],
+  "started_at_iso": "2026-05-28T22:22:39",
+  "per_period": {
+    "2040": {
+      "run_id": "p81t1_gurobi_v2_2040",
+      "config": "C:\\Users\\van538\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\p81t1_gurobi_v2_2040.yaml",
+      "archetype": "cost_optimal",
+      "solver_options": {
+        "BarConvTol": 0.001,
+        "OptimalityTol": 0.001,
+        "FeasibilityTol": 0.001
+      },
+      "started_at": 1779970960.2612717,
+      "started_at_iso": "2026-05-28T22:22:40",
+      "iasr_load_s": 0.24859209917485714,
+      "templating_s": 1.2436106000095606,
+      "translation_s": 25.43989099934697,
+      "pypsa_build_s": 51.613999100402,
+      "solve_s": 512.5561299007386,
+      "solve_ok": true,
+      "save_network_s": 1.371034100651741,
+      "extract_results_s": 3.286871099844575,
+      "annual_generation_mwh_by_period": {
+        "2040": 259180060.86732966
+      },
+      "wall_clock_s": 623.3506495002657,
+      "status": "completed",
+      "peak_rss_bytes": 3178475520,
+      "peak_rss_gib": 2.8435401916503906,
+      "lp_rows": 1506624,
+      "lp_cols": 695280,
+      "lp_nonzeros": 2781651,
+      "model_status": "Optimal",
+      "highs_run_time_s": null,
+      "simplex_iterations": null,
+      "ipm_iterations": null,
+      "ipm_final_pinf": 0.000308,
+      "ipm_final_dinf": 1.37e-05,
+      "ipm_final_gap": 11.5,
+      "objective_value": 13462218600.0,
+      "gurobi_iterations": 515983,
+      "gurobi_solver_time_s": 484.04,
+      "gurobi_barrier_iterations": 60,
+      "gurobi_barrier_time_s": 29.33,
+      "ipm_iterations_observed": 60,
+      "per_period_wall_s": 628.3508021831512,
+      "per_period_peak_gib": 2.8435401916503906,
+      "capacity_built_gw_by_fuel": {
+        "Biomass": 1.8932437761989145,
+        "Gas": 9.554300480652374,
+        "Solar": 2.199046008527317,
+        "Water": 4.7134867715769335,
+        "Wind": 8.735381574511832
+      },
+      "total_capacity_built_gw": 27.095458611467368
+    }
+  },
+  "cumulative_wall_clock_s": 665.5619668960571,
+  "peak_rss_gib_observed": 2.8435401916503906,
+  "ended_at_iso": "2026-05-28T22:33:45"
+}
