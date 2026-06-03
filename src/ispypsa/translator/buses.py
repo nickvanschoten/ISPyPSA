@@ -124,7 +124,18 @@ def create_pypsa_friendly_bus_demand_timeseries(
             trace_data["subregion"].isin(sub_regions_to_aggregate)
         ].copy()
         node_trace = node_traces.groupby("datetime", as_index=False)["value"].sum()
-        node_trace["value"] = node_trace["value"].clip(lower=0.0)
+        # OPSO_MODELLING demand traces are gross_demand minus total rooftop PV
+        # (AEMO's "operational demand" convention). Aggregated to a demand_node, the
+        # value can be negative at snapshots when local rooftop generation exceeds
+        # local gross demand — this represents real rooftop exports the bulk grid
+        # carries inter-regionally to importing buses. PyPSA Loads accept p_set < 0:
+        # the bus becomes a net injector and the surplus flows out via links,
+        # charges storage, or displaces local generation back-off. Preserving this
+        # is necessary for the bulk-grid energy balance to match physical reality
+        # (~1.7 TWh/year NEM-wide at 2018-baseline; larger at growth-scaled years).
+        # Previously clipped to 0 by commit 8ec1c4b (2025-11-27); the clip was
+        # undocumented and reverted after empirical scoping showed it was not
+        # load-bearing. See mvp_pass1_power/bench/rooftop_clip_fix_scoping.md.
         # datetime in nanoseconds required by PyPSA
         node_trace["datetime"] = node_trace["datetime"].astype("datetime64[ns]")
         demand_traces[demand_node] = node_trace

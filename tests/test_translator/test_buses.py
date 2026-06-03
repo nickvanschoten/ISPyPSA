@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from ispypsa.translator.buses import (
@@ -91,8 +90,14 @@ def test_create_pypsa_friendly_bus_timeseries_data_sub_regions(tmp_path):
     expected_trace["datetime"] = expected_trace["datetime"].astype("datetime64[ns]")
     expected_trace = expected_trace.loc[:, ["datetime", "value"]]
     expected_trace = expected_trace.reset_index(drop=True)
-    expected_trace["value"] = np.where(
-        expected_trace["value"] < 0.0, 0.0, expected_trace["value"]
+    # Negative net demand (rooftop exports exceeding local gross demand) must pass
+    # through unclipped — see src/ispypsa/translator/buses.py docstring and
+    # mvp_pass1_power/bench/rooftop_clip_fix_scoping.md. The test fixture contains
+    # negative values; this assert keeps the regression coverage explicit if the
+    # fixture or function behaviour changes.
+    assert (expected_trace["value"] < 0.0).any(), (
+        "Test fixture has no negative values — regression coverage for "
+        "negative-net-demand pass-through is no longer meaningful."
     )
 
     # The function returns a dictionary with node names as keys
@@ -100,8 +105,11 @@ def test_create_pypsa_friendly_bus_timeseries_data_sub_regions(tmp_path):
     assert "NNSW" in demand_traces
     got_trace = demand_traces["NNSW"]
 
-    # Compare the traces
+    # Compare the traces — negative values must be preserved (no clipping).
     pd.testing.assert_frame_equal(expected_trace, got_trace)
+    assert (got_trace["value"] < 0.0).any(), (
+        "Returned trace has no negative values — clip-restoration regression."
+    )
 
 
 def test_create_pypsa_friendly_bus_timeseries_data_nem_regions(tmp_path):
@@ -152,8 +160,12 @@ def test_create_pypsa_friendly_bus_timeseries_data_nem_regions(tmp_path):
         {"value": "sum"}
     )
     expected_trace = expected_trace.reset_index(drop=True)
-    expected_trace["value"] = np.where(
-        expected_trace["value"] < 0.0, 0.0, expected_trace["value"]
+    # Negative net demand (rooftop exports exceeding local gross demand) must pass
+    # through unclipped — see src/ispypsa/translator/buses.py docstring and
+    # mvp_pass1_power/bench/rooftop_clip_fix_scoping.md.
+    assert (expected_trace["value"] < 0.0).any(), (
+        "Test fixture has no negative values — regression coverage for "
+        "negative-net-demand pass-through is no longer meaningful."
     )
 
     # The function returns a dictionary with node names as keys
@@ -161,8 +173,11 @@ def test_create_pypsa_friendly_bus_timeseries_data_nem_regions(tmp_path):
     assert "NSW" in demand_traces
     got_trace = demand_traces["NSW"]
 
-    # Compare the traces
+    # Compare the traces — negative values must be preserved (no clipping).
     pd.testing.assert_frame_equal(expected_trace, got_trace)
+    assert (got_trace["value"] < 0.0).any(), (
+        "Returned trace has no negative values — clip-restoration regression."
+    )
 
 
 def test_create_pypsa_friendly_bus_timeseries_data_single_region(tmp_path):
