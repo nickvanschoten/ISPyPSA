@@ -1,5 +1,61 @@
 # Phase 7.4 — rep-week capacity-signal distortion diagnostic
 
+> **CORRECTION NOTICE (2026-06-03) — structural-preference conclusion superseded.**
+>
+> The Phase 7.4 framing — that ISPyPSA exhibits a *structural LP preference*
+> against wind, with Path B (correcting the rep-week signal in-place) declared
+> non-viable — is **wrong as a general statement about LP behaviour**.
+> Phase 8.1 Test 3 (single cost_optimal_2040 at full-year 8760 PDLP-1e-3 on
+> Optimus-NC) ran the same LP class at full annual resolution and the result
+> reverses:
+>
+> | Resolution | Wind GW (cost_optimal 2040) | Δ vs 8760 |
+> |---|---:|---:|
+> | 3-week (Phase 7.2 production) | 23.7 | -3.7 GW (-14 %) |
+> | 4-week (Phase 8.1 Test 2)     | 20.5 | -6.9 GW (-25 %) |
+> | **8760 (Phase 8.1 Test 3)**   | **27.4** | — |
+>
+> Wind builds *more* at 8760 than at any rep-week resolution. The "preference"
+> Phase 7.4 attributed to the LP formulation was a **rep-week sample-selection
+> artefact**: most wind-favourable hours fall outside the sampled weeks, so
+> rep-week LPs see a wind resource that is systematically poorer than the true
+> annual one. At 8760 the model sees the full distribution and shifts capex
+> toward wind. Test 3 also shows the objective drops $2.21 B (-16.7 %) from
+> 4-week to 8760 — rep-week sampling was systematically *over-stating* system
+> cost as well as under-stating wind.
+>
+> Evidence: [`bench/phase81_test3_addendum.md`](bench/phase81_test3_addendum.md).
+>
+> **Generalisation status (2026-06-03 ~11:30):** a 5-archetype 2040 8760
+> verification (rcp, fi, gfm, nb, sl) is mid-flight on Optimus-NC. Iteration
+> trajectories at ~9 h wall-clock show four archetypes (rcp/fi/gfm/nb) converging
+> on the 1e-3 metrics within budget; storage_led is on a slow long tail (gap_rel
+> 1.20e-2 at iter 36000) consistent with the existing "storage_led 1e-3 is the
+> practical floor" caveat now extended to 8760. **Final 8760 capacities for
+> rcp/fi/gfm/nb have not yet been written out.** Once they have, this notice
+> should be updated with the wind-vs-3-week delta per archetype.
+>
+> **What still stands** from the original Phase 7.4 below:
+> - The rep-week distortion mechanism analysis (§7.4.1) is correct *as a
+>   description of why rep-week LPs see a poorer wind resource*. The numbers
+>   in §7.4.1 are valid rep-week diagnostics.
+> - The CF-floor / availability-overlay implementations (§7.4.2) failed to
+>   close the gap *under rep-week*, which is consistent with the new
+>   understanding — they were correcting the symptom (perceived CF) without
+>   touching the cause (week selection). They were never going to work.
+>
+> **What is overturned:**
+> - The conclusion "Path B is not viable; the LP has a structural anti-wind
+>   preference that requires escalation to 8760." Path B was being asked to
+>   recreate full-resolution behaviour from a 3-week sample; that is a
+>   sampling-coverage problem, not an LP-formulation problem.
+> - Any downstream methodology built on the "structural preference" framing
+>   must be revisited. Specifically, anything that treats rep-week wind
+>   under-deployment as a property of the model itself rather than the sample.
+>
+> The original text is retained below the line for audit trail. Use it as a
+> rep-week diagnostic, not as a general LP-behaviour statement.
+
 **Premise (team).** Rep-week-extrapolated CFs send distorted signals during LP
 optimisation; the LP under-deploys VRE/storage and over-deploys thermal. Phase
 7.4 asks whether the signal can be *corrected within rep-week sampling* (Path B)

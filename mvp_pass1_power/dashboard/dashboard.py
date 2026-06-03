@@ -1561,6 +1561,18 @@ def main() -> None:
         "derived from AEMO's 2024 IASR Step Change scenario via ISPyPSA + PyPSA + HiGHS. "
         "Cost and emission intensities are per MWh delivered to end-use loads."
     )
+    st.warning(
+        "**Methodology notice (2026-06-03).** The numbers displayed throughout "
+        "this dashboard come from the Phase 7.2 3-week representative-sampling "
+        "production run. Phase 8.1 Test 3 (8760-hour single LP for "
+        "cost_optimal 2040 on Optimus-NC) established that rep-week sampling "
+        "systematically under-deploys Wind and over-states system cost by "
+        "~17 % vs full annual resolution. **Cross-archetype relative rankings "
+        "— the dashboard's intended use — survive the resolution upgrade; "
+        "absolute capacity / cost levels do not.** See "
+        "`mvp_pass1_power/bench/phase81_test3_addendum.md` and "
+        "`STATUS_PRE_REDESIGN.md` for the full state."
+    )
 
     settings = _sidebar_settings()
 

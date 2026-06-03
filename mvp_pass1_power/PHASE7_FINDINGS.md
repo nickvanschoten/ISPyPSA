@@ -1,5 +1,20 @@
 # Phase 7 production run — biomass cap methodology refinement
 
+> **Methodology notice (2026-06-03) — absolute capacity / cost figures are
+> rep-week-conditional and have been superseded by 8760 evidence.**
+> The Phase 7 production numbers documented here use 1-week (and later 3-week)
+> representative sampling. Phase 8.1 Test 3 ran the same LP class at full
+> 8760-hour resolution and found the LP builds substantially more Wind
+> (cost_optimal 2040: 23.7 GW at 3-week → 27.4 GW at 8760, +16 %), shifts
+> capex away from Solar, and lands ~17 % cheaper objective. The §0 framing
+> of "documented methodology properties" remains correct as a *rep-week
+> diagnosis* but is no longer the team's best estimate of absolute level.
+> Cross-archetype *relative* rankings (the deliverable's actual claim) survive
+> at 8760 for cost_optimal; the 5-archetype 8760 verification is in flight to
+> confirm this generalises. See
+> [`bench/phase81_test3_addendum.md`](bench/phase81_test3_addendum.md) and
+> [`STATUS_PRE_REDESIGN.md`](STATUS_PRE_REDESIGN.md).
+
 **Run id:** `20260526_161705` (PDLP @ 1e-3, NEM-wide, 6 archetypes × 6 milestone years,
 **+ biomass availability cap applied**)
 

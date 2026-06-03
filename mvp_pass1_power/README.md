@@ -4,6 +4,30 @@ A working prototype that takes a small set of structurally distinct power-sector
 archetypes, runs each through ISPyPSA, and emits simple-msm-contract-compatible
 CSVs for Pass 2 consumption.
 
+> **Methodology notice (2026-06-03) — rep-week absolute numbers superseded.**
+> The 3-week production numbers throughout this README are still internally
+> consistent for **relative** archetype-to-archetype comparison, which is the
+> deliverable's claim. They are **not** the team's current best estimate of
+> absolute capacity / cost. Phase 8.1 Test 3 (8760-hour single-LP, PDLP-1e-3
+> on Optimus-NC, [bench/phase81_test3_addendum.md](bench/phase81_test3_addendum.md))
+> established that:
+>
+> - At full annual resolution the LP builds **+33 % more Wind** for
+>   cost_optimal 2040 (27.4 GW vs 20.5 GW at 4-week). The 3-week / 4-week
+>   under-deployment of wind was a sample-selection artefact, not an LP
+>   formulation property. The Phase 7.4 "structural preference against wind"
+>   framing is corrected in
+>   [PHASE7_4_FINDINGS.md](PHASE7_4_FINDINGS.md).
+> - Rep-week sampling **over-states system cost by ~17 %** vs 8760 ($13.24 B
+>   at 4-week → $11.03 B at 8760). Cost rankings *across archetypes* survive
+>   (relative claim), but the absolute level is biased upward.
+> - 8760 is empirically tractable on Optimus-NC at ~6 h per LP under
+>   PDLP-1e-3, so a 36-LP 8760 production sweep is feasible (~1.5 days at
+>   6-way parallelism).
+>
+> See [STATUS_PRE_REDESIGN.md](STATUS_PRE_REDESIGN.md) for the full state and
+> known loose ends at the pre-redesign baseline.
+
 **Status:** working end-to-end at full-NEM production scale — six archetypes ×
 six milestone years (2025–2050), sub-regional NEM with REZ discrete nodes,
 3-week representative sampling, solved with HiGHS PDLP at 1e-3 tolerance via
