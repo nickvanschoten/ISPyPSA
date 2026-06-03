@@ -364,6 +364,10 @@ def main():
                     help="Use Gurobi (overrides config.solver = highs); default Gurobi settings")
     ap.add_argument("--gurobi-bar-conv-tol", type=float, default=None,
                     help="Set Gurobi BarConvTol (default 1e-8); e.g. 1e-3 for relaxed run")
+    ap.add_argument("--gurobi-opt-tol", type=float, default=None,
+                    help="Set Gurobi OptimalityTol (default 1e-6); reduced-cost / dual tolerance")
+    ap.add_argument("--gurobi-feas-tol", type=float, default=None,
+                    help="Set Gurobi FeasibilityTol (default 1e-6); primal feasibility tolerance")
     args = ap.parse_args()
     solver_options = None
     solver_name_override = None
@@ -379,8 +383,15 @@ def main():
             solver_options["dual_feasibility_tolerance"] = args.pdlp_tolerance
     elif args.use_gurobi:
         solver_name_override = "gurobi"
+        gurobi_opts = {}
         if args.gurobi_bar_conv_tol is not None:
-            solver_options = {"BarConvTol": args.gurobi_bar_conv_tol}
+            gurobi_opts["BarConvTol"] = args.gurobi_bar_conv_tol
+        if args.gurobi_opt_tol is not None:
+            gurobi_opts["OptimalityTol"] = args.gurobi_opt_tol
+        if args.gurobi_feas_tol is not None:
+            gurobi_opts["FeasibilityTol"] = args.gurobi_feas_tol
+        if gurobi_opts:
+            solver_options = gurobi_opts
 
     bench_dir = Path(__file__).parent
     log_path = bench_dir / "logs" / f"{args.run_id}.log"

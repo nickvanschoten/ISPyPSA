@@ -38,7 +38,10 @@ RECORDS = BENCH / "records"
 CONFIG_TEMPLATE_DIR = BENCH / "configs"
 
 
-def _write_period_config(run_id: str, year: int, regions: list[str] | None) -> Path:
+def _write_period_config(run_id: str, year: int, regions: list[str] | None,
+                         rep_weeks: list[int] | None = None,
+                         full_year: bool = False,
+                         resolution_min: int = 30) -> Path:
     """Synthesise a single-period config for this milestone year.
 
     Callers pass `run_id` already containing the year suffix (sub_run_id from
@@ -86,7 +89,7 @@ temporal:
     start_year: {year}
     end_year: {year}
   capacity_expansion:
-    resolution_min: 30
+    resolution_min: {resolution_min}
     reference_year_cycle: [2018]
     investment_periods: [{year}]
     aggregation:
@@ -108,8 +111,8 @@ temporal:
       #   spring shoulder (numbered week 42): mid-October — rising
       #     solar resource, moderate demand. Captures the VRE-favouring
       #     economic regime that single-rep-week sampling misses.
-      representative_weeks: [42]
-      named_representative_weeks: [residual-peak-demand, peak-demand]
+      representative_weeks: {"~" if full_year else (rep_weeks if rep_weeks is not None else [42])}
+      named_representative_weeks: {"~" if full_year else "[residual-peak-demand, peak-demand]"}
   operational:
     resolution_min: 30
     reference_year_cycle: [2018]
@@ -132,6 +135,10 @@ def _run_one_period(
     archetype: str,
     use_pdlp: bool = False,
     pdlp_tolerance: float | None = None,
+    use_gurobi: bool = False,
+    gurobi_bar_conv_tol: float | None = None,
+    gurobi_opt_tol: float | None = None,
+    gurobi_feas_tol: float | None = None,
 ) -> dict:
     """Run a single period via the instrumented runner and return its record."""
     log_path = LOGS / f"{run_id}.log"
@@ -146,6 +153,14 @@ def _run_one_period(
         solver_flags = " --use-pdlp"
         if pdlp_tolerance is not None:
             solver_flags += f" --pdlp-tolerance {pdlp_tolerance}"
+    elif use_gurobi:
+        solver_flags = " --use-gurobi"
+        if gurobi_bar_conv_tol is not None:
+            solver_flags += f" --gurobi-bar-conv-tol {gurobi_bar_conv_tol}"
+        if gurobi_opt_tol is not None:
+            solver_flags += f" --gurobi-opt-tol {gurobi_opt_tol}"
+        if gurobi_feas_tol is not None:
+            solver_flags += f" --gurobi-feas-tol {gurobi_feas_tol}"
 
     cmd_str = (
         f'"{sys.executable}" -u "{BENCH / "instrumented_runner.py"}" '
@@ -223,6 +238,25 @@ def main():
     ap.add_argument("--pdlp-tolerance", type=float, default=None,
                     help="Set pdlp_optimality_tolerance + primal/dual feasibility "
                          "tolerances; only used with --use-pdlp.")
+    ap.add_argument("--use-gurobi", action="store_true",
+                    help="Solve with Gurobi instead of HiGHS (overrides config.solver).")
+    ap.add_argument("--gurobi-bar-conv-tol", type=float, default=None,
+                    help="Set Gurobi BarConvTol (default 1e-8); only used with --use-gurobi.")
+    ap.add_argument("--gurobi-opt-tol", type=float, default=None,
+                    help="Set Gurobi OptimalityTol (default 1e-6); only used with --use-gurobi.")
+    ap.add_argument("--gurobi-feas-tol", type=float, default=None,
+                    help="Set Gurobi FeasibilityTol (default 1e-6); only used with --use-gurobi.")
+    ap.add_argument("--rep-weeks", type=int, nargs="+", default=None,
+                    help="Override representative_weeks list (default [42]). "
+                         "Named weeks (residual-peak-demand, peak-demand) remain. "
+                         "E.g. --rep-weeks 42 33 gives 4-week sampling.")
+    ap.add_argument("--full-year", action="store_true",
+                    help="Disable all rep-week sampling (numbered AND named) so the LP "
+                         "covers the full reference year. Default resolution_min=60 (hourly); "
+                         "override with --resolution-min.")
+    ap.add_argument("--resolution-min", type=int, default=None,
+                    help="Override temporal resolution in minutes (default 30 for "
+                         "rep-week modes; default 60 for --full-year).")
     args = ap.parse_args()
 
     regions = [args.filter] if args.filter else None
@@ -242,11 +276,23 @@ def main():
     for year in args.periods:
         sub_run_id = f"{args.run_id}_{year}"
         print(f"\n=== Myopic period {year} ({sub_run_id}) archetype={args.archetype} ===")
-        cfg = _write_period_config(sub_run_id, year, regions)
+        # capacity_expansion.resolution_min must match operational.resolution_min
+        # (validator constraint in src/ispypsa/config/validators.py). Operational
+        # is fixed at 30 in the template, so capacity_expansion stays 30 unless
+        # the caller knows what they are doing.
+        resolution_min = args.resolution_min if args.resolution_min is not None else 30
+        cfg = _write_period_config(sub_run_id, year, regions,
+                                    rep_weeks=args.rep_weeks,
+                                    full_year=args.full_year,
+                                    resolution_min=resolution_min)
         per_started = time.time()
         rec = _run_one_period(
             cfg, sub_run_id, args.budget_min, args.archetype,
             use_pdlp=args.use_pdlp, pdlp_tolerance=args.pdlp_tolerance,
+            use_gurobi=args.use_gurobi,
+            gurobi_bar_conv_tol=args.gurobi_bar_conv_tol,
+            gurobi_opt_tol=args.gurobi_opt_tol,
+            gurobi_feas_tol=args.gurobi_feas_tol,
         )
         per_wall = time.time() - per_started
         rec["per_period_wall_s"] = per_wall
