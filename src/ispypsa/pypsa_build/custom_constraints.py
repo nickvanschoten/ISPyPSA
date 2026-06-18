@@ -43,6 +43,18 @@ def _get_variables(
             var = model.variables.StorageUnit_p_nom.at[f"{component_name}"]
         except (KeyError, AttributeError):
             var = None
+    elif component_type == "StorageUnit" and attribute_type == "p_dispatch":
+        # Battery (StorageUnit) discharge — its contribution to a transmission /
+        # security corridor when exporting. PyPSA splits dispatch into
+        # p_dispatch (discharge >= 0) and p_store (charge >= 0); the output term
+        # counts discharge. Guarded because storage terms aren't pre-filtered
+        # against the model like generator terms are, so a battery absent in the
+        # modelled period (not yet built / retired / not in the candidate set)
+        # must drop to None rather than raise.
+        try:
+            var = model.variables.StorageUnit_p_dispatch.loc[:, f"{component_name}"]
+        except (KeyError, AttributeError):
+            var = None
     elif component_type == "Load" and attribute_type == "p":
         logging.info(
             f"Load component {component_name} not added to custom constraint. "

@@ -152,7 +152,9 @@ _CUSTOM_CONSTRAINT_TERM_TYPE_TO_COMPONENT_TYPE = {
     "generator_capacity": "Generator",
     "generator_output": "Generator",
     "load_consumption": "Load",
-    "storage_output": "Storage",
+    # ISPyPSA batteries are PyPSA StorageUnit components. The output term is the
+    # discharge variable (StorageUnit-p_dispatch); the capacity term is p_nom.
+    "storage_output": "StorageUnit",
     "storage_capacity": "StorageUnit",
 }
 
@@ -161,7 +163,7 @@ _CUSTOM_CONSTRAINT_TERM_TYPE_TO_ATTRIBUTE_TYPE = {
     "generator_capacity": "p_nom",
     "generator_output": "p",
     "load_consumption": "p",
-    "storage_output": "p",
+    "storage_output": "p_dispatch",
     "storage_capacity": "p_nom",
 }
 

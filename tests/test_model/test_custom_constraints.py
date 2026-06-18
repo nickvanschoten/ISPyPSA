@@ -106,6 +106,55 @@ def test_custom_constraints_greater_equal(csv_str_to_df):
     assert total_capacity >= 300.0
 
 
+def test_custom_constraints_storage_output_dispatch(csv_str_to_df):
+    """storage_output terms bind to a StorageUnit's discharge (p_dispatch).
+
+    Regression: storage_output previously mapped to a PyPSA `Storage`/`p`
+    variable that doesn't exist for batteries (which are `StorageUnit`s), so the
+    term silently dropped. The output term must constrain StorageUnit-p_dispatch.
+    """
+    import pypsa
+
+    network = pypsa.Network()
+    network.set_snapshots(pd.date_range("2025-01-01", periods=4, freq="h"))
+    network.add("Bus", "bus1")
+
+    # Cheap pre-charged battery + expensive backup generator serving a fixed load.
+    network.add(
+        "StorageUnit",
+        "battery",
+        bus="bus1",
+        p_nom=100,
+        max_hours=10,
+        state_of_charge_initial=1000,
+        cyclic_state_of_charge=False,
+        marginal_cost=1,
+    )
+    network.add("Generator", "backup", bus="bus1", p_nom=100, marginal_cost=100)
+    network.loads_t.p_set = pd.DataFrame(
+        {"load1": [50, 50, 50, 50]}, index=network.snapshots
+    )
+    network.add("Load", "load1", bus="bus1")
+
+    # Cap the battery's discharge below demand so the constraint must bind.
+    custom_constraints_rhs = csv_str_to_df("""
+    constraint_name,        rhs,    constraint_type
+    battery_export_limit,   30,     <=
+    """)
+    custom_constraints_lhs = csv_str_to_df("""
+    constraint_name,        component,     attribute,    variable_name,   coefficient
+    battery_export_limit,   StorageUnit,   p_dispatch,   battery,         1.0
+    """)
+
+    network.optimize.create_model()
+    _add_custom_constraints(network, custom_constraints_rhs, custom_constraints_lhs)
+    network.optimize.solve_model()
+
+    # Discharge held at/below the 30 MW cap, forcing the expensive backup to run.
+    assert network.storage_units_t.p_dispatch["battery"].max() <= 30.0 + 1e-6
+    assert network.generators_t.p["backup"].max() > 0.0
+
+
 def test_custom_constraints_equal_link_p_nom(csv_str_to_df):
     """Test custom constraints with == constraint type for Link p_nom variables."""
     import pypsa

@@ -313,6 +313,10 @@ _V74_TO_CANONICAL_COLUMN_RENAMES: dict[str, dict[str, str]] = {
         # v7.4 appended a "4," footnote text to this column header.
         "Total lead time (years)4,": "Total lead time (years)",
     },
+    "variable_opex_existing_committed_anticipated_additional_generators": {
+        # v7.5 appended a "1," footnote text to this column header.
+        "Variable OPEX ($/MWh sent out)1,": "Variable OPEX ($/MWh sent out)",
+    },
     # v7.4 connection_costs_other uses inconsistent casing for battery tech
     # column headers ("Battery storage" lowercase for 1-4hrs, "Battery Storage"
     # capital S for 8hrs). new_entrants_summary uses capital S consistently in

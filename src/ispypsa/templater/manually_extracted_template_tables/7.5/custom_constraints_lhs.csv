@@ -1,0 +1,163 @@
+constraint_id,term_type,term_id,coefficient
+NQ1,link_flow,Q1-NQ,1.0
+NQ1,link_flow,Q2-NQ,1.0
+NQ1,link_flow,Q3-NQ,1.0
+CQ1,link_flow,CQ-NQ,-1.0
+CQ1,link_flow,Q4-CQ,1.0
+SQ1,link_flow,SQ-CQ,-0.5
+SQ1,link_flow,Q7-SQ,1.0
+SQ1 (after CQ-SQ Upgrades),link_flow,Q7-SQ,1.0
+SQ1 (after CQ-SQ Upgrades),generator_output,Tarong,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Tarong North,0.15
+SQ1 (after CQ-SQ Upgrades),storage_output,Tarong BESS,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Coopers Gap Wind Farm,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Wambo Wind Farm,0.15
+SQ1 (after CQ-SQ Upgrades),link_flow,Q8c-SQ,0.15
+SQ1 (after CQ-SQ Upgrades),storage_output,Chinchilla BESS,0.15
+SQ1 (after CQ-SQ Upgrades),storage_output,Ulinda Park BESS,0.15
+SQ1 (after CQ-SQ Upgrades),storage_output,Wandoan South BESS,0.15
+SQ1 (after CQ-SQ Upgrades),storage_output,Western Downs Battery,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Kogan Creek,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Condamine A,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Darling Downs,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Darling Downs Solar Farm,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Braemar,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Braemar 2 Power Station,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Roma,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Bluegrass Solar Farm,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Columboola Solar Farm,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Edenvale Solar Park,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Gangarri Solar Farm,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Wandoan South Solar Farm - stage 1,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Western Downs Green Power Hub,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Dulacca Wind Farm,0.15
+SQ1 (after CQ-SQ Upgrades),link_flow,Q8a-SQ,0.15
+SQ1 (after CQ-SQ Upgrades),generator_output,Millmerran,0.12
+SQ1 (after CQ-SQ Upgrades),link_flow,Q8b-SQ,0.12
+SQ1 (after CQ-SQ Upgrades),link_flow,NNSW-SQ,0.15
+SQ1 (after CQ-SQ Upgrades),link_flow,SQ-CQ,-0.57
+SEVIC1,link_flow,V8-SEV,1.0
+SEVIC1,generator_output,Loy Yang A Power Station,1.0
+SEVIC1,generator_output,Loy Yang B,1.0
+SEVIC1,generator_output,Valley Power,1.0
+SEVIC1,link_flow,TAS-SEV,1.0
+SEVIC1 Post V8 Option 2,link_flow,V8-SEV,0.5
+SEVIC1 Post V8 Option 2,generator_output,Loy Yang A Power Station,1.0
+SEVIC1 Post V8 Option 2,generator_output,Loy Yang B,1.0
+SEVIC1 Post V8 Option 2,generator_output,Valley Power,1.0
+SEVIC1 Post V8 Option 2,link_flow,TAS-SEV,1.0
+SWV1,link_flow,WNV-SESA,-1.0
+SWV1,link_flow,V5-WNV,1.0
+SWV1,link_flow,V9-WNV,1.0
+MN1,link_flow,S3-CSA,1.0
+MN1,link_flow,S4-CSA,1.0
+MN1,link_flow,CSA-NSA,-1.0
+MN1,link_flow,SNSW-CSA,0.2
+NSA1,link_flow,S5-NSA,0.75
+NSA1,generator_output,Mount Millar Wind Farm,1.0
+NSA1,generator_output,Cathedral Rocks Wind Farm,1.0
+NSA1,generator_output,Lincoln Gap Wind Farm - stage 1,1.0
+NSA1,generator_output,Lincoln Gap Wind Farm - stage 2,1.0
+NSA1,storage_output,Lincoln Gap Wind Farm BESS,1.0
+NSA1,generator_output,Port Lincoln GT,1.0
+NSA1,link_flow,S7-NSA,1.0
+NSA1,link_flow,S8-NSA,1.0
+NET1,link_flow,T1-TAS,1.0
+NET1,link_flow,T4-TAS,1.0
+SWNSW2,link_flow,N4-SNSW,1.0
+SWNSW2,link_flow,N5-SNSW,1.0
+SWNSW2,link_flow,N13-SNSW,1.0
+SWNSW2,link_flow,SNSW-CSA,-1.0
+SWNSW2,link_flow,WNV-SNSW,0.8
+SWNSW2,generator_output,Limondale Solar Farm 1,1.0
+SWNSW2,generator_output,Limondale Solar Farm 2,1.0
+SWNSW2,generator_output,Sunraysia Solar Farm,1.0
+SWNSW2,generator_output,Coleambally Solar Farm,1.0
+SWNSW2,generator_output,Finley Solar Farm,1.0
+SWNSW2,generator_output,Darlington Point Solar Farm,1.0
+SWNSW2,generator_output,Hillston Sun Farm,1.0
+SWNSW2,storage_output,Darlington Point Energy Storage System,1.0
+SWNSW2,storage_output,Riverina Energy Storage System 1,1.0
+SWNSW2,storage_output,Riverina Energy Storage System 2,1.0
+SWNSW2,generator_output,Broken Hill Solar Farm,1.0
+SWNSW2,storage_output,Broken Hill BESS,1.0
+SWNSW2,generator_output,Silverton Wind Farm,1.0
+SWNSW2,storage_output,Silver City Energy Storage,1.0
+WV1,link_flow,V3-WNV,1.0
+WV1,link_flow,V4-WNV,1.0
+CNSW1,link_flow,DN1-CNSW,1.0
+CNSW1,generator_output,Beryl Solar Farm,1.0
+CNSW1,generator_output,Bodangora Wind Farm,1.0
+CNSW1,generator_output,Crudine Ridge Wind Farm,1.0
+CNSW1,generator_output,Flyers Creek Wind Farm,1.0
+CNSW1,generator_output,Goonumbla Solar Farm,1.0
+CNSW1,generator_output,Jemalong Solar,1.0
+CNSW1,generator_output,Manildra Solar Farm,1.0
+CNSW1,generator_output,Molong Solar Farm,1.0
+CNSW1,generator_output,Nevertire Solar Farm,1.0
+CNSW1,generator_output,Nyngan Solar Plant,1.0
+CNSW1,generator_output,Parkes Solar Farm,1.0
+CNSW1,generator_output,Suntop Solar Farm,1.0
+CNSW1,generator_output,Wellington Solar Farm,1.0
+CNSW1,generator_output,Wollar Solar Farm,1.0
+CNSW1,storage_output,Orana BESS,1.0
+CNSW1,generator_output,Uungula Wind Farm,1.0
+CNSW1,generator_output,Wellington North Solar Farm (Lightsource),1.0
+SWQLD1,generator_output,Tarong,0.14
+SWQLD1,generator_output,Tarong North,0.14
+SWQLD1,storage_output,Tarong BESS,0.14
+SWQLD1,generator_output,Coopers Gap Wind Farm,0.14
+SWQLD1,generator_output,Wambo Wind Farm,0.14
+SWQLD1,link_flow,Q8c-SQ,0.14
+SWQLD1,storage_output,Chinchilla BESS,0.43
+SWQLD1,storage_output,Ulinda Park BESS,0.43
+SWQLD1,storage_output,Wandoan South BESS,0.43
+SWQLD1,storage_output,Western Downs Battery,0.43
+SWQLD1,generator_output,Kogan Creek,0.43
+SWQLD1,generator_output,Condamine A,0.43
+SWQLD1,generator_output,Darling Downs,0.43
+SWQLD1,generator_output,Darling Downs Solar Farm,0.43
+SWQLD1,generator_output,Braemar,0.43
+SWQLD1,generator_output,Braemar 2 Power Station,0.43
+SWQLD1,generator_output,Roma,0.43
+SWQLD1,generator_output,Bluegrass Solar Farm,0.43
+SWQLD1,generator_output,Columboola Solar Farm,0.43
+SWQLD1,generator_output,Edenvale Solar Park,0.43
+SWQLD1,generator_output,Gangarri Solar Farm,0.43
+SWQLD1,generator_output,Wandoan South Solar Farm - stage 1,0.43
+SWQLD1,generator_output,Western Downs Green Power Hub,0.43
+SWQLD1,generator_output,Dulacca Wind Farm,0.43
+SWQLD1,link_flow,Q8a-SQ,0.43
+SWQLD1,generator_output,Millmerran,1.0
+SWQLD1,link_flow,Q8b-SQ,1.0
+SWQLD1,link_flow,NNSW-SQ,0.84
+SWQLD1,link_flow,SQ-CQ,-0.11
+N9_Hydrogen,link_flow,N9-CNSW,1.0
+N9_Hydrogen,link_flow,NNSW-SQ,1.0
+Q7_Hydrogen,link_flow,Q7-SQ,1.0
+Q7_Hydrogen,link_flow,SQ-CQ,0.5
+Q1_Hydrogen,link_flow,Q1-NQ,1.0
+Q4_Hydrogen,link_flow,Q4-CQ,1.0
+Q4_Hydrogen,link_flow,CQ-NQ,0.8
+WNV1,link_flow,WNV-SNSW,-0.81
+WNV1,generator_output,Murray 1,0.73
+WNV1,generator_output,Murray 2,0.73
+WNV1,generator_output,Eildon,0.95
+WNV1,generator_output,West Kiewa,0.81
+WNV1,generator_output,Bogong / Mackay,0.81
+WNV1,generator_output,Dartmouth,0.81
+WNV1,link_flow,V7-WNV,0.78
+SWNSW1,generator_output,Limondale Solar Farm 1,1.0
+SWNSW1,generator_output,Limondale Solar Farm 2,1.0
+SWNSW1,generator_output,Sunraysia Solar Farm,1.0
+SWNSW1,generator_output,Coleambally Solar Farm,1.0
+SWNSW1,generator_output,Finley Solar Farm,1.0
+SWNSW1,generator_output,Darlington Point Solar Farm,1.0
+SWNSW1,generator_output,Hillston Sun Farm,1.0
+SWNSW1,storage_output,Darlington Point Energy Storage System,1.0
+SWNSW1,storage_output,Riverina Energy Storage System 1,1.0
+SWNSW1,storage_output,Riverina Energy Storage System 2,1.0
+SWNSW1,generator_output,Broken Hill Solar Farm,1.0
+SWNSW1,storage_output,Broken Hill BESS,1.0
+SWNSW1,generator_output,Silverton Wind Farm,1.0
+SWNSW1,storage_output,Silver City Energy Storage,1.0

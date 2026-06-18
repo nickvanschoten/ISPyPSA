@@ -355,7 +355,11 @@ def _process_and_merge_existing_gpg_min_load(
                 gt_rows = station_rows.loc[
                     station_rows["Technology Type"].str.contains("Gas Turbine")
                 ]
-                to_merge.append(gt_rows.iloc[0, :].squeeze())
+                # v7.5 lists some CCGT stations (e.g. Torrens Island B) with only
+                # Steam Turbine units in this table; fall back to the first row
+                # when there is no Gas Turbine row to prefer.
+                preferred = gt_rows if len(gt_rows) else station_rows
+                to_merge.append(preferred.iloc[0, :].squeeze())
             # Handles cases like TIPSB
             else:
                 to_merge.append(station_rows.iloc[0, :].squeeze())

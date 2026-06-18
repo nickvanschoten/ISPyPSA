@@ -254,6 +254,27 @@ def build_local_cache(
             "specified in the config."
         )
     tables_to_get = _build_required_tables(iasr_workbook_version)
+    # v7.5 parser-config quirk: three slower-growth flow-path augmentation cost
+    # tables are named with singular "cost" in the installed 7.5 config, while
+    # ISPyPSA (and the v7.4 override) use the canonical plural "costs". Request
+    # the parser's actual singular name, then rename the cached CSV back to the
+    # canonical plural so downstream readers stay version-independent.
+    # v7.5 parser-config quirk: three slower-growth flow-path augmentation cost
+    # tables are named non-canonically in the installed 7.5 config — CNSW-NNSW
+    # uses singular "cost"; MEL-WNV/SEV-MEL use underscore separators. Request
+    # the parser's actual name, then rename the cached CSV to ISPyPSA's canonical
+    # name so downstream readers stay version-independent. (Exact per-table map,
+    # verified against parser.table_configs — the variances differ per table.)
+    _V75_AUG_COST_ACTUAL = {  # ispypsa-canonical -> parser-actual
+        "flow_path_augmentation_costs_slower_growth_CNSW-NNSW": "flow_path_augmentation_cost_slower_growth_CNSW-NNSW",
+        "flow_path_augmentation_costs_slower_growth_MEL-WNV": "flow_path_augmentation_costs_slower_growth_MEL_WNV",
+        "flow_path_augmentation_costs_slower_growth_SEV-MEL": "flow_path_augmentation_costs_slower_growth_SEV_MEL",
+    }
+    request_tables = list(tables_to_get)  # parser-actual names; tables_to_get stays canonical
+    _v75_cost_renames = {}  # parser-actual-on-disk -> ispypsa-canonical
+    if iasr_workbook_version == "7.5":
+        request_tables = [_V75_AUG_COST_ACTUAL.get(t, t) for t in request_tables]
+        _v75_cost_renames = {v: k for k, v in _V75_AUG_COST_ACTUAL.items()}
     # When we're running with a repo-tracked config override (e.g. v7.4 cloned
     # from v7.5), the per-table `end_row` values drift one or two rows from
     # the actual workbook content because AEMO adjusted row counts between
@@ -262,7 +283,9 @@ def build_local_cache(
     # unaffected — the parser still uses the config's sheet_name and header
     # offsets to identify table content.
     config_checks = parser_config_override is None
-    workbook.save_tables(cache_path, tables=tables_to_get, config_checks=config_checks)
+    workbook.save_tables(cache_path, tables=request_tables, config_checks=config_checks)
+    for actual, canon in _v75_cost_renames.items():
+        (Path(cache_path) / f"{actual}.csv").rename(Path(cache_path) / f"{canon}.csv")
     # Translate older-version column headers to v7.4 canonical form. Cached
     # CSVs on disk become version-independent so downstream readers (templater,
     # tests) never see v6.0 column names.
