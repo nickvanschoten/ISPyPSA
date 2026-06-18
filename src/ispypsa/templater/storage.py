@@ -744,7 +744,12 @@ def _add_isp_resource_type_column(df: pd.DataFrame):
         # in _add_unique_new_entrant_storage_name_column.
         if not isinstance(name, str):
             return None
-        duration_pattern = r"(?P<duration>\d+h)rs* storage"
+        # v7.5 renamed new-entrant batteries from "Battery Storage (Nhr storage)"
+        # to subregion-specific "<subregion> Battery - Nh" (e.g. "CNSW Battery -
+        # 1h"). Match the "Nh" duration with the v7.4 "rs storage" suffix made
+        # optional, so both vintages resolve and the duration extraction is
+        # unchanged for the v7.4 form (no regression).
+        duration_pattern = r"(?P<duration>\d+h)(?:rs* storage)?"
         duration_string = re.search(duration_pattern, name, re.IGNORECASE)
 
         if duration_string:

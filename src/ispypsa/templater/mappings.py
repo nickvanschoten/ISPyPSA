@@ -111,14 +111,19 @@ _ECAA_STORAGE_NEW_COLUMN_MAPPING = {
 }
 
 _NEW_STORAGE_NEW_COLUMN_MAPPING = {
-    "maximum_capacity_mw": "storage_name",
-    "storage_duration_hours": "storage_name",
-    "round_trip_efficiency_%": "storage_name",
-    "charging_efficiency_%": "storage_name",
-    "discharging_efficiency_%": "storage_name",
-    "lifetime": "storage_name",
+    # v7.5 renamed new-entrant batteries from the generic tech label to
+    # per-subregion names ("NQ Battery - 1h"), so the static-property columns
+    # must be seeded from `technology_type` (the generic "Battery Storage
+    # (Nhr storage)") — which is what the property tables are keyed on — rather
+    # than `storage_name`. In v7.4 the two were identical, so no regression.
+    "maximum_capacity_mw": "technology_type",
+    "storage_duration_hours": "technology_type",
+    "round_trip_efficiency_%": "technology_type",
+    "charging_efficiency_%": "technology_type",
+    "discharging_efficiency_%": "technology_type",
+    "lifetime": "technology_type",
     "technology_specific_lcf_%": "regional_build_cost_zone",
-    "isp_resource_type": "storage_name",
+    "isp_resource_type": "technology_type",
 }
 
 """
