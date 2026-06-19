@@ -51,14 +51,17 @@ FLAGGED_NO_TRACE_VRE_CANDIDATES = {
 # permanent — distribution REZs host storage, not utility-scale VRE).
 FLAGGED_NO_TRACE_VRE_REZS = {"DN1", "DN2", "DN3"}
 
-# v7.5-ECAA generator name -> name matching the 2024 trace map / parsed store.
-# The 2026 workbook names this "Stage 2" (uppercase) but the bundled trace map
-# and the parsed store use lowercase "stage 2"; on a case-insensitive filesystem
-# the two collide at parse, so the store carries only the lowercase name. Rename
-# the generator to match so its trace resolves (the trace itself is correct).
-GENERATOR_NAME_2026_NORMALIZATION = {
-    "New England Solar Farm - Stage 2": "New England Solar Farm - stage 2",
-}
+# AEMO's "Non REZ <state>" rows (REZ IDs V0=Victoria, N0=NSW) are accounting
+# placeholders for generation NOT in any named REZ — not connectable zones. They
+# appear in `initial_resource_limits` but have NO `initial_transmission_limits`
+# row, so the templater leaves their `isp_sub_region_id` blank, then builds a
+# REZ->subregion link with `isp_name=NaN` (bus1 is the missing subregion). That
+# float NaN later breaks `sorted(results["isp_name"].unique())` in
+# extract_transmission_expansion_results. They also carry zero new-VRE generation
+# limits, so dropping them removes only non-buildable candidates. Sourced from the
+# REZ Name ("Non REZ Victoria"/"Non REZ NSW"), not inferred — distinct from the
+# Q8a/b/c orphans, which are real zones reconnected to SQ in normalize_2026_rez_ids.
+NON_REZ_PLACEHOLDER_IDS = {"V0", "N0"}
 
 # v7.5-ECAA generator name -> name matching the 2024 trace map / parsed store.
 # The 2026 workbook names this "Stage 2" (uppercase) but the bundled trace map
@@ -71,10 +74,13 @@ GENERATOR_NAME_2026_NORMALIZATION = {
 
 
 def normalize_2026_rez_ids(ispypsa_tables):
-    """Map component rez_ids to 2026 REZ codes and connect the split Q8 sub-zones.
+    """Map component rez_ids to 2026 REZ codes, connect the split Q8 sub-zones, and
+    drop the non-REZ placeholder rows.
 
-    Resolves the un-split `Q8`, the sub-zone names, and the two typos to codes, and
-    sets the orphaned `Q8a/b/c` REZ nodes' subregion to SQ (the parent's subregion).
+    Resolves the un-split `Q8`, the sub-zone names, and the two typos to codes, sets
+    the orphaned `Q8a/b/c` REZ nodes' subregion to SQ (the parent's subregion), and
+    removes the `Non REZ` placeholders (V0/N0) so the translator never builds their
+    malformed NaN-subregion link.
     """
     for tbl in ("ecaa_generators", "ecaa_batteries", "new_entrant_generators"):
         df = ispypsa_tables.get(tbl)
@@ -92,26 +98,41 @@ def normalize_2026_rez_ids(ispypsa_tables):
             "isp_sub_region_id"
         ].isna()
         rez.loc[orphaned_q8_split, "isp_sub_region_id"] = "SQ"
+        # Drop the non-REZ placeholders so no malformed (NaN-subregion) link is
+        # built; their VRE candidates are dropped in exclude_flagged_new_entrants.
+        ispypsa_tables["renewable_energy_zones"] = rez[
+            ~rez["rez_id"].isin(NON_REZ_PLACEHOLDER_IDS)
+        ].reset_index(drop=True)
     return ispypsa_tables
 
 
 def exclude_flagged_new_entrants(new_entrant_generators):
-    """Drop the flagged no-trace VRE new entrants, logging each exclusion.
+    """Drop VRE new entrants that cannot build, logging each reason separately.
 
-    Two flag sources: specific (rez_id, resource_type) candidates (N10/N11
-    fixed-offshore), and whole storage-only REZs whose VRE candidates are
-    templater over-generation (DN1/2/3). Both act only on new_entrant_generators
-    (VRE); storage candidates in other tables are untouched.
+    Three flag sources: specific (rez_id, resource_type) candidates (N10/N11
+    fixed-offshore) and whole storage-only REZs (DN1/2/3) — both genuinely lacking
+    a 2026 trace; and candidates sited in AEMO 'Non REZ' placeholder zones (V0/N0),
+    which have no subregion and zero VRE limits. All act only on
+    new_entrant_generators (VRE); storage candidates in other tables are untouched.
     """
     rez = new_entrant_generators["rez_id"]
     rtype = new_entrant_generators["isp_resource_type"]
     pair_mask = [k in FLAGGED_NO_TRACE_VRE_CANDIDATES for k in zip(rez, rtype)]
     rez_mask = rez.isin(FLAGGED_NO_TRACE_VRE_REZS).tolist()
-    drop_mask = [p or r for p, r in zip(pair_mask, rez_mask)]
-    dropped = sorted(new_entrant_generators.loc[drop_mask, "generator"])
-    if dropped:
+    no_trace_mask = [p or r for p, r in zip(pair_mask, rez_mask)]
+    non_rez_mask = rez.isin(NON_REZ_PLACEHOLDER_IDS).tolist()
+
+    no_trace = sorted(new_entrant_generators.loc[no_trace_mask, "generator"])
+    if no_trace:
         logging.warning(
             "Excluding flagged VRE new entrants with no 2026 trace "
-            f"(pending verification): {dropped}"
+            f"(pending verification): {no_trace}"
         )
+    non_rez = sorted(new_entrant_generators.loc[non_rez_mask, "generator"])
+    if non_rez:
+        logging.warning(
+            "Excluding VRE new entrants sited in AEMO 'Non REZ' placeholder "
+            f"zones (V0/N0, no subregion, zero VRE limit): {non_rez}"
+        )
+    drop_mask = [t or n for t, n in zip(no_trace_mask, non_rez_mask)]
     return new_entrant_generators.loc[[not d for d in drop_mask]].reset_index(drop=True)
