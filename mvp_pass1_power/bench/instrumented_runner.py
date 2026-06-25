@@ -204,8 +204,17 @@ def _run_staged_pipeline(
     config_path: Path, archetype: str, log_path: Path,
     solver_options: dict | None = None,
     solver_name_override: str | None = None,
+    carried_tranches_dir: Path | None = None,
+    current_year: int | None = None,
 ) -> dict:
-    """Run the ISPyPSA pipeline with per-stage timing. Returns timings dict."""
+    """Run the ISPyPSA pipeline with per-stage timing. Returns timings dict.
+
+    If `carried_tranches_dir` is set, recursive-dynamic mode loads all
+    surviving prior tranches (build_year < current_year, retirement-filtered)
+    and injects them into the in-memory pypsa_friendly dict between
+    translation and timeseries generation. This makes year-(t+1)'s solve see
+    the accumulated brownfield stock built across the chain.
+    """
     from io import StringIO
     import contextlib
 
@@ -225,6 +234,10 @@ def _run_staged_pipeline(
     )
 
     from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+    from mvp_pass1_power.bench.flagged_exclusions_2026 import (
+        exclude_flagged_new_entrants,
+        normalize_2026_rez_ids,
+    )
 
     configure_logging()
     config = load_config(config_path)
@@ -276,11 +289,55 @@ def _run_staged_pipeline(
         config.filter_by_isp_sub_regions,
     )
     ispypsa_tables = APPLY_ARCHETYPE[archetype](ispypsa_tables, config)
+    # REQUIRED for the Draft 2026 trace store: drop VRE new entrants whose
+    # (rez_id, isp_resource_type) has no 2026 trace (Q8 split; N10/N11 fixed
+    # offshore). Left in, each crashes create_pypsa_friendly_timeseries at
+    # _check_time_series. Gated on the 2026 dataset so it can't wrongly fire on
+    # the 2024 store. See flagged_exclusions_2026 and isp_2026/TRACE_BASIS.md.
+    if config.trace_data.dataset_year == 2026:
+        # Normalize component rez_ids to 2026 REZ codes + connect the split Q8
+        # sub-zones (data-determined), THEN drop only the genuinely-no-trace
+        # candidates. Order matters: normalization maps Q8->Q8a (which has traces),
+        # so the exclusion is left with only the N10/N11 fixed-offshore gap.
+        ispypsa_tables = normalize_2026_rez_ids(ispypsa_tables)
+        ispypsa_tables["new_entrant_generators"] = exclude_flagged_new_entrants(
+            ispypsa_tables["new_entrant_generators"]
+        )
     write_csvs(ispypsa_tables, ispypsa_inputs_dir)
     timings["templating_s"] = time.perf_counter() - t
 
     t = time.perf_counter()
     pypsa_friendly = create_pypsa_friendly_inputs(config, ispypsa_tables)
+
+    # Recursive-dynamic injection seam. Carried rows must enter pypsa_friendly
+    # BEFORE timeseries generation so marginal_cost parquets cover any carrier
+    # that exists only in carried tranches, and so the parquet generated for
+    # the base-tech mapping is computed at the CURRENT year's carbon price
+    # (not the vintage year's). The carried row references the base mapping
+    # by sharing the original new-entrant's marginal_cost field value.
+    if carried_tranches_dir is not None and current_year is not None:
+        from mvp_pass1_power.bench.recursive_dynamic import (
+            inject_carried_tranches, load_tranches,
+        )
+        carried = load_tranches(carried_tranches_dir, before_year=current_year)
+        timings["recursive_dynamic"] = inject_carried_tranches(
+            pypsa_friendly, carried
+        )
+        print(
+            f"\n=== RECURSIVE-DYNAMIC INJECTION === {timings['recursive_dynamic']}",
+            flush=True,
+        )
+
+    # Capacity-expansion modeling choice (2026-06-22): zero p_min_pu so AEMO's
+    # min-stable-level (a unit-commitment concept = the floor WHEN a unit is on)
+    # is NOT enforced as a hard floor in this no-unit-commitment investment LP.
+    # Applied to fresh AND carried generators. Without it, must-run floors (e.g.
+    # new-entrant OCGT at 0.5) force overgeneration at high-solar low-demand hours
+    # in the VRE-rich out-years -> infeasible (2045 IIS: SA/VIC summer-midday,
+    # Generator-fix/ext-p-lower). Min-load belongs in the operational stage; the
+    # AEMO values remain in the data, just not enforced as a hard LP floor here.
+    pypsa_friendly["generators"]["p_min_pu"] = 0.0
+
     pypsa_friendly["snapshots"] = create_pypsa_friendly_timeseries_inputs(
         config, "capacity_expansion", ispypsa_tables, pypsa_friendly["generators"],
         parsed_traces_directory, ce_ts_dir,
@@ -368,7 +425,38 @@ def main():
                     help="Set Gurobi OptimalityTol (default 1e-6); reduced-cost / dual tolerance")
     ap.add_argument("--gurobi-feas-tol", type=float, default=None,
                     help="Set Gurobi FeasibilityTol (default 1e-6); primal feasibility tolerance")
+    ap.add_argument("--gurobi-method", type=int, default=None,
+                    help="Set Gurobi Method (0=primal simplex, 1=dual simplex, 2=barrier, "
+                         "3=concurrent, 4=det concurrent). For barrier-only solves "
+                         "(no crossover), pair --gurobi-method 2 with --gurobi-crossover 0.")
+    ap.add_argument("--gurobi-crossover", type=int, default=None,
+                    help="Set Gurobi Crossover (-1=auto, 0=disabled, 1-4=specific strategies). "
+                         "0 keeps Gurobi at the barrier interior solution and avoids the "
+                         "superlinear crossover scaling that was impractical at 8760 in "
+                         "Phase 8.1 Test 2.")
+    ap.add_argument("--gurobi-bar-homogeneous", type=int, default=None,
+                    help="Set Gurobi BarHomogeneous (-1=auto, 0=off, 1=on). 1 forces the "
+                         "homogeneous self-dual barrier algorithm, more robust to "
+                         "ill-conditioning and infeasibility detection. Phase 8 finding: "
+                         "Gurobi-barrier-crossover-off with default BarHomogeneous=auto "
+                         "stalled identically at iter 178 for two BarConvTol settings on "
+                         "the 2045 8760 LP — HSD is the next-class-of-barrier test.")
+    ap.add_argument("--gurobi-obj-scale", type=float, default=None,
+                    help="Set Gurobi ObjScale (>0 divides objective by this value, -1=auto, "
+                         "0=off). Phase 8 LP has cost range 4e0-3e6 and RHS down to 3e-5; "
+                         "both HiGHS and Gurobi flagged 'consider scaling the objective by "
+                         "1e-1'. ObjScale=10 implements that suggestion (divides obj by 10).")
+    ap.add_argument("--carried-tranches-dir", type=Path, default=None,
+                    help="Recursive-dynamic mode: directory holding per-year tranche "
+                         "parquets from prior solves in this chain. Requires --current-year.")
+    ap.add_argument("--current-year", type=int, default=None,
+                    help="The investment year being solved. Used by recursive-dynamic "
+                         "mode to retirement-filter carried tranches.")
     args = ap.parse_args()
+    if (args.carried_tranches_dir is None) ^ (args.current_year is None):
+        ap.error(
+            "--carried-tranches-dir and --current-year must be set together."
+        )
     solver_options = None
     solver_name_override = None
     if args.use_ipm:
@@ -390,6 +478,14 @@ def main():
             gurobi_opts["OptimalityTol"] = args.gurobi_opt_tol
         if args.gurobi_feas_tol is not None:
             gurobi_opts["FeasibilityTol"] = args.gurobi_feas_tol
+        if args.gurobi_method is not None:
+            gurobi_opts["Method"] = args.gurobi_method
+        if args.gurobi_crossover is not None:
+            gurobi_opts["Crossover"] = args.gurobi_crossover
+        if args.gurobi_bar_homogeneous is not None:
+            gurobi_opts["BarHomogeneous"] = args.gurobi_bar_homogeneous
+        if args.gurobi_obj_scale is not None:
+            gurobi_opts["ObjScale"] = args.gurobi_obj_scale
         if gurobi_opts:
             solver_options = gurobi_opts
 
@@ -418,7 +514,9 @@ def main():
     try:
         timings = _run_staged_pipeline(args.config, args.archetype, log_path,
                                        solver_options=solver_options,
-                                       solver_name_override=solver_name_override)
+                                       solver_name_override=solver_name_override,
+                                       carried_tranches_dir=args.carried_tranches_dir,
+                                       current_year=args.current_year)
         record.update(timings)
         record["wall_clock_s"] = time.perf_counter() - t_total
         record["status"] = "completed"
