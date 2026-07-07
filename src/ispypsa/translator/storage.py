@@ -305,9 +305,15 @@ def _calculate_annuitised_new_entrant_battery_capital_costs(
         * (new_entrant_batteries["technology_specific_lcf_%"] / 100)
         + new_entrant_batteries["connection_cost_$/mw"]
     )
-    # annuitise:
+    # annuitise at AEMO's per-technology WACC when the templater attached it
+    # (v7.x, batteries ~8%), else the scalar `wacc` arg (v6.0/tests).
+    per_technology_wacc = "wacc" in new_entrant_batteries.columns
     new_entrant_batteries["capital_cost"] = new_entrant_batteries.apply(
-        lambda x: _annuitised_investment_costs(x["capital_cost"], wacc, x["lifetime"]),
+        lambda x: _annuitised_investment_costs(
+            x["capital_cost"],
+            x["wacc"] if per_technology_wacc else wacc,
+            x["lifetime"],
+        ),
         axis=1,
     )
     # add annual fixed opex (first converting to $/MW/annum)

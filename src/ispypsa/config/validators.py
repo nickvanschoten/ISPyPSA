@@ -146,6 +146,18 @@ class TraceDataConfig(BaseModel):
     dataset_year: int = 2024
 
 
+class CarbonPricingConfig(BaseModel):
+    """Scenario-level carbon and CO2 transport-and-storage pricing.
+
+    Both values are scalar run parameters that the carbon-price sweep varies.
+    Defaults are 0.0 so omitting the section leaves existing configs unchanged.
+    The scoping sweep sets tns_price=20.0 explicitly to internalise the T&S
+    cost on CCS plants per the Phase 8 commission.
+    """
+    carbon_price: float = 0.0  # AUD/tCO2e on residual emissions (post-capture)
+    tns_price: float = 0.0     # AUD/tCO2 on captured tonnes (CCS opex)
+
+
 class ModelConfig(BaseModel):
     paths: PathsConfig
     scenario: Literal[tuple(_ISP_SCENARIOS)]
@@ -156,6 +168,7 @@ class ModelConfig(BaseModel):
     iasr_workbook_version: str
     unserved_energy: UnservedEnergyConfig
     trace_data: TraceDataConfig = TraceDataConfig()
+    carbon_pricing: CarbonPricingConfig = CarbonPricingConfig()
     filter_by_nem_regions: list[str] | None = None
     filter_by_isp_sub_regions: list[str] | None = None
     solver: Literal[

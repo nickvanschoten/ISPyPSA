@@ -4,6 +4,8 @@ import re
 import pandas as pd
 
 from .helpers import (
+    _assert_equipment_category_survives_lcf_dot,
+    _assert_no_nan_load_bearing_column,
     _fuzzy_match_names,
     _manual_remove_footnotes_from_generator_names,
     _one_to_one_priority_based_fuzzy_matching,
@@ -95,6 +97,13 @@ def _template_new_generators_static_properties(
         .reset_index(drop=True)
     )
 
+    _assert_no_nan_load_bearing_column(
+        new_generator_summaries,
+        "fom_$/kw/annum",
+        name_col="generator_name",
+        context="new-entrant generator",
+    )
+
     required_cols_only = [
         col
         for col in _MINIMUM_REQUIRED_GENERATOR_COLUMNS
@@ -161,7 +170,9 @@ def _clean_generator_summary(df: pd.DataFrame) -> pd.DataFrame:
     # scope — they're modelled exogenously via demand-side adjustments rather
     # than as candidate investments in the orchestrator-facing capacity expansion.
     df = df.loc[
-        ~df["technology_type"].str.contains("Distributed Resources", case=False, na=False),
+        ~df["technology_type"].str.contains(
+            "Distributed Resources", case=False, na=False
+        ),
         :,
     ]
 
@@ -185,9 +196,9 @@ def _clean_generator_summary(df: pd.DataFrame) -> pd.DataFrame:
             .to_dict()
         )
         is_sub_region = df["connection_cost_region_id"].isin(sub_to_nem.keys())
-        df.loc[is_sub_region, "connection_cost_region_id"] = (
-            df.loc[is_sub_region, "connection_cost_region_id"].map(sub_to_nem)
-        )
+        df.loc[is_sub_region, "connection_cost_region_id"] = df.loc[
+            is_sub_region, "connection_cost_region_id"
+        ].map(sub_to_nem)
 
     for (
         new_column,
@@ -444,6 +455,21 @@ def _calculate_and_merge_tech_specific_lcfs(
             threshold=90,
         )
         df_to_match_gen_names.set_index("Technology", inplace=True)
+    # v7.4/v7.8 renamed the LCF equipment category to "Equipment and installation
+    # costs" (merging equipment + installation into one factor), while
+    # breakdown_ratios still lists "Equipment costs" separately. The fuzzy matcher
+    # below (threshold 80) cannot bridge that name gap — and "Installation costs"
+    # (present in BOTH tables) grabs the only close match — so "Equipment costs"
+    # (breakdown_ratios) falls out of the shared cost categories and is silently
+    # dropped from the LCF .dot(). Equipment is the dominant capex category
+    # (~60-80% of new-entrant build cost), so dropping it understates EVERY
+    # non-PHES new-entrant's technology_specific_lcf to ~30-46% instead of ~100%,
+    # which understates all new-entrant capital costs (and the fleet cost column)
+    # to roughly a third. Map it explicitly so equipment gets its locational
+    # factor. (Does not affect dispatch/marginal cost, which excludes capex.)
+    locational_cost_factors = locational_cost_factors.rename(
+        columns={"Equipment and installation costs": "Equipment costs"}
+    )
     # use fuzzy matching to ensure that col names in tables to combine match up:
     fuzzy_column_renaming = _one_to_one_priority_based_fuzzy_matching(
         set(locational_cost_factors.columns.to_list()),
@@ -458,6 +484,7 @@ def _calculate_and_merge_tech_specific_lcfs(
     shared_cost_cats = [
         c for c in breakdown_ratios.columns if c in locational_cost_factors.columns
     ]
+    _assert_equipment_category_survives_lcf_dot(shared_cost_cats)
     breakdown_ratios = breakdown_ratios.loc[:, shared_cost_cats].apply(
         pd.to_numeric, errors="coerce"
     )
@@ -575,15 +602,35 @@ def _add_and_clean_rez_ids(
         pd.DataFrame: new entrant generator DataFrame with REZ ID column added.
     """
 
-    # add a new column to hold the REZ IDs that maps to the current rez_location:
-    df[rez_id_col_name] = df["rez_location"]
-    # v7.4 uses the literal "Not Applicable" string for non-REZ generators;
-    # v6.0 used NaN. Normalise so downstream rez_id-based masks work.
-    df[rez_id_col_name] = df[rez_id_col_name].replace("Not Applicable", pd.NA)
+    # Source-id-first: v7.4 summaries carry a clean source `rez_id` column that
+    # already holds the 2026 REZ scheme (including the new zones DN1-3, N13, Q10)
+    # plus V0/N0 for non-REZ generators. Use it directly. v6.0 had no REZ ID
+    # column, so fall back to deriving the id from the `rez_location` name for any
+    # row whose source id is blank. "Not Applicable" (v7.4) and NaN (v6.0) both
+    # normalise to NA so downstream rez_id-based masks work. Deriving the id from
+    # the name dropped the new 2026 zones, whose names don't match the names in
+    # the renewable_energy_zones table.
+    name_derived_rez_id = _rez_name_to_id_mapping(
+        df["rez_location"].replace("Not Applicable", pd.NA),
+        "rez_location",
+        renewable_energy_zones,
+    )
+    if rez_id_col_name in df.columns:
+        source_rez_id = df[rez_id_col_name].replace("Not Applicable", pd.NA)
+        df[rez_id_col_name] = source_rez_id.fillna(name_derived_rez_id)
+    else:
+        df[rez_id_col_name] = name_derived_rez_id
 
+    # Map the remaining rez/region name columns to ids as before. rez_id is
+    # resolved above, so exclude it here to avoid round-tripping its ids back
+    # through the name lookup.
     # update references to "North [East|West] Tasmania Coast" to "North Tasmania Coast"
     # update references to "Portland Coast" to "Southern Ocean"
-    rez_or_region_cols = [col for col in df.columns if re.search(r"rez|region", col)]
+    rez_or_region_cols = [
+        col
+        for col in df.columns
+        if re.search(r"rez|region", col) and col != rez_id_col_name
+    ]
 
     for col in rez_or_region_cols:
         df[col] = _rez_name_to_id_mapping(df[col], col, renewable_energy_zones)

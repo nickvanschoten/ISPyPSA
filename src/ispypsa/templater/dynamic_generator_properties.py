@@ -7,6 +7,7 @@ import pandas as pd
 
 from ispypsa.templater.helpers import (
     _add_units_to_financial_year_columns,
+    _assert_no_nan_load_bearing_column,
     _convert_financial_year_columns_to_float,
     _manual_remove_footnotes_from_generator_names,
     _rez_name_to_id_mapping,
@@ -15,7 +16,6 @@ from ispypsa.templater.helpers import (
 
 from .helpers import _fuzzy_match_names, _snakecase_string
 from .lists import _ECAA_GENERATOR_TYPES
-
 
 # ISP scenario (config name) → v7.4 canonical scenario value used in the
 # consolidated fuel-price tables. The mapping mirrors the cost-scenario
@@ -30,6 +30,70 @@ _ISP_TO_V74_SCENARIO = {
     "Green Energy Exports": "Accelerated Transition",
     "Accelerated Transition": "Accelerated Transition",
 }
+
+
+def _add_new_entrant_wacc(
+    new_entrant_table: pd.DataFrame,
+    iasr_tables: dict[str, pd.DataFrame],
+    scenario: str,
+) -> pd.DataFrame:
+    """Add a per-technology `wacc` column to a new-entrant generator/storage table.
+
+    AEMO publishes a technology- and scenario-specific weighted average cost of
+    capital (the `wacc` IASR table, values in %) that its methodology uses to
+    annuitise new-entrant build costs — thermal plant (CCGT/CCS/biomass) at
+    ~10.5%, wind ~7.5%, solar ~7%, batteries ~8%, PHES ~8.5% under Step Change.
+    The translator annuitises each new-entrant at this per-technology rate
+    instead of a single scalar. When the `wacc` table isn't in the cache (v6.0
+    or minimal test fixtures) the column is omitted and the translator falls
+    back to the scalar config rate.
+    """
+    if "wacc" not in iasr_tables:
+        return new_entrant_table
+    wacc_by_technology = _wacc_by_technology(iasr_tables["wacc"], scenario)
+    new_entrant_table = new_entrant_table.copy()
+    new_entrant_table["wacc"] = _standardise_storage_capitalisation(
+        new_entrant_table["technology_type"]
+    ).map(wacc_by_technology)
+    _assert_no_nan_load_bearing_column(
+        new_entrant_table, "wacc", "technology_type", "new-entrant WACC"
+    )
+    return new_entrant_table
+
+
+def _wacc_by_technology(wacc_table: pd.DataFrame, scenario: str) -> dict:
+    """Map each technology name to its scenario WACC as a fraction (IASR lists %)."""
+    scenario_col = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
+    technologies = _standardise_storage_capitalisation(
+        pd.Series(wacc_table["Technology type"])
+    )
+    rates = pd.to_numeric(wacc_table[scenario_col], errors="coerce") / 100.0
+    return dict(zip(technologies, rates))
+
+
+def _regulated_transmission_wacc(wacc_table: pd.DataFrame, scenario: str) -> float:
+    """AEMO's regulated electricity transmission WACC (fraction) for the scenario.
+
+    ISP flow-path augmentation and REZ transmission expansion are regulated TNSP
+    network investment (RIT-T assessed, recovered through regulated revenue), so
+    AEMO evaluates them at the *regulated* electricity transmission WACC (Step
+    Change 3.0%), not the unregulated rate (6.5%). This keeps transmission on the
+    same IASR source as the per-technology generator WACCs instead of a flat
+    non-IASR config value.
+    """
+    scenario_col = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
+    technology = wacc_table["Technology type"].str.strip()
+    is_regulated_electricity_transmission = (
+        technology.str.startswith("Electricity")
+        & technology.str.contains("Transmission")
+        & technology.str.contains("Regulated")
+        & ~technology.str.contains("Unregulated")
+    )
+    rate = pd.to_numeric(
+        wacc_table.loc[is_regulated_electricity_transmission, scenario_col],
+        errors="coerce",
+    )
+    return float(rate.iloc[0]) / 100.0
 
 
 def _template_generator_dynamic_properties(
@@ -120,9 +184,11 @@ def _template_generator_dynamic_properties(
     # statuses. v6.0's four per-status tables are concat'd into this form
     # at cache load by schema normalisation.
     seasonal_ratings = _template_seasonal_ratings(
-        [iasr_tables[
-            "seasonal_ratings_existing_committed_anticipated_additional_generators"
-        ]]
+        [
+            iasr_tables[
+                "seasonal_ratings_existing_committed_anticipated_additional_generators"
+            ]
+        ]
     )
 
     build_costs = _template_new_entrant_build_costs(iasr_tables, scenario)
@@ -356,9 +422,9 @@ def _template_biomass_prices(
     # is collapsed into this form by schema normalisation at cache load.
     v74_scenario = _ISP_TO_V74_SCENARIO.get(scenario, scenario)
     biomass_prices = iasr_tables["biomass_fuel_price"]
-    biomass_prices = biomass_prices[
-        biomass_prices["Scenario"] == v74_scenario
-    ].drop(columns=["Biomass price", "Scenario"])
+    biomass_prices = biomass_prices[biomass_prices["Scenario"] == v74_scenario].drop(
+        columns=["Biomass price", "Scenario"]
+    )
     biomass_prices = _convert_financial_year_columns_to_float(biomass_prices)
     biomass_prices.columns = _add_units_to_financial_year_columns(
         biomass_prices.columns, "$/GJ"
@@ -482,17 +548,30 @@ def _template_new_entrant_wind_and_solar_connection_costs(
     forecasts = _filter_forecast_to_scenario(
         iasr_tables["connection_cost_forecast_wind_and_solar"], scenario
     )
-    forecasts = forecasts.set_index("REZ names")
+    # Source-id-first: v7.x publishes a clean `REZ ID` column — key by it directly.
+    # The FINAL 2026 ISP names V3 and V4 identically ("Western Victoria"), so
+    # deriving the id from the name collapses both onto one id (V4) and loses V3's
+    # connection costs. v6.0 has no `REZ ID` column, so fall back to the
+    # (unique-in-v6.0) REZ name. Mirrors the source-id-first handling in
+    # `static_new_generator_properties._add_rez_id_column`.
+    key_col = "REZ ID" if "REZ ID" in forecasts.columns else "REZ names"
+    forecasts = forecasts.set_index(key_col)
     forecasts = _convert_per_mva_columns_to_per_mw(forecasts)
     forecasts = _append_system_strength_cost(
-        forecasts, iasr_tables["connection_costs_for_wind_and_solar"]
+        forecasts, iasr_tables["connection_costs_for_wind_and_solar"], key_col
     )
     forecasts = forecasts.replace("Note 1", np.nan).reset_index()
-    forecasts["REZ names"] = _rez_name_to_id_mapping(
-        forecasts["REZ names"],
-        "REZ names",
-        iasr_tables["renewable_energy_zones"],
-    )
+    if key_col == "REZ ID":
+        # Downstream keys connection costs by REZ ID (matches
+        # `new_entrant_generators.connection_cost_region_id`); the colliding name
+        # column is replaced by the unambiguous id.
+        forecasts["REZ names"] = forecasts.pop("REZ ID")
+    else:
+        forecasts["REZ names"] = _rez_name_to_id_mapping(
+            forecasts["REZ names"],
+            "REZ names",
+            iasr_tables["renewable_energy_zones"],
+        )
     return forecasts
 
 
@@ -509,14 +588,12 @@ def _convert_per_mva_columns_to_per_mw(forecasts: pd.DataFrame) -> pd.DataFrame:
     fy_cols = [c for c in forecasts.columns if re.match(r"[0-9]{4}-[0-9]{2}", c)]
     for col in fy_cols:
         forecasts[col] = forecasts[col] / forecasts["Connection capacity (MVA)"]
-    forecasts.columns = _add_units_to_financial_year_columns(
-        forecasts.columns, "$/MW"
-    )
+    forecasts.columns = _add_units_to_financial_year_columns(forecasts.columns, "$/MW")
     return forecasts
 
 
 def _append_system_strength_cost(
-    forecasts: pd.DataFrame, initial_connection_costs: pd.DataFrame
+    forecasts: pd.DataFrame, initial_connection_costs: pd.DataFrame, key_col: str
 ) -> pd.DataFrame:
     """Append a `System strength connection cost ($/MW)` column.
 
@@ -525,8 +602,12 @@ def _append_system_strength_cost(
     workbook — AEMO's documentation indicates system strength costs are folded
     into the forecast totals in v7.4. When the column is absent, append zeros
     so the downstream contract is preserved without double-counting.
+
+    `key_col` is the REZ key the caller indexed `forecasts` by (`REZ ID` for
+    v7.x, `REZ names` for v6.0) — the system-strength series must be indexed by
+    the same column so the `concat` aligns row-for-row.
     """
-    initial = initial_connection_costs.set_index("REZ names")
+    initial = initial_connection_costs.set_index(key_col)
     series_name = "system_strength_connection_cost_$/mw"
     if "System Strength connection cost ($/kW)" in initial.columns:
         system_strength_cost = (

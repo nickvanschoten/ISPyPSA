@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from ispypsa.templater.flow_paths import (
+    _drop_unmatched_rez_transmission_costs,
     _get_augmentation_table,
     _get_cost_table,
     _get_least_cost_options,
@@ -13,6 +14,47 @@ from ispypsa.templater.mappings import (
     _REZ_CONFIG,
     _REZ_PREPATORY_ACTIVITIES_NAME_TO_REZ_AND_OPTION_NAME,
 )
+
+
+def test_drop_unmatched_rez_transmission_costs_drops_and_logs(caplog):
+    # v7.8 cost tables carry ids with no modelled REZ/constraint counterpart
+    # (e.g. the un-split "N9", the group/legacy id "HCC1"). They must be dropped
+    # loudly, never force-matched onto an unrelated REZ.
+    rez_costs = pd.DataFrame(
+        {
+            "rez_constraint_id": ["SWV1", "N9", "HCC1"],
+            "2024_25_$/mw": [0.1, 0.2, 0.3],
+        }
+    )
+
+    with caplog.at_level("WARNING"):
+        result = _drop_unmatched_rez_transmission_costs(
+            rez_costs, ["SWV1", "SWQLD1", "N9a", "N9b"]
+        )
+
+    expected = pd.DataFrame({"rez_constraint_id": ["SWV1"], "2024_25_$/mw": [0.1]})
+    pd.testing.assert_frame_equal(result, expected)
+    assert (
+        "REZ transmission cost ids with no matching REZ/constraint "
+        "(expansion cost dropped): ['HCC1', 'N9']"
+    ) in caplog.text
+
+
+def test_drop_unmatched_rez_transmission_costs_keeps_all_when_matched(caplog):
+    rez_costs = pd.DataFrame(
+        {
+            "rez_constraint_id": ["SWV1", "SWQLD1"],
+            "2024_25_$/mw": [0.1, 0.2],
+        }
+    )
+
+    with caplog.at_level("WARNING"):
+        result = _drop_unmatched_rez_transmission_costs(
+            rez_costs, ["SWV1", "SWQLD1", "N9a"]
+        )
+
+    pd.testing.assert_frame_equal(result, rez_costs.reset_index(drop=True))
+    assert "expansion cost dropped" not in caplog.text
 
 
 def test_template_rez_transmission_costs_simple_least_cost_option():

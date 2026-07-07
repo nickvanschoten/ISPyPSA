@@ -1,0 +1,11 @@
+variable_opex_existing_committed_anticipated_additional_generators:
+  sheet_name: "Variable OPEX"
+  header_rows: [6, 7]
+  end_row: 733  # v7.8-adjusted: was 649; FINAL data ends r733
+  column_range: "B:E"
+
+variable_opex_new_entrants:
+  sheet_name: "Variable OPEX"
+  header_rows: [6, 7]
+  end_row: 32  # v7.8-adjusted: was 28; FINAL new-entrant block ends r32
+  column_range: "G:H"

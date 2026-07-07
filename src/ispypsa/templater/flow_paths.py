@@ -254,13 +254,50 @@ def _template_rez_transmission_costs(
         iasr_workbook_version=version,
     )
 
+    # Match cost-table REZ/constraint ids to the modelled REZ ids + custom
+    # constraint ids. Use a strict threshold so ONLY genuine typos / near-exact
+    # variants auto-correct. The previous default (`threshold=0`) force-matched
+    # EVERY unmatched cost id onto its nearest surviving candidate regardless of
+    # quality — e.g. the VIC group-constraint cost "NW1" landed on an unrelated
+    # NSW REZ, and the un-split "N9" landed arbitrarily on N9a or N9b — silently
+    # writing one zone's expansion cost onto another.
     rez_costs["rez_constraint_id"] = _fuzzy_match_names(
         rez_costs["rez_constraint_id"],
         possible_rez_or_constraint_names,
         task_desc="Processing rez transmission costs",
+        threshold=90,
+    )
+    rez_costs = _drop_unmatched_rez_transmission_costs(
+        rez_costs, possible_rez_or_constraint_names
     )
 
     return rez_costs
+
+
+def _drop_unmatched_rez_transmission_costs(
+    rez_costs: pd.DataFrame, possible_rez_or_constraint_names: list[str]
+) -> pd.DataFrame:
+    """Drop REZ transmission-cost rows whose id matches no modelled REZ/constraint.
+
+    The v7.8 FINAL cost tables carry a handful of ids with no counterpart in the
+    modelled REZ set or the custom-constraint set: `N9` (AEMO split the physical
+    REZ into `N9a`/`N9b` in the resource-limit table, but the cost table still
+    lists the un-split `N9`), plus the group/legacy transmission-constraint ids
+    `NW1`, `WV1`, `WV2`, `HCC1`. Rather than force-mis-key their cost onto an
+    unrelated REZ (the behaviour when the fuzzy threshold was 0), drop them and
+    log which were dropped, so a real REZ never inherits another zone's expansion
+    cost. Attributing `N9`'s cost to both `N9a` and `N9b`, and reconciling the
+    group-constraint ids, is a documented domain follow-up.
+    """
+    candidates = set(possible_rez_or_constraint_names)
+    matched = rez_costs["rez_constraint_id"].isin(candidates)
+    dropped = sorted(rez_costs.loc[~matched, "rez_constraint_id"].unique())
+    if dropped:
+        logging.warning(
+            "REZ transmission cost ids with no matching REZ/constraint "
+            f"(expansion cost dropped): {dropped}"
+        )
+    return rez_costs.loc[matched].reset_index(drop=True)
 
 
 def process_transmission_costs(

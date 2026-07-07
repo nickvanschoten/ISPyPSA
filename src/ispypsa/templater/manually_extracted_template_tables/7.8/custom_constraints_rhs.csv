@@ -1,0 +1,20 @@
+constraint_id,constraint_type,rhs
+NQ1,<=,2420.0
+CQ1,<=,1700.0
+SQ1,<=,1400.0
+SQ1 (after CQ-SQ Upgrades),<=,2500.0
+SEVIC1,<=,4200.0
+SEVIC1 Post V8 Option 2,<=,6200.0
+SWV1,<=,2495.0
+MN1,<=,1460.0
+NSA1,<=,585.0
+NET1,<=,1600.0
+CNSW1,<=,1800.0
+SWQLD1,<=,3000.0
+N9a_Hydrogen,<=,1020.0
+Q7_Hydrogen,<=,1050.0
+Q1_Hydrogen,<=,490.0
+Q4_Hydrogen,<=,960.0
+WNV1,<=,2040.0
+SWNSW1,<=,1200.0
+SWNSW2,<=,2700.0

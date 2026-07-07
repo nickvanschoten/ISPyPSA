@@ -14,6 +14,7 @@ from ispypsa.templater.storage import (
     _add_and_clean_rez_ids,
     _add_closure_year_column,
     _add_isp_resource_type_column,
+    _add_unique_new_entrant_storage_name_column,
     _calculate_and_merge_tech_specific_lcfs,
     _calculate_storage_duration_hours,
     _process_and_merge_connection_cost,
@@ -604,3 +605,127 @@ def test_process_and_merge_connection_cost(csv_str_to_df):
         match=r"Missing connection costs for the following batteries: \['Battery Storage \(2hrs storage\)'\]",
     ):
         _process_and_merge_connection_cost(storage_df, incomplete_costs)
+
+
+# ---------------------------------------------------------------------------
+# Regression: v7.5+ renamed new-entrant batteries' storage_name to per-subregion
+# labels ("NQ Battery - 1h"); the generic label the OPEX / LCF tables are keyed
+# on moved to technology_type. The opex and LCF merges must key on
+# technology_type (not storage_name) and standardise "storage" capitalisation
+# ("Battery storage" in the v7.8 source vs "Battery Storage" in the summary),
+# else every new-entrant battery gets NaN OPEX/LCF -> NaN capital cost -> the
+# whole new-entrant storage fleet is silently dropped in translation, leaving
+# the LP unable to build any new storage. These guard the cumulative behaviour
+# (per-subregion storage_name that differs from technology_type), not the
+# v7.4 case where the two were identical.
+# ---------------------------------------------------------------------------
+
+
+def test_process_and_merge_opex_keys_on_technology_type_for_per_subregion_names(
+    csv_str_to_df,
+):
+    # storage_name is per-subregion (v7.5+) and does NOT match the opex key;
+    # technology_type holds the generic label. The opex "Base value" table is
+    # keyed on lowercase "Battery storage".
+    storage_df = csv_str_to_df("""
+        storage_name,        technology_type,                    sub_region_id
+        NQ__Battery__-__1h,  Battery__Storage__(1hr__storage),   NQ
+        SQ__Battery__-__2h,  Battery__Storage__(2hrs__storage),  SQ
+    """)
+    fixed_opex = pd.DataFrame(
+        {
+            "Technology Type": [
+                "Battery storage (1hr storage)",
+                "Battery storage (2hrs storage)",
+            ],
+            "Base value ($/kW/year)": [9.16, 12.34],
+        }
+    )
+    table_attrs = dict(
+        table="fixed_opex_new_entrants",
+        table_lookup="Generator",
+        table_col_prefix="Fixed OPEX ($/kW sent out/year)",
+    )
+
+    result, result_col = _process_and_merge_opex(
+        storage_df.copy(), fixed_opex, "fom_$/kw/annum", table_attrs
+    )
+
+    expected = csv_str_to_df("""
+        storage_name,        technology_type,                    sub_region_id,  fom_$/kw/annum
+        NQ__Battery__-__1h,  Battery__Storage__(1hr__storage),   NQ,             9.16
+        SQ__Battery__-__2h,  Battery__Storage__(2hrs__storage),  SQ,             12.34
+    """)
+    pd.testing.assert_frame_equal(
+        result.sort_values("storage_name").reset_index(drop=True),
+        expected.sort_values("storage_name").reset_index(drop=True),
+        check_dtype=False,
+    )
+    assert result_col == "fom_$/kw/annum"
+
+
+def test_new_entrant_storage_deduped_to_one_candidate_per_subregion_duration(
+    csv_str_to_df,
+):
+    # v7.8 lists batteries as per-REZ candidates: several rez_id rows per
+    # (subregion, duration), each with its own LCF. They collapse to one
+    # storage_name → duplicate names that silently overwrite in PyPSA and break
+    # tranche extraction. Dedupe must keep ONE per name, preferring the non-REZ
+    # base row (rez_id NaN) then the cheapest LCF.
+    df = csv_str_to_df("""
+        isp_resource_type,   sub_region_id,  rez_id,  technology_specific_lcf_%
+        Battery__Storage__2h, CNSW,          ,        30.0
+        Battery__Storage__2h, CNSW,          N3,      22.0
+        Battery__Storage__2h, CNSW,          N9a,     25.0
+        Battery__Storage__1h, NQ,            Q1,      40.0
+        Battery__Storage__1h, NQ,            Q2,      35.0
+    """)
+
+    result = _add_unique_new_entrant_storage_name_column(df)
+
+    # CNSW 2h collapses to one row; the non-REZ base (rez_id NaN, lcf 30) is
+    # kept over the REZ variants. NQ 1h has no base row, so the cheapest LCF
+    # (Q2, 35) is kept.
+    expected = csv_str_to_df("""
+        isp_resource_type,   sub_region_id,  rez_id,  technology_specific_lcf_%,  storage_name
+        Battery__Storage__2h, CNSW,          ,        30.0,                       battery_storage_2h_cnsw
+        Battery__Storage__1h, NQ,            Q2,      35.0,                       battery_storage_1h_nq
+    """)
+    pd.testing.assert_frame_equal(
+        result.sort_values("storage_name").reset_index(drop=True),
+        expected.sort_values("storage_name").reset_index(drop=True),
+        check_dtype=False,
+    )
+
+
+def test_lcf_keys_on_technology_type_for_per_subregion_names(
+    csv_str_to_df, workbook_table_cache_test_path: Path
+):
+    iasr_tables = read_csvs(workbook_table_cache_test_path)
+    # storage_name is per-subregion; technology_type holds the generic label the
+    # LCF tables are keyed on. The lcf seed column carries the cost zone.
+    storage_df = csv_str_to_df("""
+        storage_name,        technology_type,                     technology_specific_lcf_%
+        NNSW__Battery__-__2h, Battery__Storage__(2hrs__storage),  NSW__Low
+        SQ__Battery__-__1h,   Battery__Storage__(1hr__storage),   QLD__Low
+    """)
+
+    result = _calculate_and_merge_tech_specific_lcfs(
+        storage_df, iasr_tables, "technology_specific_lcf_%"
+    )
+
+    # Same LCFs as the storage_name==technology_type case (the test cache maps
+    # both NSW Low / QLD Low battery LCFs to 100.0) — proving the merge resolves
+    # via technology_type despite the per-subregion storage_name.
+    expected = csv_str_to_df("""
+        storage_name,        technology_type,                     technology_specific_lcf_%
+        NNSW__Battery__-__2h, Battery__Storage__(2hrs__storage),  100.0
+        SQ__Battery__-__1h,   Battery__Storage__(1hr__storage),   100.0
+    """)
+    pd.testing.assert_frame_equal(
+        result.sort_values("storage_name").reset_index(drop=True),
+        expected.sort_values("storage_name").reset_index(drop=True),
+        check_dtype=False,
+        check_exact=False,
+        rtol=1e-2,
+    )

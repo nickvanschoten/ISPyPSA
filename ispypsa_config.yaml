@@ -26,10 +26,12 @@ trace_data:
   # Default: "example"
   dataset_type: example
 
-  # The year of trace dataset to download when using CLI download tasks
-  # Currently only 2024 is supported
-  # Default: 2024
-  dataset_year: 2024
+  # The year of trace dataset to download when using CLI download tasks.
+  # Set to 2026 to point the pipeline at the locally-parsed Draft 2026 ISP store
+  # (data/trace_data/isp_2026), produced by scripts/parse_2026_traces.py.
+  # Note: the CLI download task only supports 2024 (manifest-based); the 2026
+  # store is parsed locally, not downloaded.
+  dataset_year: 2026
 
 
 # ===== ISPyPSA templating =============================================================

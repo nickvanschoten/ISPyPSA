@@ -32,8 +32,17 @@ _NEM_SUB_REGION_IDS = pd.Series(
         "Central New South Wales": "CNSW",
         "Southern New South Wales": "SNSW",
         "Sydney, Newcastle, Wollongong": "SNW",
+        # v7.4 split the single "Victoria" subregion into three (MEL/SEV/WNV) and
+        # added "Northern South Australia". "Victoria" is kept for the regional
+        # reference-node table (the VIC region). Without the three VIC + NSA
+        # entries, these fall through as descriptive names (or fuzzy-match the
+        # stale "Victoria"->VIC) and no longer match the demand store's codes.
         "Victoria": "VIC",
+        "Greater Melbourne and Geelong": "MEL",
+        "South East Victoria": "SEV",
+        "West and North Victoria": "WNV",
         "Central South Australia": "CSA",
+        "Northern South Australia": "NSA",
         "South East South Australia": "SESA",
         "Tasmania": "TAS",
     },

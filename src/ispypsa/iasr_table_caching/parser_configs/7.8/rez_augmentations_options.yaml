@@ -1,0 +1,36 @@
+# v7.8-adjusted: FINAL "REZ augmentations options" sheet shifted the per-state
+# tables. Order is QLD, NSW, SA, TAS, VIC. All header_rows/end_row re-measured.
+rez_augmentation_options_QLD:
+  sheet_name: "REZ Augmentations Options"
+  header_rows: 11
+  end_row: 37
+  column_range: "B:O"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_options_NSW:
+  sheet_name: "REZ Augmentations Options"
+  header_rows: 40
+  end_row: 77  # v7.8-adjusted: was 76
+  column_range: "B:O"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_options_SA:
+  sheet_name: "REZ Augmentations Options"
+  header_rows: 80  # v7.8-adjusted: was 79
+  end_row: 96  # v7.8-adjusted: was 95
+  column_range: "B:O"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_options_TAS:
+  sheet_name: "REZ Augmentations Options"
+  header_rows: 99  # v7.8-adjusted: was 98
+  end_row: 110  # v7.8-adjusted: was 108
+  column_range: "B:O"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_options_VIC:
+  sheet_name: "REZ Augmentations Options"
+  header_rows: 113  # v7.8-adjusted: was 111
+  end_row: 137  # v7.8-adjusted: was 133
+  column_range: "B:O"
+  columns_with_merged_rows: ["B", "C"]

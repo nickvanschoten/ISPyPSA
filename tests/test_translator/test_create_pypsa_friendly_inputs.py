@@ -220,6 +220,12 @@ class DummyConfigTwo:
             (object,),
             {"nodes": type("obj", (object,), {"regional_granularity": "sub_regions"})},
         )
+        # Phase 8: carbon-price + T&S adders default to 0 (off) when the
+        # carbon-pricing block is absent from the config — preserve that
+        # invariant by hand for the dummy.
+        self.carbon_pricing = type(
+            "obj", (object,), {"carbon_price": 0.0, "tns_price": 0.0},
+        )
 
 
 def test_create_pypsa_friendly_timeseries_inputs_capacity_expansion(

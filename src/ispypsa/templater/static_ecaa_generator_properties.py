@@ -5,6 +5,7 @@ import pandas as pd
 
 from .helpers import (
     _fuzzy_match_names,
+    _rez_name_to_id_mapping,
     _snakecase_string,
     _where_any_substring_appears,
 )
@@ -43,9 +44,9 @@ def _template_ecaa_generators_static_properties(
     # tables are merged into this form at cache-load time by the schema
     # normalisation layer). The downstream code expects a "Generator" column
     # holding the human-readable identifier — in v7.4 that's "Power Station".
-    ecaa_generator_summaries = iasr_tables[
-        _ECAA_CONSOLIDATED_SUMMARY_TABLE
-    ].rename(columns={"Power Station": "Generator"})
+    ecaa_generator_summaries = iasr_tables[_ECAA_CONSOLIDATED_SUMMARY_TABLE].rename(
+        columns={"Power Station": "Generator"}
+    )
     cleaned_ecaa_generator_summaries = _clean_generator_summary(
         ecaa_generator_summaries
     )
@@ -455,18 +456,26 @@ def _add_rez_id_column(
         pd.DataFrame: ECAA generator DataFrame with REZ ID column added.
     """
 
-    # add a new column to hold the REZ IDs that maps to the current rez_location:
-    df[rez_id_col_name] = df["rez_location"]
-    # v7.4 uses the literal string "Not Applicable" for non-REZ generators
-    # (thermal, hydro, etc.); v6.0 used NaN. Normalise so downstream
-    # rez_id-based masks (e.g. translator's REZ-bus reassignment) work as
-    # intended for both versions.
-    df[rez_id_col_name] = df[rez_id_col_name].replace("Not Applicable", pd.NA)
-
-    rez_id_table_attributes = dict(table_lookup="Name", table_value="ID")
-    # merge in the REZ IDs:
-    df_with_rez_ids, col = _merge_table_data(
-        df, rez_id_col_name, renewable_energy_zones, rez_id_table_attributes
+    # Source-id-first: the v7.x ECAA summary carries a clean source `rez_id`
+    # column. Use it directly, because the FINAL 2026 ISP names V3 and V4
+    # identically ("Western Victoria") — deriving the id from the name via the
+    # renewable_energy_zones Name->ID lookup collapses both onto one id (V4, the
+    # last duplicate the dict keeps) and silently mis-locates V3's existing
+    # generators (e.g. Bulgana Green Power Hub, source REZ ID V3, was being
+    # reassigned to V4). Fall back to name-derivation only for blank source ids
+    # (v6.0 had no `rez_id` column). Mirrors the source-id-first handling in
+    # `static_new_generator_properties._add_and_clean_rez_ids` and `storage`.
+    # "Not Applicable" (v7.x) and NaN (v6.0) both normalise to NA so downstream
+    # rez_id-based masks (translator REZ-bus reassignment) work for both versions.
+    name_derived_rez_id = _rez_name_to_id_mapping(
+        df["rez_location"].replace("Not Applicable", pd.NA),
+        "rez_location",
+        renewable_energy_zones,
     )
+    if rez_id_col_name in df.columns:
+        source_rez_id = df[rez_id_col_name].replace("Not Applicable", pd.NA)
+        df[rez_id_col_name] = source_rez_id.fillna(name_derived_rez_id)
+    else:
+        df[rez_id_col_name] = name_derived_rez_id
 
-    return df_with_rez_ids
+    return df

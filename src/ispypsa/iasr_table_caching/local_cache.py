@@ -32,6 +32,7 @@ from ..templater.mappings import (
 _PARSER_CONFIG_OVERRIDES_ROOT = Path(__file__).parent / "parser_configs"
 _PARSER_CONFIG_OVERRIDES = {
     "7.4": _PARSER_CONFIG_OVERRIDES_ROOT / "7.4",
+    "7.8": _PARSER_CONFIG_OVERRIDES_ROOT / "7.8",
 }
 
 
@@ -59,18 +60,31 @@ def _build_required_tables(iasr_workbook_version: str = "6.0") -> list[str]:
         return _NETWORK_REQUIRED_TABLES
 
     is_v7 = iasr_workbook_version.startswith("7.")
-    _initial_limits_table = "initial_resource_limits" if is_v7 else "initial_build_limits"
+    _initial_limits_table = (
+        "initial_resource_limits" if is_v7 else "initial_build_limits"
+    )
     _h2_gpg_tables = (
         ["hydrogen_limit_for_gpg"]
         if is_v7
-        else ["gpg_emissions_reduction_h2_kogan", "gpg_emissions_reduction_h2_sa_turbine"]
+        else [
+            "gpg_emissions_reduction_h2_kogan",
+            "gpg_emissions_reduction_h2_sa_turbine",
+        ]
     )
-    _flow_path_augmentation_tables = flow_path_augmentation_tables(iasr_workbook_version)
-    _flow_path_augmentation_cost_tables = flow_path_augmentation_cost_tables(iasr_workbook_version)
+    _flow_path_augmentation_tables = flow_path_augmentation_tables(
+        iasr_workbook_version
+    )
+    _flow_path_augmentation_cost_tables = flow_path_augmentation_cost_tables(
+        iasr_workbook_version
+    )
     _prepatory_activities_tables = prepatory_activities_tables(iasr_workbook_version)
-    _actionable_isp_projects_tables = actionable_isp_projects_tables(iasr_workbook_version)
+    _actionable_isp_projects_tables = actionable_isp_projects_tables(
+        iasr_workbook_version
+    )
     _rez_augmentation_cost_tables = rez_augmentation_cost_tables(iasr_workbook_version)
-    _rez_connection_prepatory_activities_tables = rez_connection_prepatory_activities_tables(iasr_workbook_version)
+    _rez_connection_prepatory_activities_tables = (
+        rez_connection_prepatory_activities_tables(iasr_workbook_version)
+    )
     if True:
         # Generator property tables (maximum_capacity, seasonal_ratings, etc.)
         # are version-dispatched: v6.0 has per-status tables; v7.x has
@@ -85,6 +99,12 @@ def _build_required_tables(iasr_workbook_version: str = "6.0") -> list[str]:
             # Connection cost forecasts dropped the scenario suffix entirely.
             _NEW_ENTRANTS_COST_TABLES = [
                 "build_costs",
+                # Per-technology, per-scenario weighted average cost of capital
+                # (values in %). Consumed by the templater to annuitise each
+                # new-entrant at AEMO's technology-specific rate instead of a
+                # single scalar. v7.x only — v6.0's financial-parameters sheet
+                # has a different shape and the scalar config rate is used there.
+                "wacc",
                 "connection_costs_for_wind_and_solar",
                 "connection_costs_other",
                 "connection_cost_forecast_wind_and_solar",
@@ -245,7 +265,9 @@ def build_local_cache(
     if parser_config_override is not None:
         # The installed `isp-workbook-parser` doesn't ship a config dir for this
         # version (e.g. v7.4); point it at the repo-tracked override.
-        workbook = Parser(Path(workbook_path), user_config_directory_path=parser_config_override)
+        workbook = Parser(
+            Path(workbook_path), user_config_directory_path=parser_config_override
+        )
     else:
         workbook = Parser(Path(workbook_path))
     if workbook.workbook_version != iasr_workbook_version:
@@ -270,11 +292,26 @@ def build_local_cache(
         "flow_path_augmentation_costs_slower_growth_MEL-WNV": "flow_path_augmentation_costs_slower_growth_MEL_WNV",
         "flow_path_augmentation_costs_slower_growth_SEV-MEL": "flow_path_augmentation_costs_slower_growth_SEV_MEL",
     }
-    request_tables = list(tables_to_get)  # parser-actual names; tables_to_get stays canonical
+    request_tables = list(
+        tables_to_get
+    )  # parser-actual names; tables_to_get stays canonical
     _v75_cost_renames = {}  # parser-actual-on-disk -> ispypsa-canonical
     if iasr_workbook_version == "7.5":
         request_tables = [_V75_AUG_COST_ACTUAL.get(t, t) for t in request_tables]
         _v75_cost_renames = {v: k for k, v in _V75_AUG_COST_ACTUAL.items()}
+    # v7.8 (2026 ISP FINAL workbook) quirk: AEMO removed the standalone
+    # gas/liquid/H2 consultant-scenario-mapping matrix (the small G:N table at
+    # the top of the "Gas, Liquid fuel, H2 price" sheet that mapped AEMO
+    # scenario names to consultant scenario labels). It no longer exists in the
+    # FINAL workbook, so the parser can't extract it. It's also unused by the
+    # v7.x templater path (dynamic_generator_properties reads coal_fuel_price /
+    # liquid_fuel_prices / biomass_fuel_price by name directly), so dropping it
+    # from the request is safe. Skip it for 7.8 rather than letting save_tables
+    # halt on the out-of-bounds usecols error.
+    if iasr_workbook_version == "7.8":
+        _removed = "gas_and_liquid_fuel_prices_consultant_scenario_mapping"
+        request_tables = [t for t in request_tables if t != _removed]
+        tables_to_get = [t for t in tables_to_get if t != _removed]
     # When we're running with a repo-tracked config override (e.g. v7.4 cloned
     # from v7.5), the per-table `end_row` values drift one or two rows from
     # the actual workbook content because AEMO adjusted row counts between
@@ -322,7 +359,7 @@ def _normalise_cached_csvs_to_v74(
         aggregate_v74_biomethane_prices_to_v60_form,
         aggregate_v74_ecaa_units_to_power_stations,
         aggregate_v74_liquid_fuel_prices_to_v60_form,
-        filter_v74_ecaa_to_trace_coverage,
+        backfill_early_fy_fuel_prices,
         consolidate_v60_biomass_prices_to_v74,
         consolidate_v60_build_costs_to_v74,
         consolidate_v60_coal_prices_to_v74,
@@ -333,14 +370,15 @@ def _normalise_cached_csvs_to_v74(
         consolidate_v60_marginal_loss_factors_tables,
         consolidate_v60_maximum_capacity_tables,
         consolidate_v60_seasonal_ratings_tables,
+        drop_v78_not_applicable_build_cost_year,
         expand_v60_auxiliary_load_to_per_generator,
+        filter_v74_ecaa_to_trace_coverage,
         merge_v74_connection_capacity_into_forecast,
-        strip_v74_rez_prefix_from_aug_cost_options,
         pivot_v74_other_outages_to_wide,
         split_v74_maximum_capacity_commissioning_dates,
+        strip_v74_rez_prefix_from_aug_cost_options,
         synthesize_v60_new_entrants_power_station,
         transform_v60_battery_properties_to_wide,
-        backfill_early_fy_fuel_prices,
     )
 
     _strip_leading_underscore_columns(cache_path, table_names)
@@ -355,6 +393,10 @@ def _normalise_cached_csvs_to_v74(
         df.to_csv(csv_path, index=False)
 
     if source_version.startswith("7."):
+        # v7.8 FINAL prepends an all-"Not Applicable" 2024-25 build-cost column;
+        # drop it so the templater's $/kW->$/MW multiply doesn't hit a string.
+        # No-op for v7.4/v7.5 (numeric 2024-25).
+        drop_v78_not_applicable_build_cost_year(cache_path)
         # v7.4 carries a single `Commissioning date` column on the consolidated
         # max_capacity table; downstream code expects the v6.0 two-column
         # layout (confirmed vs indicative) which we restore here so the
@@ -478,9 +520,7 @@ def _normalise_cached_csvs_to_v74(
     backfill_early_fy_fuel_prices(cache_path)
 
 
-def _strip_leading_underscore_columns(
-    cache_path: Path, table_names: list[str]
-) -> None:
+def _strip_leading_underscore_columns(cache_path: Path, table_names: list[str]) -> None:
     """Strip leading underscores from cached CSV column headers.
 
     `isp_workbook_parser` joins multi-row headers with `_`. When the top row

@@ -1,0 +1,109 @@
+# v7.8-adjusted: FINAL "REZ cost forecasts" sheet shifted every per-state cost
+# table relative to the v7.5 clone. Per-scenario state order is NSW, SA, TAS,
+# VIC, QLD. All header_rows/end_row re-measured against the FINAL workbook (the
+# v7.5 positions silently read the wrong state/scenario under config_checks).
+rez_augmentation_costs_slower_growth_NSW:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 13
+  end_row: 46  # v7.8-adjusted: was 45
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_slower_growth_SA:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 50  # v7.8-adjusted: was 47
+  end_row: 63  # v7.8-adjusted: was 60
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_slower_growth_TAS:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 65  # v7.8-adjusted: was 62
+  end_row: 76  # v7.8-adjusted: was 72
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_slower_growth_VIC:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 78  # v7.8-adjusted: was 74
+  end_row: 97  # v7.8-adjusted: was 92
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_slower_growth_QLD:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 99  # v7.8-adjusted: was 94
+  end_row: 117  # v7.8-adjusted: was 112
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_step_change_NSW:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 120  # v7.8-adjusted: was 115
+  end_row: 153  # v7.8-adjusted: was 147
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_step_change_SA:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 157  # v7.8-adjusted: was 149
+  end_row: 170  # v7.8-adjusted: was 162
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_step_change_TAS:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 172  # v7.8-adjusted: was 164
+  end_row: 183  # v7.8-adjusted: was 174
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_step_change_VIC:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 185  # v7.8-adjusted: was 176
+  end_row: 204  # v7.8-adjusted: was 194
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_step_change_QLD:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 206  # v7.8-adjusted: was 196
+  end_row: 224  # v7.8-adjusted: was 214
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+####################
+rez_augmentation_costs_accelerated_transition_NSW:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 227  # v7.8-adjusted: was 217
+  end_row: 260  # v7.8-adjusted: was 249
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_accelerated_transition_SA:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 264  # v7.8-adjusted: was 251
+  end_row: 277  # v7.8-adjusted: was 264
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_accelerated_transition_TAS:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 279  # v7.8-adjusted: was 266
+  end_row: 290  # v7.8-adjusted: was 276
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_accelerated_transition_VIC:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 292  # v7.8-adjusted: was 278
+  end_row: 311  # v7.8-adjusted: was 296
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]
+
+rez_augmentation_costs_accelerated_transition_QLD:
+  sheet_name: "REZ cost forecasts"
+  header_rows: 313  # v7.8-adjusted: was 298
+  end_row: 331  # v7.8-adjusted: was 316
+  column_range: "B:AJ"
+  columns_with_merged_rows: ["B", "C"]

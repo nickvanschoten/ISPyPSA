@@ -21,6 +21,7 @@ from ispypsa.translator.generators import (
     create_pypsa_friendly_ecaa_generator_timeseries,
     create_pypsa_friendly_new_entrant_generator_timeseries,
 )
+from ispypsa.translator.helpers import _annuitised_investment_costs
 from ispypsa.translator.snapshots import (
     _add_investment_periods,
     _create_complete_snapshots_index,
@@ -47,12 +48,18 @@ def test_translate_ecaa_generators(csv_str_to_df, translated_generator_column_or
     # Call the function under test
     result = _translate_ecaa_generators(ispypsa_tables, investment_periods)
 
-    # Define expected output
+    # Define expected output. The `__→ ` substitution in `csv_str_to_df` means
+    # carriers in this fixture do collapse to canonical names ("Black__Coal" →
+    # "Black Coal" matches the NGER dict). Residuals = heat_rate * carrier_factor
+    # / 1000 (capture_rate = 0 for all three — none is "CCGT with CCS"):
+    #   Bayswater (Black Coal, 9.8 GJ/MWh):  9.8 * 90.24 / 1000 = 0.884352
+    #   Borumba   (Hydro, 0 GJ/MWh):         carrier not in NGER dict → 0
+    #   Tallawarra (Gas, 7.2 GJ/MWh):        7.2 * 51.53 / 1000 = 0.371016
     expected_output_csv = """
-    name,        p_nom,  p_min_pu,  build_year,  carrier,      lifetime,  isp_fuel_cost_mapping,  isp_vom_$/mwh_sent_out,  isp_heat_rate_gj/mwh,  bus,   marginal_cost,  p_nom_extendable,  capital_cost,  isp_technology_type,     isp_rez_id
-    Bayswater,   660.0,  0.227,     2024,        Black__Coal,  7.0,       Bayswater,              2.5,                     9.8,                   CNSW,  bayswater,      False,             0.0,           Steam__Sub__Critical,    NaN
-    Borumba,     200.0,  0.0,       2030,        Hydro,        Infinity,  Hydro,                  0.0,                     0.0,                   SQ,    borumba,        False,             0.0,           Pumped__Hydro,           NaN
-    Tallawarra,  420.0,  0.405,     2024,        Gas,          15.0,      Tallawarra,             3.5,                     7.2,                   SNSW,  tallawarra,     False,             0.0,           CCGT,                    NaN
+    name,        p_nom,  p_min_pu,  build_year,  carrier,      lifetime,  isp_fuel_cost_mapping,  isp_vom_$/mwh_sent_out,  isp_heat_rate_gj/mwh,  bus,   marginal_cost,  p_nom_extendable,  capital_cost,  isp_technology_type,     isp_rez_id,  isp_capture_rate,  isp_residual_co2_t_per_mwh,  isp_captured_co2_t_per_mwh
+    Bayswater,   660.0,  0.227,     2024,        Black__Coal,  7.0,       Bayswater,              2.5,                     9.8,                   CNSW,  bayswater,      False,             0.0,           Steam__Sub__Critical,    NaN,         0.0,               0.884352,                    0.0
+    Borumba,     200.0,  0.0,       2030,        Hydro,        Infinity,  Hydro,                  0.0,                     0.0,                   SQ,    borumba,        False,             0.0,           Pumped__Hydro,           NaN,         0.0,               0.0,                         0.0
+    Tallawarra,  420.0,  0.405,     2024,        Gas,          15.0,      Tallawarra,             3.5,                     7.2,                   SNSW,  tallawarra,     False,             0.0,           CCGT,                    NaN,         0.0,               0.371016,                    0.0
     """
     expected_output = csv_str_to_df(expected_output_csv)
     expected_output = expected_output.replace("Infinity", np.inf)
@@ -217,6 +224,11 @@ def test_translate_new_entrant_generators(
             ],
             "isp_resource_type": ["CCGT", "SAT", "WM"],
             "isp_rez_id": [None, "N7", "Q1"],
+            # ccgt_csa (Gas, heat_rate=7.2): residual = 7.2 * 51.53 / 1000.
+            # Solar/Wind: heat_rate=0 → all carbon-pricing quantities are 0.
+            "isp_capture_rate": [0.0, 0.0, 0.0],
+            "isp_residual_co2_t_per_mwh": [0.371016, 0.0, 0.0],
+            "isp_captured_co2_t_per_mwh": [0.0, 0.0, 0.0],
         }
     )
 
@@ -541,6 +553,35 @@ def test_calculate_annuitised_new_entrant_gen_capital_costs(csv_str_to_df):
     pd.testing.assert_frame_equal(
         result, expected_result_df, check_dtype=False, check_exact=False
     )
+
+
+def test_calculate_annuitised_new_entrant_gen_capital_costs_uses_per_row_wacc(
+    csv_str_to_df,
+):
+    """A per-technology `wacc` column overrides the scalar arg (v7.x behaviour)."""
+    generators_df = csv_str_to_df(
+        """
+        generator_name,  lifetime,  fom_$/kw/annum,  connection_cost_$/mw,  build_cost_$/mw,  technology_specific_lcf_%,  wacc
+        CCGT,            40,        15.0,            85000,                 1950000,          100.0,                      0.105
+        Wind,            30,        25.0,            337000,                1800000,          98.0,                       0.075
+        """
+    )
+
+    # Scalar arg is deliberately 0.05 so the test fails if the column is ignored.
+    result = _calculate_annuitised_new_entrant_gen_capital_costs(
+        generators_df.copy(), 0.05
+    )
+
+    def expected_capital_cost(build, lcf, conn, rate, life, fom):
+        base = build * (lcf / 100) + conn
+        return _annuitised_investment_costs(base, rate, life) + fom * 1000
+
+    expected = generators_df.copy()
+    expected["capital_cost"] = [
+        expected_capital_cost(1950000, 100.0, 85000, 0.105, 40, 15.0),
+        expected_capital_cost(1800000, 98.0, 337000, 0.075, 30, 25.0),
+    ]
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 
 def test_get_single_carrier_fuel_prices_simple(

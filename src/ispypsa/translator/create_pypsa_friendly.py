@@ -57,6 +57,22 @@ _BASE_TRANSLATOR_OUTPUTS = [
 ]
 
 
+def _config_with_transmission_wacc(
+    config: ModelConfig, ispypsa_tables: dict[str, pd.DataFrame]
+) -> ModelConfig:
+    """Return a config whose `wacc` is the templated regulated transmission WACC.
+
+    Leaves `config` unchanged and returns it as-is when the rate wasn't templated
+    (v6.0/tests), so the scalar config `wacc` remains the fallback.
+    """
+    if "transmission_wacc" not in ispypsa_tables:
+        return config
+    rate = float(
+        ispypsa_tables["transmission_wacc"]["regulated_transmission_wacc"].iloc[0]
+    )
+    return config.model_copy(update={"wacc": rate})
+
+
 def create_pypsa_friendly_inputs(
     config: ModelConfig, ispypsa_tables: dict[str, pd.DataFrame]
 ) -> dict[str, pd.DataFrame]:
@@ -178,18 +194,28 @@ def create_pypsa_friendly_inputs(
             [pypsa_inputs["generators"], unserved_energy_generators], ignore_index=True
         )
 
+    # Transmission (flow-path + REZ) expansion is regulated network investment,
+    # so annuitise it at AEMO's regulated transmission WACC when the templater
+    # sourced it from the IASR (v7.x), rather than the flat config `wacc`. The
+    # transmission translators read `config.wacc`, so hand them a config copy
+    # carrying the sourced rate. Falls back to the scalar config `wacc` when the
+    # rate isn't templated (v6.0/tests).
+    transmission_config = _config_with_transmission_wacc(config, ispypsa_tables)
+
     if config.network.nodes.rezs == "discrete_nodes":
         buses.append(_translate_rezs_to_buses(ispypsa_tables["renewable_energy_zones"]))
         links.append(
             _translate_renewable_energy_zone_build_limits_to_links(
                 ispypsa_tables["renewable_energy_zones"],
                 ispypsa_tables["rez_transmission_expansion_costs"],
-                config,
+                transmission_config,
             )
         )
 
     if config.network.nodes.regional_granularity != "single_region":
-        links.append(_translate_flow_paths_to_links(ispypsa_tables, config))
+        links.append(
+            _translate_flow_paths_to_links(ispypsa_tables, transmission_config)
+        )
 
     pypsa_inputs["buses"] = pd.concat(buses)
 
@@ -200,7 +226,10 @@ def create_pypsa_friendly_inputs(
 
     pypsa_inputs.update(
         _translate_custom_constraints(
-            config, ispypsa_tables, pypsa_inputs["links"], pypsa_inputs["generators"]
+            transmission_config,
+            ispypsa_tables,
+            pypsa_inputs["links"],
+            pypsa_inputs["generators"],
         )
     )
 
@@ -366,6 +395,8 @@ def create_pypsa_friendly_timeseries_inputs(
         generators,
         snapshots,
         pypsa_friendly_timeseries_inputs_location,
+        carbon_price=config.carbon_pricing.carbon_price,
+        tns_price=config.carbon_pricing.tns_price,
     )
 
     snapshots = _add_snapshot_weightings(

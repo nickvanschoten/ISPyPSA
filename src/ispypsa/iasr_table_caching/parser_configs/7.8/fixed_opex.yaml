@@ -1,0 +1,12 @@
+fixed_opex_existing_committed_anticipated_additional_generators:
+  sheet_name: "Fixed OPEX"
+  header_rows: [6, 7]
+  end_row: 733  # v7.8-adjusted: was 649; FINAL adds committed/anticipated rows, data ends r733 (footnotes r735+)
+  column_range: "B:E"
+
+fixed_opex_new_entrants:
+  sheet_name: "Fixed OPEX"
+  header_rows: [6, 7]
+  end_row: 32  # v7.8-adjusted: was 28; FINAL new-entrant block ends r32
+  column_range: "G:I"
+  forward_fill_values: False

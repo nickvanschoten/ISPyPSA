@@ -1,0 +1,17 @@
+marginal_loss_factors_existing_generators:
+  sheet_name: "Marginal Loss Factors"
+  header_rows: 12
+  end_row: 738  # v7.8-adjusted: was 654; FINAL data ends r738 (footnotes r742+)
+  column_range: "B:G"
+
+marginal_loss_factors_new_entrants:
+  sheet_name: "Marginal Loss Factors"
+  header_rows: 12
+  end_row: 536  # v7.8-adjusted: was 529; FINAL new-entrant MLF block ends r536
+  column_range: "I:M"
+
+marginal_loss_factors_new_entrant_electrolysers:
+  sheet_name: "Marginal Loss Factors"
+  header_rows: 12
+  end_row: 161  # v7.8-adjusted: was 163; FINAL electrolyser MLF block ends r161
+  column_range: "O:S"

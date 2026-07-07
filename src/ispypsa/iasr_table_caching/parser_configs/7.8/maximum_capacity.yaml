@@ -1,0 +1,11 @@
+maximum_capacity_existing_committed_anticipated_additional_generators:
+  sheet_name: "Maximum capacity"
+  header_rows: 10  # v7.8-adjusted: was 9; column header moved to r10 (title row is r9)
+  end_row: 736  # v7.8-adjusted: was 651; FINAL data ends r736 (Notes r740+)
+  column_range: "B:J"
+
+maximum_capacity_new_entrants:
+  sheet_name: "Maximum capacity"
+  header_rows: 10  # v7.8-adjusted: was 9; column header moved to r10
+  end_row: 32  # v7.8-adjusted: was 30; FINAL new-entrant block ends r32
+  column_range: "L:O"

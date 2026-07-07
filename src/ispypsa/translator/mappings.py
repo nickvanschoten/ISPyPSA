@@ -58,7 +58,42 @@ _GENERATOR_ATTRIBUTE_ORDER = [
     "isp_heat_rate_gj/mwh",
     "isp_resource_type",
     "isp_rez_id",
+    # CCS + carbon-pricing metadata (translator-computed; not passed to PyPSA).
+    "isp_capture_rate",
+    "isp_residual_co2_t_per_mwh",
+    "isp_captured_co2_t_per_mwh",
 ]
+
+# Total Scope 1 CO2e (CO2 + CH4_CO2e + N2O_CO2e), kg/GJ, by ISPyPSA carrier.
+# Mirrors the NGER cross-walk in mvp_pass1_power/postprocess/nger_factors.py
+# (_NGER_FACTORS_KG_CO2E_PER_GJ). Translator-side copy because src/ispypsa
+# cannot import from the project-specific postprocess layer; keep in sync if
+# either dict changes. The values are NGA Factors 2024 Tables 4, 5, 8.
+_CARRIER_TO_TOTAL_CO2E_KG_PER_GJ = {
+    "Black Coal": 90.24,    # 90.0 + 0.04 + 0.2
+    "Brown Coal": 93.82,    # 93.5 + 0.02 + 0.3
+    "Gas": 51.53,           # 51.4 + 0.1 + 0.03
+    "Liquid Fuel": 70.2,    # 69.9 + 0.1 + 0.2
+    "Biomass": 1.8,         # biogenic CO2; CH4 + N2O combustion residuals
+    "Hydrogen": 0.0,
+    "Biomethane": 0.13,
+    "Nuclear": 0.0,
+    "Wind": 0.0,
+    "Solar": 0.0,
+    "Water": 0.0,
+    "Storage": 0.0,
+    # Hyblend: blended per-period gas+H2 — carbon adder for Hyblend is not
+    # wired in this pass; flag if a sweep needs it. (Scoping uses cost_optimal
+    # which does not have the gpg_emissions_reduction_h2 mandate active.)
+}
+
+# Capture rate (fraction of combustion CO2e captured) by ISPyPSA technology_type.
+# Placeholder values — refine when IASR or AEMO provides per-plant figures.
+# Translator constant by design: keeps the non-IASR assumption out of the
+# IASR catalogue so it is easy to find, flag in metadata, and revise.
+_TECHNOLOGY_TO_CAPTURE_RATE = {
+    "CCGT with CCS": 0.90,
+}
 
 # _GENERATOR_ATTRIBUTES dictionaries:
 # Fields that have "isp_" at the beginning of the value string indicate columns

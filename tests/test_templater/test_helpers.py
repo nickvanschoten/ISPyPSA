@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 from ispypsa.templater.helpers import (
+    _assert_equipment_category_survives_lcf_dot,
+    _assert_no_nan_load_bearing_column,
     _manual_remove_footnotes_from_generator_names,
     _rez_name_to_id_mapping,
     _snakecase_string,
@@ -363,3 +365,55 @@ def test_rez_name_to_id_mapping_empty_input():
 
     # Check the result
     pd.testing.assert_series_equal(result, expected)
+
+
+def test_assert_equipment_category_survives_lcf_dot_passes_when_present():
+    # On correct v7.x data the explicit rename keeps "Equipment costs" shared.
+    shared_cost_cats = [
+        "Equipment costs",
+        "Fuel connection costs",
+        "Installation costs",
+    ]
+    # Should not raise.
+    _assert_equipment_category_survives_lcf_dot(shared_cost_cats)
+
+
+def test_assert_equipment_category_survives_lcf_dot_raises_when_dropped():
+    # This is the ~3-5x-understatement bug signature: the dominant equipment
+    # category fell out of the shared cost categories (e.g. a v7.x column rename
+    # the fuzzy matcher couldn't bridge).
+    shared_cost_cats = ["Fuel connection costs", "Installation costs"]
+    with pytest.raises(ValueError, match="Equipment costs"):
+        _assert_equipment_category_survives_lcf_dot(shared_cost_cats)
+
+
+def test_assert_no_nan_load_bearing_column_passes_when_complete():
+    df = pd.DataFrame(
+        {"technology_type": ["CCGT", "Wind"], "fom_$/kw/annum": [15.0, 25.0]}
+    )
+    # Should not raise.
+    _assert_no_nan_load_bearing_column(
+        df, "fom_$/kw/annum", "technology_type", "new-entrant generator"
+    )
+
+
+def test_assert_no_nan_load_bearing_column_raises_and_names_rows():
+    # A NaN FOM is the fleet-drop bug signature (broken v7.x join key).
+    df = pd.DataFrame(
+        {
+            "technology_type": ["CCGT", "Battery Storage (1hr storage)"],
+            "fom_$/kw/annum": [15.0, pd.NA],
+        }
+    )
+    with pytest.raises(ValueError, match=r"Battery Storage \(1hr storage\)"):
+        _assert_no_nan_load_bearing_column(
+            df, "fom_$/kw/annum", "technology_type", "new-entrant storage"
+        )
+
+
+def test_assert_no_nan_load_bearing_column_noop_when_column_absent():
+    df = pd.DataFrame({"technology_type": ["CCGT"]})
+    # Absent column (e.g. v6.0 fallback) is a no-op, not an error.
+    _assert_no_nan_load_bearing_column(
+        df, "wacc", "technology_type", "new-entrant generator"
+    )

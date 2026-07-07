@@ -334,6 +334,14 @@ _V74_TO_CANONICAL_COLUMN_RENAMES: dict[str, dict[str, str]] = {
     "gas_prices_new_entrants": {
         "New generating stations": "Generator",
     },
+    # v7.8 (2026 ISP FINAL) appended a "5" footnote ref to the Status column
+    # header on the consolidated maximum_capacity table ("Status5"). Downstream
+    # (split_v74_maximum_capacity_commissioning_dates, the per-status
+    # consolidation) keys on a plain "Status". No-op for earlier versions whose
+    # header is already "Status".
+    "maximum_capacity_existing_committed_anticipated_additional_generators": {
+        "Status5": "Status",
+    },
 }
 
 
@@ -1126,6 +1134,40 @@ def backfill_early_fy_fuel_prices(cache_path: Path) -> None:
             )
         except Exception:
             pass
+
+
+def drop_v78_not_applicable_build_cost_year(cache_path: Path) -> None:
+    """Drop fully-"Not Applicable" financial-year columns from `build_costs`.
+
+    The 2026 ISP FINAL (v7.8) workbook prepended a `2024-25` build-cost column
+    to the "Build costs" sheet whose every cell reads the string
+    "Not Applicable" (AEMO's first published GenCost year is 2025-26). The
+    templater's `_template_new_entrant_build_costs` multiplies the whole
+    year-column block by 1000 (`build_costs *= 1000.0`) to convert $/kW to
+    $/MW, which raises `TypeError: can't multiply sequence by non-int` on the
+    string column.
+
+    The column carries no data the model uses — every investment period is
+    2025-26 or later — so dropping the all-"Not Applicable" FY column at cache
+    load is lossless and keeps the templater version-naive. Earlier vintages
+    (v6.0/v7.4/v7.5) publish a numeric 2024-25 column, so the all-string guard
+    makes this a no-op for them.
+    """
+    import re
+
+    fy_pattern = re.compile(r"^\d{4}-\d{2}$")
+    csv_path = cache_path / "build_costs.csv"
+    if not csv_path.exists():
+        return
+    df = pd.read_csv(csv_path)
+    fy_cols = [c for c in df.columns if fy_pattern.match(str(c))]
+    all_not_applicable = [
+        c for c in fy_cols if (df[c].astype(str) == "Not Applicable").all()
+    ]
+    if not all_not_applicable:
+        return
+    df = df.drop(columns=all_not_applicable)
+    df.to_csv(csv_path, index=False)
 
 
 def synthesize_v60_new_entrants_power_station(cache_path: Path) -> None:

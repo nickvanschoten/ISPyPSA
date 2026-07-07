@@ -375,3 +375,55 @@ def _rez_name_to_id_mapping(
     )
 
     return series_fixed_rez_names.replace(rez_name_to_id)
+
+
+def _assert_equipment_category_survives_lcf_dot(
+    shared_cost_cats: Iterable[str],
+) -> None:
+    """Fail loud if the dominant equipment capex category dropped from the LCF dot product.
+
+    The technology-specific locational cost factor is
+    `breakdown_ratios . locational_cost_factors` over the cost categories the two
+    tables share. Equipment is the dominant category (~55-80% of new-entrant
+    build cost). If it silently falls out of the shared set — as it did when
+    v7.x renamed the LCF column "Equipment costs" -> "Equipment and installation
+    costs" and the fuzzy column-matcher couldn't bridge the gap — every non-PHES
+    new-entrant's LCF collapses to ~20-46% instead of ~100%, understating all
+    new-entrant capital costs several-fold. This crashes that failure at build
+    time instead of shipping plausible-but-wrong capex. (The explicit
+    "Equipment and installation costs" -> "Equipment costs" rename applied before
+    the dot product keeps the category named "Equipment costs" on both sides on
+    correct v7.x data.)
+    """
+    if "Equipment costs" not in set(shared_cost_cats):
+        raise ValueError(
+            "The dominant 'Equipment costs' capex category is missing from the "
+            f"shared LCF cost categories {sorted(shared_cost_cats)} — the "
+            "locational cost factor dot product would understate every "
+            "new-entrant's capital cost several-fold. Check for a v7.x rename of "
+            "the locational_cost_factors equipment column."
+        )
+
+
+def _assert_no_nan_load_bearing_column(
+    df: pd.DataFrame, column: str, name_col: str, context: str
+) -> None:
+    """Fail loud if a load-bearing capex-input column is NaN for any new-entrant row.
+
+    A NaN FOM (or build cost) silently propagates to a NaN capital cost, which
+    the translator drops — the failure mode when a v7.x rename broke the battery
+    FOM join key (storage_name -> per-subregion labels) and the whole
+    new-entrant storage fleet vanished from the model. Every new-entrant
+    candidate must carry this cost input, so a NaN means a broken join; crash
+    at build time (naming the affected rows) instead of silently modelling zero
+    new-entrant capacity for that technology.
+    """
+    if column not in df.columns:
+        return
+    nan_names = sorted(df.loc[df[column].isna(), name_col].astype(str).unique())
+    if nan_names:
+        raise ValueError(
+            f"NaN {column} for {context} {nan_names} — a load-bearing capex "
+            "input is missing (likely a broken v7.x join key). These candidates "
+            "would be dropped silently in translation."
+        )

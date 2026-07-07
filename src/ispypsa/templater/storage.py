@@ -4,6 +4,8 @@ import re
 import pandas as pd
 
 from .helpers import (
+    _assert_equipment_category_survives_lcf_dot,
+    _assert_no_nan_load_bearing_column,
     _fuzzy_match_names,
     _one_to_one_priority_based_fuzzy_matching,
     _rez_name_to_id_mapping,
@@ -91,6 +93,12 @@ def _template_battery_properties(
         _merge_and_set_new_battery_static_properties(
             new_entrant_battery_summary, iasr_tables
         )
+    )
+    _assert_no_nan_load_bearing_column(
+        merged_cleaned_new_entrant_battery_summaries,
+        "fom_$/kw/annum",
+        name_col="storage_name",
+        context="new-entrant storage",
     )
     new_entrant_required_cols = [
         col
@@ -340,19 +348,30 @@ def _process_and_merge_opex(
             c for c in table_data.columns if "base value" in c.lower()
         )
         # Identifier in v7.4 storage opex tables is either Technology Type
-        # (fixed_opex) or Generator (variable_opex); the storage summary uses
-        # `storage_name` for the matching value.
+        # (fixed_opex) or Generator (variable_opex).
         id_col_in_table = (
             "Technology Type"
             if "Technology Type" in table_data.columns
             else "Generator"
         )
-        base_dict = (
-            table_data.set_index(id_col_in_table)[base_value_col]
-            .squeeze()
-            .to_dict()
+        base = table_data.set_index(id_col_in_table)[base_value_col]
+        # v7.5+ renamed new-entrant batteries' storage_name to per-subregion
+        # labels ("NQ Battery - 1h") and moved the generic tech label the opex
+        # table is keyed on to technology_type. Key on technology_type (== the
+        # generic storage_name in v7.4, so no regression) and standardise
+        # "storage" capitalisation on both sides so v7.8's "Battery storage"
+        # matches the summary's "Battery Storage" — otherwise the map misses
+        # and every new-entrant battery gets a NaN OPEX (then NaN capital cost,
+        # then dropped in translation: the whole new-entrant storage fleet
+        # silently disappears from the model).
+        base.index = _standardise_storage_capitalisation(
+            pd.Series(base.index, dtype="object")
+        ).values
+        base_dict = base.to_dict()
+        key_col = (
+            "technology_type" if "technology_type" in df.columns else "storage_name"
         )
-        df[col_name] = df["storage_name"].map(base_dict)
+        df[col_name] = _standardise_storage_capitalisation(df[key_col]).map(base_dict)
         return df, col_name
     # v6.0 shape: per-region cost columns + identifier lookup.
     df[col_name] = df["storage_name"] + " " + df[col_name]
@@ -557,6 +576,18 @@ def _calculate_and_merge_tech_specific_lcfs(
         if "O&M" not in col and col != "REZ name"
     ]
     locational_cost_factors = locational_cost_factors.loc[:, cols]
+    # v7.4/v7.8 renamed the LCF equipment category "Equipment costs" ->
+    # "Equipment and installation costs" while technology_cost_breakdown_ratios
+    # still lists "Equipment costs". The fuzzy column-matcher below (threshold
+    # 80) maps "Equipment and installation costs" to itself, not to "Equipment
+    # costs", so "Equipment costs" falls out of shared_cost_cats and drops from
+    # the .dot() — understating every new-entrant battery's LCF to ~19%
+    # (equipment is ~80% of battery capex) instead of ~100%, i.e. ~5x too-cheap
+    # battery capital cost. Map it explicitly, mirroring the identical fix in
+    # static_new_generator_properties._calculate_and_merge_tech_specific_lcfs.
+    locational_cost_factors = locational_cost_factors.rename(
+        columns={"Equipment and installation costs": "Equipment costs"}
+    )
 
     # reshape technology_specific_lcfs and name columns manually. v7.4 adds a
     # `REZ name / Description` column alongside the cost-zone ID — treat both
@@ -585,11 +616,17 @@ def _calculate_and_merge_tech_specific_lcfs(
         technology_specific_lcfs = technology_specific_lcfs.drop(
             columns=["REZ name / Description"]
         )
-    # ensures storage names in LCF tables match those in the summary table
+    # ensures storage names in LCF tables match those in the summary table.
+    # Match on technology_type (the generic "Battery Storage (Nhr storage)"
+    # label the LCF table is keyed on), NOT storage_name — v7.5+ renamed
+    # storage_name to per-subregion labels ("NQ Battery - 1h") that no longer
+    # fuzzy-match the LCF tech names, which left every new-entrant battery LCF
+    # NaN (→ NaN capital cost → dropped in translation). technology_type ==
+    # storage_name in v7.4, so this does not regress earlier vintages.
     for df_to_match_batt_names in [technology_specific_lcfs, breakdown_ratios]:
         df_to_match_batt_names["Technology"] = _fuzzy_match_names(
             df_to_match_batt_names["Technology"],
-            df["storage_name"].unique(),
+            df["technology_type"].unique(),
             "calculating and merging in LCFs to static new entrant storage summary",
             not_match="existing",
             threshold=90,
@@ -610,6 +647,7 @@ def _calculate_and_merge_tech_specific_lcfs(
     shared_cost_cats = [
         c for c in breakdown_ratios.columns if c in locational_cost_factors.columns
     ]
+    _assert_equipment_category_survives_lcf_dot(shared_cost_cats)
     breakdown_ratios = breakdown_ratios.loc[:, shared_cost_cats].apply(
         pd.to_numeric, errors="coerce"
     )
@@ -626,7 +664,7 @@ def _calculate_and_merge_tech_specific_lcfs(
         )
         calculated_lcf /= 100
         df.loc[
-            ((df["storage_name"] == tech) & (df[tech_lcf_col] == row["Location"])),
+            ((df["technology_type"] == tech) & (df[tech_lcf_col] == row["Location"])),
             tech_lcf_col,
         ] = calculated_lcf
     # fills rows with no LCF with pd.NA
@@ -705,15 +743,33 @@ def _add_and_clean_rez_ids(
         pd.DataFrame: new entrant storage DataFrame with REZ ID column added.
     """
 
-    # add a new column to hold the REZ IDs that maps to the current rez_location:
-    df[rez_id_col_name] = df["rez_location"]
-    # v7.4 uses the literal "Not Applicable" string for non-REZ generators;
-    # v6.0 used NaN. Normalise so downstream rez_id-based masks work.
-    df[rez_id_col_name] = df[rez_id_col_name].replace("Not Applicable", pd.NA)
+    # Source-id-first: v7.x carries a clean source `rez_id`; use it directly
+    # because the FINAL 2026 ISP names V3 and V4 identically ("Western Victoria"),
+    # so deriving the id from the name collapses both onto one id (V4) and
+    # mis-keys V3's batteries. Fall back to deriving the id from `rez_location`
+    # only for blank source ids (v6.0 had no `rez_id` column). Mirrors
+    # `static_new_generator_properties._add_rez_id_column`.
+    # "Not Applicable" (v7.4) and NaN (v6.0) both normalise to NA so downstream
+    # rez_id-based masks work.
+    name_derived_rez_id = _rez_name_to_id_mapping(
+        df["rez_location"].replace("Not Applicable", pd.NA),
+        "rez_location",
+        renewable_energy_zones,
+    )
+    if rez_id_col_name in df.columns:
+        source_rez_id = df[rez_id_col_name].replace("Not Applicable", pd.NA)
+        df[rez_id_col_name] = source_rez_id.fillna(name_derived_rez_id)
+    else:
+        df[rez_id_col_name] = name_derived_rez_id
 
+    # Map any remaining rez/region name columns to ids (rez_id resolved above).
     # update references to "North [East|West] Tasmania Coast" to "North Tasmania Coast"
     # update references to "Portland Coast" to "Southern Ocean"
-    rez_or_region_cols = [col for col in df.columns if re.search(r"rez|region_id", col)]
+    rez_or_region_cols = [
+        col
+        for col in df.columns
+        if re.search(r"rez|region_id", col) and col != rez_id_col_name
+    ]
 
     for col in rez_or_region_cols:
         df[col] = _rez_name_to_id_mapping(df[col], col, renewable_energy_zones)
@@ -788,5 +844,27 @@ def _add_unique_new_entrant_storage_name_column(df: pd.DataFrame):
     df = df.dropna(subset=["isp_resource_type"]).reset_index(drop=True)
     df["storage_name"] = df["isp_resource_type"] + "_" + df["sub_region_id"]
     df["storage_name"] = df["storage_name"].map(_snakecase_string)
+    df = _dedupe_new_entrant_storage_to_subregion(df)
 
     return df
+
+
+def _dedupe_new_entrant_storage_to_subregion(df: pd.DataFrame) -> pd.DataFrame:
+    """Collapse per-REZ battery candidates to one per subregion + duration.
+
+    v7.8 lists new-entrant batteries as per-REZ candidates (several `rez_id`
+    rows per subregion + duration, each with a REZ-specific LCF), but the
+    storage_name is built from subregion + duration only, so the REZ variants
+    collapse to duplicate names — which silently overwrite each other in PyPSA
+    (understating storage) and break recursive-dynamic tranche extraction.
+    Keep one candidate per name: prefer the non-REZ base row (`rez_id` NaN,
+    which connects at the subregion node) then the cheapest LCF. Storage is
+    thus modelled at subregion granularity (the templater's existing
+    assumption); REZ-colocated storage is a Pass-3 refinement.
+    """
+    df = df.copy()
+    df["_prefers_subregion_node"] = df["rez_id"].notna()  # False (no REZ) sorts first
+    df["_lcf"] = pd.to_numeric(df["technology_specific_lcf_%"], errors="coerce")
+    df = df.sort_values(["storage_name", "_prefers_subregion_node", "_lcf"])
+    df = df.drop_duplicates(subset="storage_name", keep="first")
+    return df.drop(columns=["_prefers_subregion_node", "_lcf"]).reset_index(drop=True)

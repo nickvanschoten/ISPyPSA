@@ -1,0 +1,83 @@
+powering_australia_plan:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 19
+  end_row: 20
+  column_range: "D:E"
+
+capacity_investment_generation_targets:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 56
+  end_row: 62
+  column_range: "D:F"
+
+capacity_investment_dispatchable_capacity_targets:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 89
+  end_row: 93
+  column_range: "D:G"
+
+lret_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 109  # v7.8-adjusted: was 110; header r109 (Financial year/2029-30), data r110
+  end_row: 110  # v7.8-adjusted: was 111
+  column_range: "D:E"
+
+nsw_roadmap_min_vre_generation_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 131  # v7.8-adjusted: was 133; NSW roadmap block shifted up in FINAL
+  end_row: 133  # v7.8-adjusted: was 134; data r132-133
+  column_range: "D:E"
+
+nsw_roadmap_storage_power_capacity_trajectory:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 146  # v7.8-adjusted: was 148; header r146 (Financial year/2029-30)
+  end_row: 147  # v7.8-adjusted: was 150; single data row r147
+  column_range: "D:E"
+
+nsw_roadmap_storage_energy_capacity_trajectory:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 152  # v7.8-adjusted: was 155
+  end_row: 154  # v7.8-adjusted: was 157; data r153-154
+  column_range: "D:F"
+
+nsw_roadmap_rez_max_connection_limit:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 177  # v7.8-adjusted: was 180
+  end_row: 179  # v7.8-adjusted: was 182; data r178-179
+  column_range: "D:G"
+
+sa_renewable_generation_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 217  # v7.8-adjusted: was 209; header r217 (Financial year/All scenarios), data r218
+  end_row: 218  # v7.8-adjusted: was 210
+  column_range: "D:E"
+
+tas_renewable_energy_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: [227, 228]
+  end_row: 230
+  column_range: "D:E"
+
+tas_renewable_target_trajectory:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 239
+  end_row: 241
+  column_range: "D:F"
+
+vic_renewable_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 260
+  end_row: 263
+  column_range: "D:E"
+
+vic_storage_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 285
+  end_row: 287
+  column_range: "D:E"
+
+vic_offshore_wind_target:
+  sheet_name: "Energy Policy Targets"
+  header_rows: 301
+  end_row: 304
+  column_range: "D:E"

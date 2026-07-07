@@ -1,0 +1,11 @@
+seasonal_ratings_new_entrants:
+  sheet_name: "Seasonal ratings"
+  header_rows: 11
+  end_row: 32
+  column_range: "B:E"
+
+seasonal_ratings_existing_committed_anticipated_additional_generators:
+  sheet_name: "Seasonal ratings"
+  header_rows: [43, 44]
+  end_row: 770  # v7.8-adjusted: was 700; FINAL data ends r770 (last gen Mugga Lane Renewable Hybrid)
+  column_range: "B:AI"

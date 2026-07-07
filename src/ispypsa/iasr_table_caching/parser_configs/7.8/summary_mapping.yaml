@@ -1,0 +1,47 @@
+existing_committed_anticipated_additional_generator_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  end_row: 648
+  column_range: "B:AF"
+  forward_fill_values: False
+
+consumer_energy_resources_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  skip_rows:
+    start: 7
+    end: 654
+  end_row: 704
+  column_range: "B:AF"
+  forward_fill_values: False
+
+new_entrants_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  skip_rows:
+    # The FINAL workbook re-laid the "Summary Mapping" sheet: the New Entrant
+    # block is preceded by the ECAA tail (ends row 733), the Consumer Energy
+    # Resources block (header 734, data 737-786), and the "Summary Mapping -
+    # New Entrant" section header at row 790 with blank rows 791-792. The real
+    # New Entrant data therefore starts at row 793 (NQ SAT - Distributed
+    # Resources) and runs to row 1316 (DREZ Marulan Battery - 8h), just before
+    # the New Entrant Electrolysers section header at row 1319.
+    start: 7
+    end: 792
+  end_row: 1316
+  column_range: "B:AF"
+  forward_fill_values: False
+
+new_entrant_electrolysers_summary:
+  sheet_name: "Summary Mapping"
+  header_rows: [4, 5, 6]
+  skip_rows:
+    # FINAL workbook: New Entrant block ends row 1316; the "Summary Mapping -
+    # New Entrant Electrolysers" header is at row 1319 with blank rows 1317-1318
+    # and 1320-1321. Electrolyser data starts at row 1322 and runs to row 1381
+    # (V7 to WNV ... Green Commodities).
+    start: 7
+    end: 1321
+  end_row: 1381
+  column_range: "B:AF"
+  forward_fill_values: False
