@@ -74,7 +74,9 @@ def _flatten_snapshots(snaps: list) -> pd.DatetimeIndex:
 
 def _real_generator_mask(network: pypsa.Network) -> pd.Series:
     g = network.generators
-    return (g["bus"] != "bus_for_custom_constraint_gens") & (g["carrier"] != "Unserved Energy")
+    return (g["bus"] != "bus_for_custom_constraint_gens") & (
+        g["carrier"] != "Unserved Energy"
+    )
 
 
 def _dispatch_by_carrier(network, snaps, flat_idx) -> pd.DataFrame:
@@ -85,7 +87,9 @@ def _dispatch_by_carrier(network, snaps, flat_idx) -> pd.DataFrame:
     return by_carrier
 
 
-def _storage_dispatch_and_charge(network, snaps, flat_idx) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _storage_dispatch_and_charge(
+    network, snaps, flat_idx
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     if network.storage_units.empty:
         empty = pd.DataFrame(index=flat_idx)
         return empty, empty
@@ -102,10 +106,14 @@ def _demand_series(network, snaps, flat_idx) -> pd.Series:
 
 def _curtailment_by_carrier(network, snaps, flat_idx) -> pd.DataFrame:
     real_mask = _real_generator_mask(network)
-    vre = network.generators[real_mask & network.generators["carrier"].isin(_VRE_CARRIERS)]
+    vre = network.generators[
+        real_mask & network.generators["carrier"].isin(_VRE_CARRIERS)
+    ]
     if vre.empty:
         return pd.DataFrame(index=flat_idx)
-    available_pu = network.get_switchable_as_dense("Generator", "p_max_pu").loc[snaps, vre.index]
+    available_pu = network.get_switchable_as_dense("Generator", "p_max_pu").loc[
+        snaps, vre.index
+    ]
     available_mw = available_pu.multiply(vre["p_nom_opt"], axis=1)
     dispatched = network.generators_t.p.loc[snaps, vre.index].clip(lower=0)
     curtailed = (available_mw - dispatched).clip(lower=0)
@@ -120,6 +128,22 @@ def _period_hours_series(network, snaps, flat_idx) -> pd.Series:
     return hours
 
 
+def _emissions_rate(network, run_dir: Path, snaps, flat_idx) -> pd.Series:
+    """Per-snapshot Scope-1 emissions rate (tCO2e/h) = Σ dispatch_MW × residual
+    intensity, from the pypsa-friendly `isp_residual_co2_t_per_mwh` column (CCS
+    capture already netted at translation). Zero if the column is absent."""
+    pf_path = run_dir / "pypsa_friendly" / "generators.csv"
+    if not pf_path.exists():
+        return pd.Series(0.0, index=flat_idx)
+    pf = pd.read_csv(pf_path).set_index("name")
+    res = pd.to_numeric(pf.get("isp_residual_co2_t_per_mwh"), errors="coerce")
+    real = network.generators[_real_generator_mask(network)]
+    dispatch = network.generators_t.p.loc[snaps, real.index].clip(lower=0)
+    rate = dispatch.mul(res.reindex(real.index).fillna(0.0), axis=1).sum(axis=1)
+    rate.index = flat_idx
+    return rate
+
+
 # ---------- public interface ----------
 
 
@@ -131,7 +155,9 @@ def list_available_runs(runs_dir: Path) -> dict[str, dict[str, list[int]]]:
     return {p: {a: sorted(ys) for a, ys in archs.items()} for p, archs in out.items()}
 
 
-def find_run_dir(runs_dir: Path, run_id_prefix: str, archetype: str, year: int) -> Path | None:
+def find_run_dir(
+    runs_dir: Path, run_id_prefix: str, archetype: str, year: int
+) -> Path | None:
     """Find the unique run directory for (prefix, archetype, year), or None."""
     for d, (prefix, y, a) in _iter_solved_runs(runs_dir):
         if prefix == run_id_prefix and a == archetype and y == year:
@@ -157,7 +183,9 @@ def extract_dispatch_timeseries(run_dir: Path) -> dict | None:
         return None
     snaps = _period_snapshots(network, year)
     flat_idx = _flatten_snapshots(snaps)
-    storage_dispatch, storage_charge = _storage_dispatch_and_charge(network, snaps, flat_idx)
+    storage_dispatch, storage_charge = _storage_dispatch_and_charge(
+        network, snaps, flat_idx
+    )
     return {
         "dispatch_by_carrier": _dispatch_by_carrier(network, snaps, flat_idx),
         "storage_dispatch": storage_dispatch,
@@ -165,5 +193,6 @@ def extract_dispatch_timeseries(run_dir: Path) -> dict | None:
         "demand": _demand_series(network, snaps, flat_idx),
         "curtailment": _curtailment_by_carrier(network, snaps, flat_idx),
         "period_hours": _period_hours_series(network, snaps, flat_idx),
+        "emissions_rate_t_per_h": _emissions_rate(network, run_dir, snaps, flat_idx),
         "snapshot_index": flat_idx,
     }

@@ -669,6 +669,12 @@ def test_maintenance_overlay_pre_pass_runs_for_every_archetype(csv_str_to_df):
     tables = {
         "ecaa_generators": ecaa,
         "ecaa_batteries": pd.DataFrame(columns=["storage_name"]),
+        # Real templater output always includes a biomass price table; the
+        # feedstock-cost pre-pass re-prices it.
+        "biomass_prices": csv_str_to_df("""
+            2029_30_$/gj,  2049_50_$/gj
+            0.661895,      0.661895
+        """),
     }
     config = _StubConfig(investment_periods=[2030, 2040, 2050])
 
@@ -723,6 +729,13 @@ def minimal_templater_output(csv_str_to_df):
         """),
         "custom_constraints_lhs": pd.DataFrame(columns=["constraint_id", "term_type", "term_id", "coefficient"]),
         "custom_constraints_rhs": pd.DataFrame(columns=["constraint_id", "constraint_type", "rhs"]),
+        # The real templater always emits a single-row biomass price table
+        # (IASR $0.66/GJ, flat). Included so the biomass feedstock-cost
+        # pre-pass has a table to re-price.
+        "biomass_prices": csv_str_to_df("""
+            2029_30_$/gj,  2039_40_$/gj,  2049_50_$/gj
+            0.661895,      0.661895,      0.661895
+        """),
     }
 
 
@@ -972,3 +985,72 @@ def test_biomass_cap_runs_under_every_wrapped_archetype(minimal_templater_output
         biomass_caps = rhs[rhs.constraint_id.str.startswith("biomass_cap_")]
         assert not biomass_caps.empty, f"{arch}: biomass_cap_* not present in rhs"
         assert set(biomass_caps.constraint_id) == {"biomass_cap_2030", "biomass_cap_2040", "biomass_cap_2050"}
+
+
+# ---------------------------------------------------------------------------
+# Phase 8.x biomass feedstock cost — re-prices biomass feedstock from the
+# IASR $0.66/GJ residue-tier value to the scale-appropriate beyond-residue
+# delivered cost ($6.0/GJ, IRENA locally-collected tier). Corrects the
+# running economics the capacity cap left untouched. See
+# _biomass_feedstock_cost.py for sourcing.
+# ---------------------------------------------------------------------------
+
+
+def test_biomass_feedstock_cost_reprices_every_financial_year(csv_str_to_df):
+    from mvp_pass1_power.archetypes._biomass_feedstock_cost import (
+        _SCALED_BIOMASS_FEEDSTOCK_COST_GJ,
+        apply as feedstock_apply,
+    )
+
+    biomass_prices = csv_str_to_df("""
+        2029_30_$/gj,  2039_40_$/gj,  2049_50_$/gj
+        0.661895,      0.661895,      0.661895
+    """)
+    tables = {"biomass_prices": biomass_prices}
+
+    result = feedstock_apply(tables, config=None)
+
+    expected = csv_str_to_df(f"""
+        2029_30_$/gj,                        2039_40_$/gj,                        2049_50_$/gj
+        {_SCALED_BIOMASS_FEEDSTOCK_COST_GJ}, {_SCALED_BIOMASS_FEEDSTOCK_COST_GJ}, {_SCALED_BIOMASS_FEEDSTOCK_COST_GJ}
+    """)
+    pd.testing.assert_frame_equal(
+        result["biomass_prices"], expected, check_dtype=False
+    )
+
+
+def test_biomass_feedstock_cost_leaves_other_price_tables_untouched(csv_str_to_df):
+    from mvp_pass1_power.archetypes._biomass_feedstock_cost import apply as feedstock_apply
+
+    biomass_prices = csv_str_to_df("""
+        2029_30_$/gj,  2049_50_$/gj
+        0.661895,      0.661895
+    """)
+    gas_prices = csv_str_to_df("""
+        generator,  2029_30_$/gj,  2049_50_$/gj
+        CNSW__CCGT, 12.5,          13.0
+    """)
+    tables = {"biomass_prices": biomass_prices, "gas_prices": gas_prices.copy()}
+
+    result = feedstock_apply(tables, config=None)
+
+    # Gas price table (also has $/gj columns) must be left untouched — the
+    # pre-pass only re-prices the biomass table it is handed by name.
+    pd.testing.assert_frame_equal(result["gas_prices"], gas_prices)
+
+
+def test_biomass_feedstock_cost_logs_the_reprice(csv_str_to_df, caplog):
+    from mvp_pass1_power.archetypes._biomass_feedstock_cost import apply as feedstock_apply
+
+    biomass_prices = csv_str_to_df("""
+        2029_30_$/gj,  2039_40_$/gj,  2049_50_$/gj
+        0.661895,      0.661895,      0.661895
+    """)
+
+    with caplog.at_level("INFO"):
+        feedstock_apply({"biomass_prices": biomass_prices}, config=None)
+
+    assert (
+        "Biomass feedstock re-priced to 6.0 $/GJ "
+        "(IRENA locally-collected tier) across 3 financial years"
+    ) in caplog.text

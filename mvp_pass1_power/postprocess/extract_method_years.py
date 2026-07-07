@@ -66,11 +66,14 @@ from .nger_factors import nger_factor_table, hyblend_factor
 
 log = logging.getLogger(__name__)
 
-# Carriers classified as renewable for share computation (matches extract_granular_outputs.py).
-# Water excluded: ISPyPSA models hydro with p_max_pu=1.0 (no availability traces),
-# producing ~60 TWh/year vs ~15-17 TWh realistic. Including it inflates renewable
-# share by ~20 pp. Wind + Solar + Biomass only.
-_RENEWABLE_CARRIERS = {"Wind", "Solar", "Biomass"}
+# Carriers classified as renewable for share computation.
+# Water (hydro) IS included: although ISPyPSA models hydro with p_max_pu=1.0 (no
+# availability traces), the *solved dispatch* runs hydro at ~18 TWh/year — squarely
+# in the realistic 15-18 TWh range, not the ~60 TWh a flat-out run would imply. The
+# CF-inflation concern that originally excluded it does not materialise in dispatch,
+# so excluding it understated the renewable share by ~7 pp. Share is dispatch-based,
+# so hydro contributes its actual generation, not its (inflated) nameplate energy.
+_RENEWABLE_CARRIERS = {"Wind", "Solar", "Biomass", "Water"}
 
 # Map ISPyPSA fuel_type (the PyPSA carrier) to simple-msm commodity ids.
 # Renewables / Storage / Water carry no commodity input.
@@ -322,9 +325,18 @@ def extract_method_year_row(
     period: int,
     archetype_id: str,
     archetype_bounds: dict,
+    carbon_price: float = 0.0,
+    tns_price: float = 0.0,
 ) -> dict:
-    """Produce one simple-msm method_years row for an archetype-period."""
+    """Produce one simple-msm method_years row for an archetype-period.
+
+    carbon_price (AUD/tCO2e) is needed to strip the carbon-cost component out
+    of bundled marginal cost (the LP also had this added by the translator).
+    tns_price (AUD/tCO2) is recorded as metadata; the T&S cost is deliberately
+    retained in the intensity per the Phase 8 commission.
+    """
     gens = _load_pypsa_friendly_generators(pypsa_friendly_dir)
+    _check_carbon_pricing_columns(gens, pypsa_friendly_dir)
     fuel_tables = _load_fuel_price_tables(workbook_cache)
     load_per_period = _per_period_total_load(network)
     dispatch_per_period = _per_period_total_dispatch(network)
@@ -339,8 +351,10 @@ def extract_method_year_row(
     fuel_gj = _annual_fuel_consumption_gj(dispatch, gens)
 
     fuel_cost = _annual_fuel_cost(dispatch, gens, fuel_tables, period)
+    carbon_cost = _annual_carbon_cost(dispatch, gens, carbon_price)
     bundled_opex = float(mcost_per_period.loc[period].sum())
     non_fuel_opex = bundled_opex - fuel_cost
+    non_fuel_non_carbon_opex = non_fuel_opex - carbon_cost
     capex = float(capex_per_period.loc[period])
 
     input_coeffs = _aggregate_fuel_coefficients(fuel_gj, gens, annual_mwh, workbook_cache, period)
@@ -352,11 +366,15 @@ def extract_method_year_row(
         output_cost_per_unit=(capex + non_fuel_opex) / annual_mwh,
         bundled_cost_per_unit=(capex + bundled_opex) / annual_mwh,
         fuel_cost_per_unit=fuel_cost / annual_mwh,
+        carbon_cost_per_unit=carbon_cost / annual_mwh,
+        cost_per_unit_excl_fuel_and_carbon=(capex + non_fuel_non_carbon_opex) / annual_mwh,
         input_coeffs=input_coeffs,
         emissions=emissions,
         bounds=archetype_bounds,
         annual_mwh_delivered=annual_mwh,
         renewable_share=renewable_share,
+        carbon_price=carbon_price,
+        tns_price=tns_price,
     )
 
 
@@ -375,6 +393,40 @@ def _annual_fuel_cost(
         price = _fuel_price_per_mwh(row, fuel_tables, period)
         total += float(mwh) * float(hr) * float(price)
     return total
+
+
+def _annual_carbon_cost(
+    dispatch: pd.Series, gens: pd.DataFrame, carbon_price: float,
+) -> float:
+    """Sum of dispatch × residual_t_per_mwh × carbon_price across all generators.
+
+    Mirrors the carbon adder applied by the translator in marginal cost
+    construction. residual_t_per_mwh is pre-computed at translation time and
+    carried in the pypsa-friendly generators.csv as `isp_residual_co2_t_per_mwh`.
+    """
+    if carbon_price == 0.0 or "isp_residual_co2_t_per_mwh" not in gens.columns:
+        return 0.0
+    residual = pd.to_numeric(gens["isp_residual_co2_t_per_mwh"], errors="coerce").fillna(0.0)
+    aligned = residual.reindex(dispatch.index).fillna(0.0)
+    return float((dispatch * aligned).sum() * carbon_price)
+
+
+def _check_carbon_pricing_columns(gens: pd.DataFrame, pypsa_friendly_dir: Path) -> None:
+    """Warn if the pypsa-friendly generators.csv is missing the carbon-pricing
+    metadata columns added by the translator at this commit. A pre-redesign run
+    won't have them; postprocessor degrades to capture_rate=0 (no CCS credit)
+    silently otherwise. Surface the situation explicitly."""
+    missing = [c for c in (
+        "isp_capture_rate", "isp_residual_co2_t_per_mwh", "isp_captured_co2_t_per_mwh",
+    ) if c not in gens.columns]
+    if missing:
+        log.warning(
+            "pypsa-friendly generators.csv at %s is missing carbon-pricing "
+            "metadata columns %s; carbon cost-strip and CCS emission-reduction "
+            "will degrade to zero. Re-translate with the post-Phase-8 build "
+            "to pick these up.",
+            pypsa_friendly_dir, sorted(missing),
+        )
 
 
 def _aggregate_fuel_coefficients(
@@ -406,6 +458,11 @@ def _aggregate_emissions(
 
     Returns CO2e pollutant totals plus physical-mass CH4 and N2O (in kg/MWh).
     Physical masses are derived by reversing AR5 GWP-100 from the CO2e values.
+
+    For CCS plants, the NGER carrier factor is the *combustion* emissions; we
+    multiply by (1 - capture_rate) to get the residual (what's actually
+    emitted). capture_rate column is set by the translator from technology_type
+    (see `_add_carbon_pricing_columns` in src/ispypsa/translator/generators.py).
     """
     nger = nger_factor_table().set_index("carrier")
     h2_frac = _h2_blend_fraction_per_period(workbook_cache, period)
@@ -416,11 +473,17 @@ def _aggregate_emissions(
             continue
         carrier = gens.loc[gen_name, "carrier"]
         factors = _carrier_emission_factors(carrier, nger, h2_frac)
-        em["CO2"]      += float(gj) * factors["co2_kg_per_gj"]
-        em["CH4_CO2e"] += float(gj) * factors["ch4_co2e_kg_per_gj"]
-        em["N2O_CO2e"] += float(gj) * factors["n2o_co2e_kg_per_gj"]
-        em["CH4_physical_kg"] += float(gj) * factors["ch4_co2e_kg_per_gj"] / 28
-        em["N2O_physical_kg"] += float(gj) * factors["n2o_co2e_kg_per_gj"] / 265
+        capture_rate = pd.to_numeric(
+            gens.loc[gen_name].get("isp_capture_rate", 0.0), errors="coerce"
+        )
+        if pd.isna(capture_rate):
+            capture_rate = 0.0
+        residual_share = 1.0 - float(capture_rate)
+        em["CO2"]      += float(gj) * factors["co2_kg_per_gj"] * residual_share
+        em["CH4_CO2e"] += float(gj) * factors["ch4_co2e_kg_per_gj"] * residual_share
+        em["N2O_CO2e"] += float(gj) * factors["n2o_co2e_kg_per_gj"] * residual_share
+        em["CH4_physical_kg"] += float(gj) * factors["ch4_co2e_kg_per_gj"] * residual_share / 28
+        em["N2O_physical_kg"] += float(gj) * factors["n2o_co2e_kg_per_gj"] * residual_share / 265
     # Convert kg → tonnes per MWh for CO2e; keep physical as kg per MWh.
     return {
         "CO2":              em["CO2"]      / annual_mwh / 1000.0,
@@ -450,12 +513,37 @@ def _assemble_row(
     input_coeffs: dict, emissions: dict, bounds: dict,
     annual_mwh_delivered: float,
     renewable_share: float = 0.0,
+    carbon_cost_per_unit: float = 0.0,
+    cost_per_unit_excl_fuel_and_carbon: float | None = None,
+    carbon_price: float = 0.0,
+    tns_price: float = 0.0,
 ) -> dict:
-    """Build one method_years row."""
+    """Build one method_years row.
+
+    `output_cost_per_unit` is the legacy fuel-only-stripped intensity
+    (kept for backward compatibility with downstream readers).
+    `cost_per_unit_excl_fuel_and_carbon` is the Phase 8 carbon-stripped
+    intensity (capex + non-fuel non-carbon opex) / annual_mwh — T&S is
+    deliberately retained per the commission. If carbon_price == 0 the
+    two are numerically equal.
+    """
     input_commodities = list(input_coeffs.keys())
     input_coefficients = [input_coeffs[c] for c in input_commodities]
     co2e_pollutants = {k: v for k, v in emissions.items()
                        if k in ("CO2", "CH4_CO2e", "N2O_CO2e")}
+    if cost_per_unit_excl_fuel_and_carbon is None:
+        cost_per_unit_excl_fuel_and_carbon = output_cost_per_unit
+    # Fresh diagnostic (not an assert): the strip order should observe
+    # bundled >= excl_fuel >= excl_fuel_and_carbon. Float epsilon allowance.
+    cost_strip_monotone_ok = (
+        bundled_cost_per_unit + 1e-6 >= output_cost_per_unit
+        and output_cost_per_unit + 1e-6 >= cost_per_unit_excl_fuel_and_carbon
+        if not (
+            pd.isna(bundled_cost_per_unit) or pd.isna(output_cost_per_unit)
+            or pd.isna(cost_per_unit_excl_fuel_and_carbon)
+        )
+        else True  # diagnostic skipped for empty rows
+    )
     return {
         "method_id": f"electricity__grid_supply__{archetype_id}",
         "year": period,
@@ -479,6 +567,11 @@ def _assemble_row(
         "availability_conditions": bounds.get("availability_conditions", "national_frontier"),
         "diagnostic_bundled_cost_per_unit": bundled_cost_per_unit,
         "diagnostic_fuel_cost_per_unit":   fuel_cost_per_unit,
+        "diagnostic_carbon_cost_per_unit": carbon_cost_per_unit,
+        "diagnostic_cost_per_unit_excl_fuel_and_carbon": cost_per_unit_excl_fuel_and_carbon,
+        "diagnostic_cost_strip_monotone_ok": cost_strip_monotone_ok,
+        "diagnostic_carbon_price_AUD_per_tCO2e": carbon_price,
+        "diagnostic_tns_price_AUD_per_tCO2": tns_price,
         "diagnostic_annual_mwh_delivered": annual_mwh_delivered,
         "diagnostic_ch4_physical_kg_per_mwh": emissions.get("CH4_physical_kg_per_mwh", 0.0),
         "diagnostic_n2o_physical_kg_per_mwh": emissions.get("N2O_physical_kg_per_mwh", 0.0),

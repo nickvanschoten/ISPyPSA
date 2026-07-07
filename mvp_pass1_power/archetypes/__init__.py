@@ -28,6 +28,7 @@ from ._pumped_storage_fix import apply as _pumped_storage_fix_apply
 from ._maintenance_overlay import apply as _maintenance_overlay_apply
 from ._repowering import apply as _repowering_apply
 from ._biomass_cap import apply as _biomass_cap_apply
+from ._biomass_feedstock_cost import apply as _biomass_feedstock_cost_apply
 from .cost_optimal import apply as cost_optimal_apply
 from .rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
 from .gas_fleet_maintained import apply as gas_fleet_maintained_apply
@@ -46,7 +47,7 @@ PRODUCTION_ARCHETYPES = [
 
 
 def _with_pre_passes(archetype_fn):
-    """Wrap an archetype mutation with four cross-archetype pre-passes:
+    """Wrap an archetype mutation with five cross-archetype pre-passes:
 
       1. Pumped-storage fix — re-route Wivenhoe / Shoalhaven / Borumba / Snowy 2.0
          from ecaa_generators to ecaa_batteries so they are modelled as PyPSA
@@ -70,8 +71,18 @@ def _with_pre_passes(archetype_fn):
          ~70x current Australian usage. ARENA Bioenergy Roadmap 2021 +
          AEMO ISP 2024 baseline. See _biomass_cap.py.
 
+      5. Phase 8.x biomass feedstock cost — re-prices biomass feedstock from
+         the IASR $0.66/GJ residue-tier value to a scale-appropriate
+         beyond-residue delivered cost ($6.0/GJ, IRENA locally-collected
+         tier). The capacity cap (pre-pass 4) bounded biomass MW but the
+         5 GW fleet still ran ~77 % CF as cheap firm baseload on unlimited
+         residue-priced feedstock; this corrects the running economics so
+         biomass's CF is an economic output. See _biomass_feedstock_cost.py.
+
     Pre-passes run on EVERY archetype so all six see consistent baseline
-    accounting before per-archetype mutations are applied.
+    accounting before per-archetype mutations are applied. The biomass
+    feedstock re-price (5) runs after the capacity cap (4) — order does not
+    matter between them (one edits a price table, the other a constraint).
     """
 
     def wrapped(ispypsa_tables, config):
@@ -79,6 +90,7 @@ def _with_pre_passes(archetype_fn):
         ispypsa_tables = _maintenance_overlay_apply(ispypsa_tables, config)
         ispypsa_tables = _repowering_apply(ispypsa_tables, config)
         ispypsa_tables = _biomass_cap_apply(ispypsa_tables, config)
+        ispypsa_tables = _biomass_feedstock_cost_apply(ispypsa_tables, config)
         return archetype_fn(ispypsa_tables, config)
 
     wrapped.__name__ = f"{archetype_fn.__name__}_with_pre_passes"
