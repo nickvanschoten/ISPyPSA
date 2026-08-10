@@ -1,10 +1,11 @@
 """Parse AEMO FINAL 2026 ISP traces into the ISPyPSA `get_data` layout.
 
 This is the FINAL-data sibling of `parse_2026_traces.py` (which parsed the
-DRAFT 2026 release). It is a near-verbatim copy: every 2026 convention
-(RefYear5000->2018 relabel, demand "<REGION>_" prefix strip, Q8a/b/c split-
-aware regex, POE50 + OPSO_MODELLING + Step Change filter, single-process
-parse) is preserved exactly. Only four things change for the FINAL release:
+DRAFT 2026 release). It preserves the 2026 conventions (demand
+"<REGION>_" prefix strip, Q8a/b/c split-aware regex, and single-process
+parse) while retaining the AEMO reference year from each VRE archive.
+The existing 2018 VRE partition is deliberately preserved byte-for-byte.
+Only four things change for the FINAL release:
 
 1. Input paths point at "iasr inputs/2026 ISP Final/...". The FINAL solar and
    wind CSVs live in a nested "solar/" / "wind/" subdir (the draft files sat
@@ -28,16 +29,18 @@ parse) is preserved exactly. Only four things change for the FINAL release:
 The produced store layout is identical to the draft:
 
     data/trace_data_final/isp_2026/
-        project/reference_year=2018/        # solar + wind, existing generators
-        zone/reference_year=2018/           # solar + wind, REZs
+    project/reference_year=2011..2025/  # solar + wind, existing generators
+    zone/reference_year=2011..2025/     # solar + wind, REZs
         demand/scenario=Step Change/reference_year=<y>/
 
 Run:  uv run python scripts/parse_2026_final_traces.py
 """
 
 import logging
+import os
 import re
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -65,10 +68,12 @@ INPUTS = REPO / "iasr inputs" / "2026 ISP Final"
 SOLAR_CSV = INPUTS / "2026 ISP Solar traces" / "solar"
 WIND_CSV = INPUTS / "2026 ISP Wind traces" / "wind"
 OUT = REPO / "data" / "trace_data_final" / "isp_2026"
-FLAT = REPO / "data" / "trace_data_final" / "_flat_2026"  # transient per-type parsed files
+_requested_years = os.environ.get("ISP_PARSE_YEARS", "")
+VRE_YEARS = tuple(int(y) for y in _requested_years.split(",") if y) if _requested_years else tuple(range(2011, 2026))
+FLAT = REPO / "data" / "trace_data_final" / ("_flat_2026_" + ("_".join(map(str, VRE_YEARS)) if _requested_years else "all"))
 
-TARGET_REFERENCE_YEAR = 2018  # relabel the synthetic VRE RefYear5000 onto this year
-SYNTHETIC_VRE_YEAR = 5000
+STAGING = INPUTS / "_extracted_vre"
+VRE_YEARS_TO_ADD = tuple(y for y in VRE_YEARS if y != 2018)
 
 MAPPING_DIR = Path(solar_traces.__file__).parent.parent / "isp_trace_name_mapping_configs"
 
@@ -204,20 +209,42 @@ WIND_PROJECT_OVERRIDES = {
 
 def parse_2026_final_traces():
     _clean_dirs()
-    with _vre_relabelled_to(TARGET_REFERENCE_YEAR), _demand_region_prefix_stripped():
+    _extract_vre_archives()
+    with _vre_metadata_split_aware():
         with _vre_maps_overridden():
             _parse_vre_split_by_filetype()
-        _parse_step_change_demand()
     _optimise_into_get_data_layout()
     _remove_transient_flat_files()
     logging.info(f"Done. FINAL 2026 trace store written to {OUT}")
 
 
 def _clean_dirs():
-    for d in (OUT, FLAT):
-        if d.exists():
-            shutil.rmtree(d)
-        d.mkdir(parents=True)
+    # Never remove OUT: the committed reference_year=2018 VRE partition and
+    # the already-ingested demand partitions are inputs to this incremental run.
+    if FLAT.exists():
+        shutil.rmtree(FLAT)
+    FLAT.mkdir(parents=True)
+    (OUT / "project").mkdir(parents=True, exist_ok=True)
+    (OUT / "zone").mkdir(parents=True, exist_ok=True)
+
+
+def _extract_vre_archives():
+    """Extract each downloaded archive to a year-specific staging directory."""
+    import zipfile
+
+    if STAGING.exists() and all((STAGING / kind).exists() for kind in ("solar", "wind")):
+        return
+    if STAGING.exists():
+        shutil.rmtree(STAGING)
+    for kind, folder_name in (("solar", "2026 ISP Solar traces"), ("wind", "2026 ISP Wind traces")):
+        for year in VRE_YEARS:
+            archive = INPUTS / folder_name / f"ISP {kind.title()} Traces r{year}.zip"
+            if not archive.exists():
+                raise FileNotFoundError(f"Missing AEMO archive: {archive}")
+            target = STAGING / kind / f"r{year}"
+            target.mkdir(parents=True)
+            with zipfile.ZipFile(archive) as zf:
+                zf.extractall(target)
 
 
 def _parse_vre_split_by_filetype():
@@ -227,14 +254,25 @@ def _parse_vre_split_by_filetype():
     them); likewise for zones. We parse with a file_type filter so the parser tags
     each parquet with the right `project`/`zone` column.
     """
-    parse_solar_traces(SOLAR_CSV, FLAT / "project", use_concurrency=False,
-                       filters=SolarMetadataFilter(file_type=["project"]))
-    parse_wind_traces(WIND_CSV, FLAT / "project", use_concurrency=False,
-                      filters=WindMetadataFilter(file_type=["project"]))
-    parse_solar_traces(SOLAR_CSV, FLAT / "zone", use_concurrency=False,
-                       filters=SolarMetadataFilter(file_type=["zone"]))
-    parse_wind_traces(WIND_CSV, FLAT / "zone", use_concurrency=False,
-                      filters=WindMetadataFilter(file_type=["zone"]))
+    # The parser's default is os.cpu_count()-2 workers, which is excessive for
+    # these large 2026 CSVs on Windows. Bound joblib to four workers while
+    # retaining the upstream concurrency implementation.
+    original_cpu_count = os.cpu_count
+    os.cpu_count = lambda: 6
+    try:
+        for year in VRE_YEARS_TO_ADD:
+            solar_csv = STAGING / "solar" / f"r{year}"
+            wind_csv = STAGING / "wind" / f"r{year}"
+            parse_solar_traces(solar_csv, FLAT / "project", use_concurrency=True,
+                               filters=SolarMetadataFilter(file_type=["project"]))
+            parse_wind_traces(wind_csv, FLAT / "project", use_concurrency=True,
+                              filters=WindMetadataFilter(file_type=["project"]))
+            parse_solar_traces(solar_csv, FLAT / "zone", use_concurrency=True,
+                               filters=SolarMetadataFilter(file_type=["zone"]))
+            parse_wind_traces(wind_csv, FLAT / "zone", use_concurrency=True,
+                              filters=WindMetadataFilter(file_type=["zone"]))
+    finally:
+        os.cpu_count = original_cpu_count
 
 
 def _parse_step_change_demand():
@@ -248,8 +286,27 @@ def _parse_step_change_demand():
 
 def _optimise_into_get_data_layout():
     """Combine flat per-trace parquet into the hive-partitioned store get_data reads."""
+    _trim_flat_to_model_horizon()
     partition_traces_by_columns(f"{FLAT / 'project'}/*.parquet", str(OUT / "project"),
                                 partition_cols=["reference_year"])
+
+
+def _trim_flat_to_model_horizon():
+    """Keep only the model horizon from AEMO's wider trace archive span."""
+    import pyarrow.compute as pc
+    import pyarrow.parquet as pq
+
+    start = datetime(2026, 7, 1, 0, 30)
+    end = datetime(2051, 7, 1, 0, 0)
+    for kind in ("project", "zone"):
+        for path in (FLAT / kind).glob("*.parquet"):
+            table = pq.read_table(path)
+            mask = pc.and_(pc.greater_equal(table["datetime"], start),
+                           pc.less_equal(table["datetime"], end))
+            trimmed = table.filter(mask)
+            temp = path.with_suffix(".trimmed.parquet")
+            pq.write_table(trimmed, temp)
+            temp.replace(path)
     partition_traces_by_columns(f"{FLAT / 'zone'}/*.parquet", str(OUT / "zone"),
                                 partition_cols=["reference_year"])
     partition_traces_by_columns(f"{FLAT / 'demand'}/*.parquet", str(OUT / "demand"),
@@ -305,38 +362,24 @@ def _extract_wind_trace_metadata_split_aware(filename):
     raise ValueError(f"Filename '{filename}' does not match the expected pattern")
 
 
-class _vre_relabelled_to:
-    """Relabel the synthetic VRE reference year (5000) onto `year` during parsing.
+class _vre_metadata_split_aware:
+    """Route VRE metadata through extractors that retain the native year.
 
-    Also routes extraction through the split-aware extractors so the 2026 Q8-split
-    zone codes (Q8a/b/c) parse as zones rather than mis-classified projects.
+    The 2026 Q8-split zone codes (Q8a/b/c) must parse as zones rather than
+    mis-classified projects. Unlike the original interim parser, no reference
+    year is relabelled.
     """
-
-    def __init__(self, year):
-        self.year = year
 
     def __enter__(self):
         self._orig_solar = solar_traces.extract_solar_trace_metadata
         self._orig_wind = wind_traces.extract_wind_trace_metadata
-        solar_traces.extract_solar_trace_metadata = self._relabel(_extract_solar_trace_metadata_split_aware)
-        wind_traces.extract_wind_trace_metadata = self._relabel(_extract_wind_trace_metadata_split_aware)
+        solar_traces.extract_solar_trace_metadata = _extract_solar_trace_metadata_split_aware
+        wind_traces.extract_wind_trace_metadata = _extract_wind_trace_metadata_split_aware
         return self
 
     def __exit__(self, *exc):
         solar_traces.extract_solar_trace_metadata = self._orig_solar
         wind_traces.extract_wind_trace_metadata = self._orig_wind
-
-    def _relabel(self, extractor):
-        year = self.year
-
-        def relabelled(filename):
-            metadata = extractor(filename)
-            if metadata["reference_year"] == SYNTHETIC_VRE_YEAR:
-                metadata["reference_year"] = year
-            return metadata
-
-        return relabelled
-
 
 class _demand_region_prefix_stripped:
     """Strip the 2026 "<REGION>_" filename prefix so the parser's regex matches."""

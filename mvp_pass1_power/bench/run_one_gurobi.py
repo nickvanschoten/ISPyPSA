@@ -35,20 +35,36 @@ def main():
     ap.add_argument("--archetype", default="cost_optimal")
     ap.add_argument("--gurobi-bar-conv-tol", type=float, default=None,
                     help="Set Gurobi BarConvTol (default 1e-8); e.g. 1e-3 for relaxed run")
+    ap.add_argument("--gurobi-method", type=int, default=None,
+                    help="Gurobi Method (2=barrier); passthrough to instrumented_runner")
+    ap.add_argument("--gurobi-crossover", type=int, default=None,
+                    help="Gurobi Crossover (0=off -> interior solution)")
+    ap.add_argument("--gurobi-numeric-focus", type=int, default=None,
+                    help="Gurobi NumericFocus (0=auto, 1-3 increasing care)")
+    ap.add_argument("--gurobi-bar-homogeneous", type=int, default=None,
+                    help="Gurobi BarHomogeneous (-1 auto, 0 off, 1 on) — robust on ill-conditioned LPs")
     args = ap.parse_args()
 
     LOGS.mkdir(parents=True, exist_ok=True)
     RECORDS.mkdir(parents=True, exist_ok=True)
     log_path = LOGS / f"{args.run_id}.log"
 
-    tol_flag = (f"--gurobi-bar-conv-tol {args.gurobi_bar_conv_tol}"
-                if args.gurobi_bar_conv_tol is not None else "")
-    solver_label = (f"Gurobi BarConvTol={args.gurobi_bar_conv_tol}"
-                    if args.gurobi_bar_conv_tol is not None else "Gurobi default")
+    flags = "--use-gurobi"
+    if args.gurobi_bar_conv_tol is not None:
+        flags += f" --gurobi-bar-conv-tol {args.gurobi_bar_conv_tol}"
+    if args.gurobi_method is not None:
+        flags += f" --gurobi-method {args.gurobi_method}"
+    if args.gurobi_crossover is not None:
+        flags += f" --gurobi-crossover {args.gurobi_crossover}"
+    if args.gurobi_numeric_focus is not None:
+        flags += f" --gurobi-numeric-focus {args.gurobi_numeric_focus}"
+    if args.gurobi_bar_homogeneous is not None:
+        flags += f" --gurobi-bar-homogeneous {args.gurobi_bar_homogeneous}"
+    solver_label = f"Gurobi [{flags}]"
     cmd_str = (
         f'"{sys.executable}" -u "{BENCH / "instrumented_runner.py"}" '
         f"--config \"{args.config}\" --run-id \"{args.run_id}\" "
-        f"--archetype {args.archetype} --use-gurobi {tol_flag} "
+        f"--archetype {args.archetype} {flags} "
         f'> "{log_path}" 2>&1'
     )
     print(f"Launching {args.run_id} (budget {args.budget_min:.0f} min, {solver_label})")
