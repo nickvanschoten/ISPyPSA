@@ -185,8 +185,13 @@ data/*
 # IDE specific files
 .vscode/
 .DS_Store
-# ignore claude stuff
+# ignore claude stuff (local session state, never repo material)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+/memory/
+
+# local presentation assets not referenced by the codebase
+/CSIRO_Logo.png
 
 # ignore all pypsa output files
 *.nc
