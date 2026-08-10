@@ -28,6 +28,21 @@ _HYDRO_MONTHLY_CF = {
 }
 
 
+# Empirical NEM-wide realised annual capacity factor for conventional (non-pumped)
+# hydro, used to cap total annual Water-carrier generation via a GlobalConstraint
+# (see `_add_hydro_energy_budget_constraint`). `_HYDRO_MONTHLY_CF` above is only a
+# ceiling on instantaneous output; paired with hydro's near-zero marginal cost, the
+# LP dispatches Water generators at ~that ceiling in almost every hour, which
+# overstates annual hydro generation because real hydro is water-limited, not just
+# capacity-limited. AEMO Quarterly Energy Dynamics reports show average NEM hydro
+# output of ~1,344 MW (Q1 2024) to ~1,612 MW (Q4 2024) against ~6.9 GW of installed
+# conventional hydro capacity -- an annual CF of roughly 0.20, well below the
+# _HYDRO_MONTHLY_CF ceiling's ~0.37 mean.
+_HYDRO_ANNUAL_CF = 0.20
+
+_HOURS_PER_YEAR = 8760
+
+
 def _build_seasonal_hydro_trace(snapshots: pd.MultiIndex) -> pd.DataFrame:
     """Build a wind/solar-shaped trace DataFrame for Water-carrier generators.
 
@@ -168,6 +183,39 @@ def _add_generators_to_network(
         ),
         axis=1,
     )
+
+
+def _add_hydro_energy_budget_constraint(network: pypsa.Network) -> None:
+    """Caps total annual Water-carrier generation at a realistic energy budget.
+
+    Adds a PyPSA `GlobalConstraint` (type "operational_limit") per investment
+    period, so the LP must allocate a limited annual water budget to its
+    highest-value hours rather than dispatching hydro at its `p_max_pu`
+    ceiling in every hour. Does nothing if the network has no Water generators.
+
+    Args:
+        network: The `pypsa.Network` object, with generators already added.
+
+    Returns: None
+    """
+    water_capacity_mw = network.generators.loc[
+        network.generators["carrier"] == "Water", "p_nom"
+    ].sum()
+    if water_capacity_mw == 0:
+        return
+
+    annual_budget_mwh = water_capacity_mw * _HYDRO_ANNUAL_CF * _HOURS_PER_YEAR
+
+    for period, years in network.investment_period_weightings["years"].items():
+        network.add(
+            "GlobalConstraint",
+            f"water_annual_energy_budget_{period}",
+            type="operational_limit",
+            carrier_attribute="Water",
+            sense="<=",
+            constant=annual_budget_mwh * years,
+            investment_period=period,
+        )
 
 
 def _add_custom_constraint_generators_to_network(

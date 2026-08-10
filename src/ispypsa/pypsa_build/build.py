@@ -11,6 +11,7 @@ from ispypsa.pypsa_build.custom_constraints import _add_custom_constraints
 from ispypsa.pypsa_build.generators import (
     _add_custom_constraint_generators_to_network,
     _add_generators_to_network,
+    _add_hydro_energy_budget_constraint,
 )
 from ispypsa.pypsa_build.initialise import _initialise_network
 from ispypsa.pypsa_build.investment_period_weights import _add_investment_period_weights
@@ -77,6 +78,8 @@ def build_pypsa_network(
         pypsa_friendly_tables["generators"],
         path_to_pypsa_friendly_timeseries_data,
     )
+
+    _add_hydro_energy_budget_constraint(network)
 
     if "batteries" in pypsa_friendly_tables.keys():
         _add_batteries_to_network(network, pypsa_friendly_tables["batteries"])
