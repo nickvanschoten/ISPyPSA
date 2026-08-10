@@ -26,14 +26,46 @@
 >
 > Evidence: [`bench/phase81_test3_addendum.md`](bench/phase81_test3_addendum.md).
 >
-> **Generalisation status (2026-06-03 ~11:30):** a 5-archetype 2040 8760
-> verification (rcp, fi, gfm, nb, sl) is mid-flight on Optimus-NC. Iteration
-> trajectories at ~9 h wall-clock show four archetypes (rcp/fi/gfm/nb) converging
-> on the 1e-3 metrics within budget; storage_led is on a slow long tail (gap_rel
-> 1.20e-2 at iter 36000) consistent with the existing "storage_led 1e-3 is the
-> practical floor" caveat now extended to 8760. **Final 8760 capacities for
-> rcp/fi/gfm/nb have not yet been written out.** Once they have, this notice
-> should be updated with the wind-vs-3-week delta per archetype.
+> **Generalisation status (FINAL) — falsified at 3/3 converged archetypes.**
+> The 5-archetype 2040 8760 verification ran on Optimus-NC; the three
+> archetypes that reached PDLP-1e-3 convergence (cost_optimal, rcp, gfm)
+> all show the same wind uplift at 8760 vs 3-week production:
+>
+> | Archetype | Wind 3-week | Wind 8760 | Uplift |
+> |---|---:|---:|---:|
+> | cost_optimal | 23.67 GW | 27.58 GW | **+16.5 %** |
+> | rapid_coal_phaseout | 27.98 GW | 32.74 GW | **+17.0 %** |
+> | gas_fleet_maintained | 27.98 GW | 32.74 GW | **+17.0 %** (≡ rcp at 2040, see below) |
+>
+> The original Phase 7.4 claim was universal ("the LP structurally prefers
+> less wind"). Three independent converged archetypes rejecting it — all
+> with the same ~16–17 % uplift direction and magnitude — is sufficient to
+> falsify the universal. The framing is wrong as a general LP property.
+>
+> **The two non-completing runs do not resurrect the universal**:
+> - storage_led plateaued at gap_rel ~9e-3 (descent ~1.02× per 4000-iter
+>   window) — the "no coal, no gas" forcing creates storage-SOC degeneracy
+>   PDLP-1e-3 cannot tighten. Extends the existing 3-week "storage_led 1e-3
+>   floor" caveat to 8760. **Not a clean test of endogenous wind response
+>   anyway** — sl is storage-constrained by archetype design.
+> - nuclear_baseload and fossil_incumbent both stopped 1–3 h short of [L]
+>   termination with gap and dinf already under 1e-3 and pinf bouncing at
+>   1.7–2.0e-3 (adaptive-restart tail). The runs were ended deliberately
+>   when the team retired the forced-style archetype structure; the
+>   trajectory shapes match the converged archetypes' (rcp/gfm/co) at
+>   equivalent iter counts, suggesting they would have landed in the same
+>   wind-uplift regime had they been allowed to terminate.
+>
+> The gfm-and-rcp identity at 2040 (digit-for-digit through PDLP terminal
+> iter 35,840) is a separate, equally important structural finding: the
+> 2030+2035 gas-floor mandate cannot bind at single-period myopic 2040
+> because nothing carries earlier-year build state forward. **gfm IS rcp
+> at single-period 2040 by LP construction.** Documented under §1.4 of
+> [STATUS_PRE_REDESIGN.md](STATUS_PRE_REDESIGN.md).
+>
+> Evidence sources for the 3/3 finalisation:
+> - [`bench/phase81_test3_addendum.md`](bench/phase81_test3_addendum.md) — cost_optimal 2040
+> - [`bench/phase81_clip_fix_and_5archetype_verification.md`](bench/phase81_clip_fix_and_5archetype_verification.md) — rcp/gfm convergence + sl/nb/fi mid-flight states
 >
 > **What still stands** from the original Phase 7.4 below:
 > - The rep-week distortion mechanism analysis (§7.4.1) is correct *as a

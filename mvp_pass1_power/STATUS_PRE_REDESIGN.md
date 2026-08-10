@@ -56,18 +56,37 @@ The wind-vs-AEMO gap narrows from ~10 GW (3-week) to ~5 GW (8760) for
 cost_optimal 2040. Whether the residual ~5 GW is data-side (IASR feed),
 framing-side (POE50 vs underlying demand), or model-side is unresolved.
 
-### 1.4 gfm-collapse confirmed at 8760
+### 1.4 gfm ≡ rcp confirmed structural — single-period myopic has no inter-period inheritance
 
-The 5-archetype 2040 verification (in flight as of 2026-06-03 11:30) shows
-`gas_fleet_maintained` and `rapid_coal_phaseout` solving to **identical
-PDLP iteration trajectories digit-for-digit through iteration 32,000**
-(same iterate values, same gap_rel = 1.08e-3, same pinf = 6.61e-04). This
-confirms the Phase 6/7 finding that the 12,500 MW gas mandate is
-**non-binding** at the LP's natural transition-gas response — and the
-finding is robust to the 8760 resolution upgrade. Unlike the wind result
-(rep-week artefact), the gfm-collapse is a real structural property of the
-model: under coal-by-2030 with IASR demand growth and IASR fuel costs, the
-LP builds gas at or above the mandate floor irrespective of resolution.
+The 5-archetype 2040 verification ran on Optimus-NC and confirmed that
+`gas_fleet_maintained` and `rapid_coal_phaseout` solve to **bit-identical
+LPs at 2040 single-period myopic**:
+
+| | rcp 2040 8760 | gfm 2040 8760 |
+|---|---:|---:|
+| LP rows | 39,194,880 | 39,194,880 (identical) |
+| LP cols | 18,077,904 | 18,077,904 (identical) |
+| LP nonzeros | 72,494,603 | 72,494,603 (identical) |
+| PDLP iter trajectory | every printed iter (0, 4000, …, 32000) | digit-identical Pobj/Dobj/gap/pinf/dinf |
+| PDLP terminal iter | 35,840 [L] | 35,840 [L] (identical) |
+| Final convergence | gap 9.96e-04 / pinf 8.56e-04 / dinf 5.98e-07 | identical to every sig fig |
+| Objective | $13,477,681,276 | $13,477,681,276 (identical to the dollar) |
+
+**This is structural, not behavioural.** The gas-floor mandate is for
+years 2030 and 2035 only; neither falls inside the single-period 2040
+investment-periods set. Without cross-period build inheritance the
+2030/2035 mandate cannot bind at 2040, so gfm's LP IS rcp's LP at
+single-period 2040 by construction. The Phase 6/7 "gfm collapses onto
+rcp" finding is correct, but the mechanism is sharper than originally
+characterised: **it's an architectural property of single-period myopic
+mode (no inter-period build inheritance), not a "naturally-builds-enough-
+gas-anyway" behavioural outcome.**
+
+This finding is direct evidence that **the current production structure
+is independent-static-per-year** — see §5.1 for how this carries into the
+redesign reconnaissance.
+
+Evidence: [`bench/phase81_clip_fix_and_5archetype_verification.md`](bench/phase81_clip_fix_and_5archetype_verification.md).
 
 ### 1.5 Rooftop clip fix
 
@@ -104,10 +123,13 @@ LP builds gas at or above the mandate floor irrespective of resolution.
 767 passed, 1 skipped, 6 failed in 190 s
 ```
 
-The two `tests/test_translator/test_buses.py` cases now assert
-negative-load pass-through and contribute to the +1 (was 766/766 prior to
-the rooftop fix; 767 is the new baseline after retitling the same two
-tests to enforce the new semantics).
+The "passed" total moved from the prior 766/766 invariant to 767 because
+the two `tests/test_translator/test_buses.py` cases now assert
+negative-load pass-through (positive `(... < 0.0).any()` assertions on
+both expected and got traces) in addition to the legacy unchanged
+content. **The invariant is not silently degrading from 766**: 767 is
+the new floor after the deliberate addition of regression coverage for
+the clip-fix semantics.
 
 The 6 failures are pre-existing CLI infrastructure issues in
 `tests/test_cli/`:
@@ -129,12 +151,13 @@ as both a task (at [src/ispypsa/cli/dodo.py:743](src/ispypsa/cli/dodo.py#L743))
 
 > `iasr_scenario_mapping.csv' is a target for cache_required_iasr_workbook_tables and cache_required_iasr_workbook_tables.`
 
-**Confirmed pre-existing**: `tests/test_cli/` does not import
-`src/ispypsa/translator/buses.py` and has no dependency on the rooftop
-clip. The duplicate-target bug lives in `dodo.py` whose last edit
-predates Phase 8.1 work (commit `c67154d`, "testing feedback and fixes").
-These failures are tracked separately and are NOT a regression caused
-by this branch.
+**Confirmed pre-existing** (verified at finalisation): re-ran
+`tests/test_cli/` at parent commit `544325d` (one before the clip fix
+`3f3439e`) — same 6 failures, same error pattern, 1 passed, 1 skipped.
+`tests/test_cli/` does not import `src/ispypsa/translator/buses.py`; the
+duplicate-target bug in `dodo.py` predates Phase 8.1 work. **These
+failures are tracked separately, unrelated to grid-electricity modelling,
+and are NOT a regression caused by this branch.**
 
 ---
 
@@ -188,38 +211,61 @@ by this branch.
 
 ## 3. Known loose ends (explicit, not hidden)
 
-### 3.1 5-archetype 8760 verification — in flight at sign-off
+### 3.1 5-archetype 8760 verification — completed (rcp, gfm) + stopped (sl, nb, fi)
 
 The verification asking "does the wind reversal generalise beyond
-cost_optimal?" is **mid-flight as of 2026-06-03 ~11:30**. Five PDLP-1e-3
-runs started ~02:40 the same day on Optimus-NC. Iteration trajectories
-at ~9 h wall-clock:
+cost_optimal?" ran on Optimus-NC and was **deliberately stopped by the
+team after ~14 h** when the redesign direction (carbon-price sweep
+replacing the forced-style archetype catalogue) was settled. Two
+archetypes converged with saved NetCDFs; three were stopped before [L]
+termination and are recorded here as superseded characteristics, not
+deliverables.
 
-| Archetype | Iter | gap_rel | pinf_rel | dinf_rel | Status |
-|---|---:|---:|---:|---:|---|
-| cost_optimal | 25,200 | 9.93e-04 ✓ | 8.79e-04 ✓ | 1.73e-06 ✓ | Test 3 — converged |
-| rapid_coal_phaseout | 32,000 | 1.08e-03 | 6.61e-04 | 1.31e-06 | very close |
-| fossil_incumbent | 40,000 | 7.11e-04 ✓ | 7.50e-03 ✗ | 7.05e-08 | gap converged, pinf needs more iters |
-| gas_fleet_maintained | 32,000 | 1.08e-03 | 6.61e-04 | 1.31e-06 | digit-identical to rcp ≤ 32k |
-| nuclear_baseload | 32,000 | 1.06e-03 | 1.12e-03 | 2.04e-07 | very close |
-| storage_led | 36,000 | 1.20e-02 ✗ | 3.81e-04 ✓ | 8.99e-06 | hard tail; gap 12× above target |
+Final state at stop:
 
-**Implication for sign-off:**
+| Archetype | Status | Wall (h) | PDLP iters | gap_rel | pinf_rel | dinf_rel |
+|---|---|---:|---:|---:|---:|---:|
+| **rcp** | ✓ converged [L] | 8.89 | 35,840 | 9.96e-04 ✓ | 8.56e-04 ✓ | 5.98e-07 ✓ |
+| **gfm** | ✓ converged [L] (≡ rcp bit-identically) | ~9.0 | 35,840 | 9.96e-04 ✓ | 8.56e-04 ✓ | 5.98e-07 ✓ |
+| nb | ✗ stopped near-converged | ~14 | 48,000 | 2.94e-04 ✓ | 1.78e-03 | 2.01e-07 ✓ |
+| fi | ✗ stopped near-converged | ~14 | 60,000 | 4.99e-04 ✓ | 1.94e-03 | 1.37e-08 ✓ |
+| sl | ✗ stopped on slow-tail | ~14 | 56,000 | 9.02e-03 | 2.80e-04 ✓ | 2.18e-06 ✓ |
 
-- The four "easier" archetypes (rcp, fi, gfm, nb) are tracking toward
-  convergence. Final capacity numbers are not yet written out, so the
-  wind-reversal generalisation claim remains *inferred from trajectory*,
-  not *confirmed from capacities*.
-- `storage_led` 2040 at 8760 is in the same "hard archetype-year"
-  category as `storage_led` 2035 at 3-week was at Phase 7.2. The 1e-3
-  tolerance floor caveat documented in [`PHASE7_FINDINGS.md`](PHASE7_FINDINGS.md)
-  §0.4 extends to 8760. **No autonomous tolerance relaxation has been
-  applied** — the run is left to its budget.
-- The team may choose to either (a) wait for the 4 easy archetypes to
-  finish before tagging, or (b) tag now with this state documented and
-  re-tag (or amend the tag) once the verification capacities are
-  available. The redesign does not depend on this verification
-  completing first.
+**Wind-reversal 3-week → 8760, all converged archetypes:**
+
+| Archetype | 3-week Wind | 8760 Wind | Uplift |
+|---|---:|---:|---:|
+| cost_optimal | 23.67 GW | 27.58 GW | **+16.5 %** |
+| rapid_coal_phaseout | 27.98 GW | 32.74 GW | **+17.0 %** |
+| gas_fleet_maintained | 27.98 GW | 32.74 GW | **+17.0 %** |
+
+**The wind reversal generalises 3/3 converged archetypes.** Phase 7.4's
+universal "structural anti-wind preference" is decisively falsified.
+PHASE7_4_FINDINGS.md correction finalised at 3/3.
+
+**Why the three stopped runs are recorded as superseded — not re-opened:**
+
+- **storage_led plateau at gap 9.02e-03 with descent ~1.02×/window**:
+  the "no coal, no gas" archetype forces massive storage-SOC chains that
+  create PDLP-degenerate LP behaviour. Extends the existing 3-week
+  "storage_led 1e-3 floor" caveat to 8760. **No autonomous tolerance
+  relaxation applied — superseded.** storage_led is a forced-style
+  archetype the redesign abandons; it's also the least-clean test of
+  endogenous wind response (storage-constrained by archetype design).
+- **nuclear_baseload and fossil_incumbent near-converged-stopped**:
+  both have gap ✓ and dinf ✓; only pinf is bouncing in the
+  adaptive-restart tail (1.78e-3 and 1.94e-3 respectively). They
+  would have completed within another 1-3 h had they been allowed to
+  run, but the team retired the forced-style archetype structure
+  before that point. **NetCDFs not recovered — superseded.**
+- **Full 8760 production wall (~3.8 days at 6-way parallel)** is also
+  superseded: the redesign emits a carbon-price-sweep deliverable, not
+  6 archetype × 6-year cells.
+
+The trajectories at stop are preserved in `bench/logs/p81v_*.log` and
+the convergence-state in `bench/records/p81v_*.json`; see
+[`bench/phase81_clip_fix_and_5archetype_verification.md`](bench/phase81_clip_fix_and_5archetype_verification.md)
+for the full narrative.
 
 ### 3.2 The 6 pre-existing CLI test failures
 
@@ -296,8 +342,10 @@ fix as a separate task. Decision deferred to the sign-off commit step.
 | Phase 8.1 compute survey | `bench/compute_survey_new_machine.md` | Optimus-NC characterisation |
 | Rooftop fix documentation | `bench/rooftop_export_accounting.md`, `bench/rooftop_clip_fix_scoping.md` | Diagnostic + scoping for the fix |
 | Phase 8.1 analysis scripts | `bench/analyse_test2_4week.py`, `bench/analyse_test3_8760.py`, `bench/analyse_variance_substudy.py`, `bench/compare_test1_gurobi_pdlp.py`, `bench/phase81_progress.py`, `bench/run_variance_2_to_5.sh` | Reproducibility of the Phase 8.1 analyses |
-| Phase 8.1 solver logs (completed runs) | `bench/logs/p81fix_*`, `bench/logs/p81t1_*`, `bench/logs/p81t2_*`, `bench/logs/p81t3_*`, `bench/logs/p81vs_*` | Audit trail (small, KB-scale; matches existing bench/logs convention) |
-| Phase 8.1 bench records (completed runs) | `bench/records/p81fix_*`, `bench/records/p81t1_*`, `bench/records/p81t2_*`, `bench/records/p81t3_*`, `bench/records/p81vs_*` | Audit trail |
+| Phase 8.1 solver logs (Tests 1-3 + variance + smoke) | `bench/logs/p81fix_*`, `bench/logs/p81t1_*`, `bench/logs/p81t2_*`, `bench/logs/p81t3_*`, `bench/logs/p81vs_*` | Audit trail (small, KB-scale; matches existing bench/logs convention) |
+| Phase 8.1 bench records (Tests 1-3 + variance + smoke) | `bench/records/p81fix_*`, `bench/records/p81t1_*`, `bench/records/p81t2_*`, `bench/records/p81t3_*`, `bench/records/p81vs_*` | Audit trail |
+| 5-archetype verification logs + records | `bench/logs/p81v_*.log`, `bench/records/p81v_*.json` | rcp/gfm converged with [L] terminal; sl/nb/fi stopped before [L]. All five log trajectories preserved as audit trail for the falsification evidence on Phase 7.4. |
+| Clip-fix + 5-archetype verification report | `bench/phase81_clip_fix_and_5archetype_verification.md` | Narrative + per-archetype convergence detail + supersedes-resolution for the stopped runs |
 | Missing essential modules | `archetypes/_pumped_storage_fix.py` (imported by `archetypes/__init__.py`), `postprocess/extract_dispatch_timeseries.py` (imported by `dashboard.py`) | These were on disk but ungitted; force-added to make the repo runnable from a fresh clone |
 | Rooftop fix | `src/ispypsa/translator/buses.py` + `tests/test_translator/test_buses.py` | The fix itself + regression coverage |
 | Bench tooling | `bench/instrumented_runner.py` + `bench/run_myopic.py` | Gurobi flag plumbing + full-year / rep-week mode for Phase 8.1 tests |
@@ -312,39 +360,100 @@ fix as a separate task. Decision deferred to the sign-off commit step.
 | Auto-generated configs | `bench/configs_myopic/` | Rebuilt by `run_myopic.py` |
 | Input data | `data/` (IASR workbook, trace data, NGA PDF) | Downloadable; ~1.6 GB |
 | Python bytecode | `__pycache__/` | Standard |
-| 5-archetype verification logs | `bench/logs/p81v_*.log` | **Still being written**; not committed at sign-off because the runs are mid-flight. Force-add after they complete if the team wants the trajectory snapshot. |
-| 5-archetype verification records | `bench/records/p81v_*.json` | Will only exist after the runs complete. |
+| Solved NetCDFs for the 5-archetype verification | `bench/runs_myopic/p81v_*__*/outputs/capacity_expansion.nc` | ~250 MB each; only exist for rcp and gfm (the two that reached [L]); regenerable from configs + data |
 
 ---
 
-## 5. Proposed sign-off commits (for team review before staging)
+## 5. Carried forward into the redesign
 
-| # | Scope | Files | Message |
-|---|---|---|---|
-| 1 | Missing essential modules | `archetypes/_pumped_storage_fix.py`, `postprocess/extract_dispatch_timeseries.py` | "force-add essential modules that were on disk but untracked" |
-| 2 | Rooftop clip fix | `src/ispypsa/translator/buses.py`, `tests/test_translator/test_buses.py` | "fix: pass through negative net demand (rooftop exports) from OPSO_MODELLING traces — revert upstream commit 8ec1c4b's undocumented clip" |
-| 3 | Bench tooling | `bench/instrumented_runner.py`, `bench/run_myopic.py` | "bench: Gurobi tolerance flags + full-year / rep-weeks selection plumbing for Phase 8.1" |
-| 4 | Phase 8.1 findings + scripts | `bench/phase81_*.md`, `bench/rooftop_*.md`, `bench/compute_survey_new_machine.md`, `bench/analyse_*.py`, `bench/compare_test1_gurobi_pdlp.py`, `bench/phase81_progress.py`, `bench/run_variance_2_to_5.sh` | "Phase 8.1: force-add Tests 1-3 findings, variance sub-study, rooftop scoping, analysis scripts" |
-| 5 | Phase 8.1 logs + records (completed runs only) | `bench/logs/p81{fix,t1,t2,t3,vs}_*.log`, `bench/records/p81{fix,t1,t2,t3,vs}_*.json` | "Phase 8.1: force-add solver logs + bench records for completed Phase 8.1 runs" |
-| 6 | Correction notices | `PHASE7_4_FINDINGS.md`, `README.md`, `PHASE7_FINDINGS.md`, `dashboard/dashboard.py`, `STATUS_PRE_REDESIGN.md` | "docs: pre-redesign correction notices + STATUS_PRE_REDESIGN" |
+The redesign is a separate scoping commission. The findings below are
+inputs to that scoping; they are recorded here so the redesign agent does
+not have to re-derive them from the addenda.
 
-After all six commits land, propose tag `stable-pre-archetype-redesign`
-pointing at the final commit (the STATUS doc) with annotated message
-summarising the state.
+### 5.1 The current production structure is independent-static-per-year
+
+Direct evidence: gfm ≡ rcp at single-period 2040 (§1.4). The gas-floor
+mandate at 2030 and 2035 cannot bind at single-period 2040 because nothing
+carries 2030/2035 build state forward. **The current path is static — not
+sequential, not perfect-foresight.** This pre-answers the third prong of
+the redesign reconnaissance's "what temporal structure is the production
+currently using?" question: the path is static.
+
+The persistence probe in the redesign scoping should therefore ask
+*whether persistence matters*, not whether it is currently absent — it is
+absent. If a recursive-dynamic middle is desired (sequential with
+inter-period build carry-forward), it would have to be **built**, not
+merely confirmed.
+
+This also means the assembly-fallback's hidden-inconsistency concern
+(per-year greenfield frontiers don't share a capacity history) is **live**
+for any sweep deliverable assembled from per-year cells without explicit
+state passing. The redesign should treat this as a recon item, not an
+assumption.
+
+### 5.2 Points-vs-trajectories — routed to STABLE gap analysis
+
+The carbon-price sweep produces per-snapshot-of-the-sweep capacity points.
+Whether STABLE consumes these as independent points or as a trajectory
+(with carry-forward state between sweep points) is a STABLE-side
+question, not an ISPyPSA-side one. ISPyPSA's job is to emit each sweep
+point at the correct temporal-structure setting (decided by §5.1's
+persistence probe).
+
+### 5.3 Candidate-set prerequisite
+
+The current archetype catalogue exposes some technologies only via forcing
+(nuclear, hydrogen) and others only via constraint relaxation (CCS — not
+present). The carbon-price sweep needs a clear answer to: for each
+candidate technology, is it (a) freely buildable subject to economics
+under the sweep, or (b) only-via-force? This is a recon item for the
+redesign — it determines what the sweep can actually trade between.
+
+### 5.4 8760 production wall-clock characterisation
+
+Single-LP 8760 at PDLP-1e-3 on Optimus-NC: ~6 h with clip-clipped LP, ~15 h
+with the clip fix. Per-year per-sweep-point wall ~15 h is the relevant
+unit cost for sweep planning. 6-way parallel reduces per-batch wall to ~15
+h; 12-way parallel halves that. Memory budget ~30 GiB per concurrent job
+(comfortable within Optimus-NC's available headroom).
 
 ---
 
-## 6. What this baseline is NOT
+## 6. Proposed sign-off commits
+
+These commits are already in place at the baseline (verified at
+finalisation):
+
+| Commit | Scope | Message |
+|---|---|---|
+| `544325d` | Missing essential modules | `mvp_pass1_power: force-add two essential modules that were untracked` |
+| `3f3439e` | Rooftop clip fix | `fix: pass through negative net demand from OPSO_MODELLING traces` |
+| `0cc2ad5` | Bench tooling | `bench: Gurobi tolerance flags + full-year/rep-weeks plumbing` |
+| `74887cd` | Phase 8.1 findings + scripts | `Phase 8.1: findings, variance substudy, rooftop scoping + analysis scripts` |
+| `fed5b09` | Phase 8.1 logs + records (Tests 1-3 + variance + smoke) | `Phase 8.1: force-add solver logs + bench records for completed runs` |
+| `2085ccf` | Correction notices + initial STATUS | `docs: pre-redesign correction notices + STATUS_PRE_REDESIGN` |
+| *pending* | This finalisation pass (5-archetype results + Phase 7.4 → 3/3) | `Phase 8.1 finalisation: 5-archetype verification stopped, Phase 7.4 falsified 3/3, STATUS updated` |
+
+After the finalisation commit lands, propose tag
+`stable-pre-archetype-redesign` on it with annotated message summarising
+the state.
+
+---
+
+## 7. What this baseline is NOT
 
 - **NOT a completed 8760 production sweep.** Single-LP feasibility is
-  proven; 5-archetype verification is in flight; the 36-LP all-archetype
-  / all-year sweep has not been run.
-- **NOT a fix for the 6 CLI test failures.** They are documented as
-  pre-existing and deferred.
+  proven; 5-archetype verification ran for 2040 with rcp/gfm converged
+  and sl/nb/fi stopped (per §3.1); the 36-LP all-archetype / all-year
+  sweep has not been run and **is not on the redesign critical path**
+  (the sweep emits a different deliverable shape).
+- **NOT a fix for the 6 CLI test failures.** Verified pre-existing
+  (§1.6); deferred so the redesign baseline matches the working state.
 - **NOT an authoritative final calibration against AEMO Step Change.**
-  The wind-vs-AEMO gap is closing under 8760 but a residual ~5 GW gap
-  for cost_optimal 2040 is unresolved (and the all-archetype 8760
-  picture isn't yet available).
+  The wind-vs-AEMO gap is closing under 8760 (cost_optimal residual
+  ~5 GW); the redesign re-frames the question (cross-archetype
+  comparison is replaced by carbon-price sweep), so authoritative-
+  calibration in the archetype sense is no longer the target.
 - **NOT a commitment to keep the six-archetype catalogue.** The next
   step is the carbon-price-sweep redesign; this tag exists so that
   redesign can branch from a known-good state and the team can return

@@ -1,0 +1,70 @@
+{
+  "run_id": "p81v_gfm",
+  "kind": "myopic_sequential",
+  "archetype": "gas_fleet_maintained",
+  "regions_filter": null,
+  "periods": [
+    2040
+  ],
+  "started_at_iso": "2026-06-03T02:40:14",
+  "per_period": {
+    "2040": {
+      "run_id": "p81v_gfm_2040",
+      "config": "C:\\Users\\van538\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\p81v_gfm_2040.yaml",
+      "archetype": "gas_fleet_maintained",
+      "solver_options": {
+        "solver": "pdlp",
+        "pdlp_optimality_tolerance": 0.001,
+        "primal_feasibility_tolerance": 0.001,
+        "dual_feasibility_tolerance": 0.001
+      },
+      "started_at": 1780418414.7844574,
+      "started_at_iso": "2026-06-03T02:40:14",
+      "iasr_load_s": 0.4492470994591713,
+      "templating_s": 1.4402548987418413,
+      "translation_s": 94.79777530021966,
+      "pypsa_build_s": 156.04173759929836,
+      "solve_s": 33795.093250799924,
+      "solve_ok": true,
+      "save_network_s": 16.833101898431778,
+      "extract_results_s": 95.77958399988711,
+      "annual_generation_mwh_by_period": {
+        "2040": 240802048.27809346
+      },
+      "wall_clock_s": 34173.778284100816,
+      "status": "completed",
+      "peak_rss_bytes": 32271564800,
+      "peak_rss_gib": 32.51690673828125,
+      "lp_rows": 39194880,
+      "lp_cols": 18077904,
+      "lp_nonzeros": 72494603,
+      "model_status": "Unknown",
+      "highs_run_time_s": 32633.23,
+      "simplex_iterations": null,
+      "ipm_iterations": null,
+      "ipm_final_pinf": null,
+      "ipm_final_dinf": null,
+      "ipm_final_gap": null,
+      "objective_value": 13477681276.0,
+      "pdlp_iterations": 35840,
+      "pdlp_final_pinf_abs": 1650.0,
+      "pdlp_final_pinf_rel": 0.000856,
+      "pdlp_final_dinf_abs": 3.76,
+      "pdlp_final_dinf_rel": 5.98e-07,
+      "pdlp_final_gap_abs": 26800000.0,
+      "pdlp_final_gap_rel": 0.000996,
+      "per_period_wall_s": 34180.45580482483,
+      "per_period_peak_gib": 32.51690673828125,
+      "capacity_built_gw_by_fuel": {
+        "Gas": 13.337523829852728,
+        "Solar": 6.234731228447169,
+        "Water": 2.8333057394912204,
+        "Wind": 17.818780260629207
+      },
+      "total_capacity_built_gw": 40.22434105842032
+    }
+  },
+  "cumulative_wall_clock_s": 34245.93352603912,
+  "peak_rss_gib_observed": 32.51690673828125,
+  "ended_at_iso": "2026-06-03T12:11:00"
+}
