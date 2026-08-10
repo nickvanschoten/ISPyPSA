@@ -154,8 +154,24 @@ class CarbonPricingConfig(BaseModel):
     The scoping sweep sets tns_price=20.0 explicitly to internalise the T&S
     cost on CCS plants per the Phase 8 commission.
     """
+
     carbon_price: float = 0.0  # AUD/tCO2e on residual emissions (post-capture)
-    tns_price: float = 0.0     # AUD/tCO2 on captured tonnes (CCS opex)
+    tns_price: float = 0.0  # AUD/tCO2 on captured tonnes (CCS opex)
+
+
+class GasSupplyCurveConfig(BaseModel):
+    """Stepped supply curve for gas consumed by gas-fired generation.
+
+    `curve_csv` points to a CSV defining annual price-quantity tranches
+    (columns: tranche, financial_year, cap_pj, adder_$/gj). Tranche adders are
+    premiums above the IASR baseline gas prices already embedded in generator
+    marginal costs, so the LP faces a convex piecewise-linear fuel cost that
+    rises with total gas consumption (ReEDS/IPM-style supply curve anchored at
+    the IASR reference price). Default None leaves gas supply unlimited at the
+    IASR price (the pre-existing behaviour).
+    """
+
+    curve_csv: str | None = None
 
 
 class ModelConfig(BaseModel):
@@ -169,6 +185,7 @@ class ModelConfig(BaseModel):
     unserved_energy: UnservedEnergyConfig
     trace_data: TraceDataConfig = TraceDataConfig()
     carbon_pricing: CarbonPricingConfig = CarbonPricingConfig()
+    gas_supply_curve: GasSupplyCurveConfig = GasSupplyCurveConfig()
     filter_by_nem_regions: list[str] | None = None
     filter_by_isp_sub_regions: list[str] | None = None
     solver: Literal[

@@ -19,6 +19,7 @@ from ispypsa.translator.custom_constraints import (
     _append_if_not_empty,
     _translate_custom_constraints,
 )
+from ispypsa.translator.gas_supply_curve import _translate_gas_supply_curve
 from ispypsa.translator.generators import (
     _create_unserved_energy_generators,
     _translate_ecaa_generators,
@@ -232,6 +233,12 @@ def create_pypsa_friendly_inputs(
             pypsa_inputs["generators"],
         )
     )
+
+    if config.gas_supply_curve.curve_csv is not None:
+        pypsa_inputs["gas_supply_curve"] = _translate_gas_supply_curve(
+            config.gas_supply_curve.curve_csv,
+            config.temporal.capacity_expansion.investment_periods,
+        )
 
     return pypsa_inputs
 

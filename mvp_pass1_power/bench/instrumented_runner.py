@@ -41,6 +41,36 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 _LICENSE_RETRY_MAX_WAIT_S = 36000  # 10 h
 
 
+def extract_gas_supply_curve_usage(network, gas_supply_curve):
+    """Reads solved tranche purchases into a tidy per-period usage table (PJ).
+
+    The tranche variables live only in the in-process linopy model (not the
+    saved NetCDF), so this must run in the same process as the solve.
+    """
+    import pandas as pd
+
+    rows = []
+    for period in network.investment_periods:
+        variable_name = f"gas_supply_purchases_gj_{period}"
+        if variable_name not in network.model.variables:
+            continue
+        solution = network.model.variables[variable_name].solution
+        tranches = gas_supply_curve[gas_supply_curve["investment_period"] == period]
+        for _, tranche in tranches.iterrows():
+            used_pj = float(solution.sel(gas_tranche=tranche["tranche"])) / 1.0e6
+            rows.append(
+                {
+                    "investment_period": period,
+                    "tranche": tranche["tranche"],
+                    "adder_$/gj": tranche["adder_$/gj"],
+                    "cap_pj": tranche["cap_pj"],
+                    "used_pj": used_pj,
+                    "premium_cost_$m": used_pj * tranche["adder_$/gj"],
+                }
+            )
+    return pd.DataFrame(rows)
+
+
 def _solve_with_license_retry(network, kwargs) -> bool:
     """Solve, retrying only while the token server reports no free seat.
 
@@ -541,6 +571,13 @@ def _run_staged_pipeline(
     results["regions_and_zones_mapping"] = extract_regions_and_zones_mapping(
         ispypsa_tables
     )
+    if "gas_supply_curve" in pypsa_friendly:
+        usage = extract_gas_supply_curve_usage(
+            network, pypsa_friendly["gas_supply_curve"]
+        )
+        results["gas_supply_curve_usage"] = usage
+        print("\n=== GAS SUPPLY CURVE USAGE (PJ by tranche) ===", flush=True)
+        print(usage.to_string(index=False), flush=True)
     write_csvs(results, tables_dir)
     timings["extract_results_s"] = time.perf_counter() - t
 

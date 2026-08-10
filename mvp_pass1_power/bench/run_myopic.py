@@ -61,15 +61,22 @@ RECORDS = BENCH / "records"
 CONFIG_TEMPLATE_DIR = BENCH / "configs"
 
 
-def _write_period_config(run_id: str, year: int, regions: list[str] | None,
-                         rep_weeks: list[int] | None = None,
-                         full_year: bool = False,
-                         resolution_min: int = 30,
-                         carbon_price: float = 0.0,
-                         tns_price: float = 0.0,
-                         parsed_traces_directory: str = "mvp_pass1_power/data/traces",
-                         dataset_year: int = 2024,
-                         iasr_final: bool = False) -> Path:
+def _write_period_config(
+    run_id: str,
+    year: int,
+    regions: list[str] | None,
+    rep_weeks: list[int] | None = None,
+    full_year: bool = False,
+    resolution_min: int = 30,
+    carbon_price: float = 0.0,
+    tns_price: float = 0.0,
+    gas_supply_curve_csv: str | None = None,
+    parsed_traces_directory: str = "mvp_pass1_power/data/traces",
+    dataset_year: int = 2024,
+    iasr_final: bool = False,
+    unserved_energy_cost: float = 10000.0,
+    reference_years: list[int] | None = None,
+) -> Path:
     """Synthesise a single-period config for this milestone year.
 
     Callers pass `run_id` already containing the year suffix (sub_run_id from
@@ -82,6 +89,7 @@ def _write_period_config(run_id: str, year: int, regions: list[str] | None,
     (`morgan_to_whyalla_pipeline_no_1_ps_and_water_filtration_plant.parquet`,
     66 chars).
     """
+    ref_years = reference_years if reference_years is not None else [2018]
     cfg_dir = BENCH / "configs_myopic"
     cfg_dir.mkdir(parents=True, exist_ok=True)
     cfg_path = cfg_dir / f"{run_id}.yaml"
@@ -96,11 +104,15 @@ def _write_period_config(run_id: str, year: int, regions: list[str] | None,
         # --parsed-traces-directory data/trace_data_final (the FINAL traces +
         # appended 10 draft-vintage solar). dataset_year stays 2026 so the
         # flagged-exclusion gate + isp_<year> trace-subdir convention hold.
-        workbook_path = "iasr inputs/2026 ISP Final/2026-isp-inputs-and-assumptions-workbook.xlsm"
+        workbook_path = (
+            "iasr inputs/2026 ISP Final/2026-isp-inputs-and-assumptions-workbook.xlsm"
+        )
         workbook_cache = "mvp_pass1_power/data/workbook_cache_final"
         iasr_version = "7.8"
     elif dataset_year == 2026:
-        workbook_path = "iasr inputs/Draft 2026 ISP Inputs and Assumptions workbook.xlsx"
+        workbook_path = (
+            "iasr inputs/Draft 2026 ISP Inputs and Assumptions workbook.xlsx"
+        )
         workbook_cache = "mvp_pass1_power/data/workbook_cache_v75"
         iasr_version = "7.5"
     else:
@@ -122,7 +134,7 @@ scenario: Step Change
 wacc: 0.07
 discount_rate: 0.05
 unserved_energy:
-  cost: 10000.0
+  cost: {unserved_energy_cost}
   max_per_node: 100000.0
 {filter_line}network:
   transmission_expansion: True
@@ -139,7 +151,7 @@ temporal:
     end_year: {year}
   capacity_expansion:
     resolution_min: {resolution_min}
-    reference_year_cycle: [2018]
+    reference_year_cycle: {ref_years}
     investment_periods: [{year}]
     aggregation:
       # Phase 7.2 (revised): 3-week sampling. Reduced from 4 to 3 weeks
@@ -164,7 +176,7 @@ temporal:
       named_representative_weeks: {"~" if full_year else "[residual-peak-demand, peak-demand]"}
   operational:
     resolution_min: 30
-    reference_year_cycle: [2018]
+    reference_year_cycle: {ref_years}
     horizon: 336
     overlap: 48
     aggregation:
@@ -176,6 +188,8 @@ carbon_pricing:
   carbon_price: {carbon_price}
   tns_price: {tns_price}
 """
+    if gas_supply_curve_csv is not None:
+        cfg_text += f'gas_supply_curve:\n  curve_csv: "{gas_supply_curve_csv}"\n'
     cfg_path.write_text(cfg_text)
     return cfg_path
 
@@ -289,27 +303,40 @@ def _run_one_period(
                     pass
             psproc.kill()
             proc.wait(timeout=30)
-            return {"status": "timed_out", "wall_clock_s": time.time() - started,
-                    "peak_rss_gib": peak_rss / (1024**3)}
+            return {
+                "status": "timed_out",
+                "wall_clock_s": time.time() - started,
+                "peak_rss_gib": peak_rss / (1024**3),
+            }
         time.sleep(5)
 
     if record_path.exists():
         rec = json.loads(record_path.read_text())
         rec["peak_rss_gib"] = peak_rss / (1024**3)
         return rec
-    return {"status": "failed", "wall_clock_s": time.time() - started,
-            "peak_rss_gib": peak_rss / (1024**3)}
+    return {
+        "status": "failed",
+        "wall_clock_s": time.time() - started,
+        "peak_rss_gib": peak_rss / (1024**3),
+    }
 
 
 def _extract_built_capacities(run_id: str, year: int, archetype: str) -> pd.DataFrame:
     """Extract capacity built in this period — generators with build_year=year."""
     import pypsa
-    nc_path = Path("mvp_pass1_power/bench/runs_myopic") / f"{run_id}_{year}__{archetype}" \
-              / "outputs" / "capacity_expansion.nc"
+
+    nc_path = (
+        Path("mvp_pass1_power/bench/runs_myopic")
+        / f"{run_id}_{year}__{archetype}"
+        / "outputs"
+        / "capacity_expansion.nc"
+    )
     if not nc_path.exists():
         return pd.DataFrame()
     n = pypsa.Network(nc_path)
-    gens = n.generators[["bus", "carrier", "p_nom_opt", "build_year", "lifetime"]].copy()
+    gens = n.generators[
+        ["bus", "carrier", "p_nom_opt", "build_year", "lifetime"]
+    ].copy()
     gens = gens[gens["bus"] != "bus_for_custom_constraint_gens"]
     # Filter to new entrants that were built this period
     built = gens[(gens["build_year"] == year) & (gens["p_nom_opt"] > 1.0)]
@@ -319,113 +346,253 @@ def _extract_built_capacities(run_id: str, year: int, archetype: str) -> pd.Data
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-id", required=True)
-    ap.add_argument("--filter", default=None,
-                    help="NEM region filter (e.g. 'NSW'); omit for full NEM")
-    ap.add_argument("--periods", type=int, nargs="+",
-                    default=[2025, 2030, 2035, 2040, 2045, 2050])
-    ap.add_argument("--archetype", default="cost_optimal",
-                    help="Archetype id to apply (default: cost_optimal)")
-    ap.add_argument("--budget-min", type=float, default=720,
-                    help="Per-period wall-clock budget (default 12h)")
-    ap.add_argument("--use-pdlp", action="store_true",
-                    help="Solve with HiGHS PDLP instead of default simplex.")
-    ap.add_argument("--pdlp-tolerance", type=float, default=None,
-                    help="Set pdlp_optimality_tolerance + primal/dual feasibility "
-                         "tolerances; only used with --use-pdlp.")
-    ap.add_argument("--use-gurobi", action="store_true",
-                    help="Solve with Gurobi instead of HiGHS (overrides config.solver).")
-    ap.add_argument("--gurobi-bar-conv-tol", type=float, default=None,
-                    help="Set Gurobi BarConvTol; only used with --use-gurobi. PRODUCTION "
-                         "FRONTIER MUST PIN 1e-4 (the new-artifact menu's quality choice). "
-                         "If omitted, Gurobi falls back to its 1e-8 default -- tighter than "
-                         "intended and materially slower; do NOT rely on the default for "
-                         "production runs.")
-    ap.add_argument("--gurobi-opt-tol", type=float, default=None,
-                    help="Set Gurobi OptimalityTol (default 1e-6); only used with --use-gurobi.")
-    ap.add_argument("--gurobi-feas-tol", type=float, default=None,
-                    help="Set Gurobi FeasibilityTol (default 1e-6); only used with --use-gurobi.")
-    ap.add_argument("--gurobi-threads", type=int, default=None,
-                    help="Set Gurobi Threads (cores per solve); only used with --use-gurobi. "
-                         "Cap for concurrent trajectories so concurrent x threads <= cores "
-                         "with headroom; default (unset) uses all cores (single-solve default).")
-    ap.add_argument("--gurobi-method", type=int, default=None,
-                    help="Set Gurobi Method (2=barrier); only used with --use-gurobi.")
-    ap.add_argument("--gurobi-crossover", type=int, default=None,
-                    help="Set Gurobi Crossover (0=off -> interior solution, fast); only used with --use-gurobi.")
-    ap.add_argument("--gurobi-numeric-focus", type=int, default=None,
-                    help="Set Gurobi NumericFocus (0=auto, 1-3=increasing numerical care); "
-                         "only used with --use-gurobi. Needed once buildable storage widens "
-                         "the objective coefficient range (~[1, 1e7]) enough that the barrier "
-                         "terminates sub-optimal; 2-3 trades speed for numerical robustness.")
-    ap.add_argument("--gurobi-bar-homogeneous", type=int, default=None,
-                    help="Set Gurobi BarHomogeneous (-1=auto, 0=off, 1=on); only used with "
-                         "--use-gurobi. The homogeneous barrier is more robust on ill-"
-                         "conditioned / heavily-coupled LPs (e.g. storage SOC inter-temporal "
-                         "coupling); try 1 when the default barrier stalls Sub-optimal.")
-    ap.add_argument("--rep-weeks", type=int, nargs="+", default=None,
-                    help="Override representative_weeks list (default [42]). "
-                         "Named weeks (residual-peak-demand, peak-demand) remain. "
-                         "E.g. --rep-weeks 42 33 gives 4-week sampling.")
-    ap.add_argument("--full-year", action="store_true",
-                    help="Disable all rep-week sampling (numbered AND named) so the LP "
-                         "covers the full reference year. Default resolution_min=60 (hourly); "
-                         "override with --resolution-min.")
-    ap.add_argument("--resolution-min", type=int, default=None,
-                    help="Override temporal resolution in minutes (default 30 for "
-                         "rep-week modes; default 60 for --full-year).")
-    ap.add_argument("--recursive-dynamic", action="store_true",
-                    help="Enable recursive-dynamic capacity roll-forward: after each "
-                         "year's solve, extract the new-build tranche and inject all "
-                         "surviving prior tranches into subsequent solves. Default "
-                         "(independent-static) is unchanged when this flag is absent.")
-    ap.add_argument("--resume", action="store_true",
-                    help="Resume a partially-completed recursive-dynamic chain: do NOT "
-                         "wipe the tranches/ and retention/ dirs on launch, so prior "
-                         "periods' saved tranches + retention floors are preserved and "
-                         "carried forward. Pass --periods with only the REMAINING years "
-                         "(e.g. after 2030 completed, --periods 2035 2040 2045 2050). "
-                         "Used to apply a per-period tolerance fallback without re-solving "
-                         "already-converged earlier periods. Default (fresh chain, wipe) "
-                         "is unchanged when this flag is absent.")
-    ap.add_argument("--reducible-existing", action="store_true",
-                    help="Enable endogenous economic retirement: make existing (ECAA) "
-                         "generators a downward-only continuous capacity decision each "
-                         "period, with the retained level carried forward as a monotone "
-                         "non-increasing floor. Default (fixed existing fleet) is "
-                         "unchanged when this flag is absent. Composes with "
-                         "--recursive-dynamic.")
-    ap.add_argument("--existing-keeping-cost", type=float, default=0.0,
-                    help="Per-MW per-period cost of keeping existing capacity (capital_cost "
-                         "on the reducible existing generators). 0 = Phase-1 strict; "
-                         "Phase-2 passes the AEMO fixed-OPEX so idle units are shed.")
-    ap.add_argument("--existing-fom-keeping", action="store_true",
-                    help="Phase-2: route each existing unit's own FOM (ecaa fom_$/kw/annum) "
-                         "as its keeping-cost (capital_cost), instead of --existing-keeping-cost.")
-    ap.add_argument("--span-weight-years", type=int, default=None,
-                    help="Phase-2 accounting fix: weight each myopic milestone period as an "
-                         "N-year span, so recurring FOM counts over the span vs the one-off "
-                         "disestablishment. Default: off (1-year, as the committed menu).")
-    ap.add_argument("--disestablishment-cost", type=float, default=0.0,
-                    help="Phase-2b: one-off disestablishment/decommissioning cost ($/MW) on "
-                         "retired existing capacity. A unit sheds only when FOM*span > D. "
-                         "Default 0 (off).")
-    ap.add_argument("--carbon-price", type=float, default=0.0,
-                    help="AUD/tCO2e adder on residual emissions, threaded into "
-                         "config.carbon_pricing.carbon_price for every period in the "
-                         "chain. Default 0 (no carbon adder).")
-    ap.add_argument("--tns-price", type=float, default=0.0,
-                    help="AUD/tCO2 T&S cost on captured tonnes for CCS plants. "
-                         "Threaded into config.carbon_pricing.tns_price. Default 0.")
-    ap.add_argument("--parsed-traces-directory", default="mvp_pass1_power/data/traces",
-                    help="Base parsed-traces dir (isp_<dataset_year> is appended). Use "
-                         "'data/trace_data' with --dataset-year 2026 for the Draft 2026 store.")
-    ap.add_argument("--dataset-year", type=int, default=2024,
-                    help="Trace dataset year; selects isp_<year> and (==2026) triggers the "
-                         "flagged-new-entrant exclusion in instrumented_runner. Default 2024.")
-    ap.add_argument("--iasr-final", action="store_true",
-                    help="Use FINAL 2026 ISP economics: v7.8 cache (workbook_cache_final) + "
-                         "final workbook. Pair with --dataset-year 2026 + "
-                         "--parsed-traces-directory data/trace_data_final.")
+    ap.add_argument(
+        "--filter",
+        default=None,
+        help="NEM region filter (e.g. 'NSW'); omit for full NEM",
+    )
+    ap.add_argument(
+        "--periods", type=int, nargs="+", default=[2025, 2030, 2035, 2040, 2045, 2050]
+    )
+    ap.add_argument(
+        "--archetype",
+        default="cost_optimal",
+        help="Archetype id to apply (default: cost_optimal)",
+    )
+    ap.add_argument(
+        "--budget-min",
+        type=float,
+        default=720,
+        help="Per-period wall-clock budget (default 12h)",
+    )
+    ap.add_argument(
+        "--use-pdlp",
+        action="store_true",
+        help="Solve with HiGHS PDLP instead of default simplex.",
+    )
+    ap.add_argument(
+        "--pdlp-tolerance",
+        type=float,
+        default=None,
+        help="Set pdlp_optimality_tolerance + primal/dual feasibility "
+        "tolerances; only used with --use-pdlp.",
+    )
+    ap.add_argument(
+        "--use-gurobi",
+        action="store_true",
+        help="Solve with Gurobi instead of HiGHS (overrides config.solver).",
+    )
+    ap.add_argument(
+        "--gurobi-bar-conv-tol",
+        type=float,
+        default=None,
+        help="Set Gurobi BarConvTol; only used with --use-gurobi. PRODUCTION "
+        "FRONTIER MUST PIN 1e-4 (the new-artifact menu's quality choice). "
+        "If omitted, Gurobi falls back to its 1e-8 default -- tighter than "
+        "intended and materially slower; do NOT rely on the default for "
+        "production runs.",
+    )
+    ap.add_argument(
+        "--gurobi-opt-tol",
+        type=float,
+        default=None,
+        help="Set Gurobi OptimalityTol (default 1e-6); only used with --use-gurobi.",
+    )
+    ap.add_argument(
+        "--gurobi-feas-tol",
+        type=float,
+        default=None,
+        help="Set Gurobi FeasibilityTol (default 1e-6); only used with --use-gurobi.",
+    )
+    ap.add_argument(
+        "--gurobi-threads",
+        type=int,
+        default=None,
+        help="Set Gurobi Threads (cores per solve); only used with --use-gurobi. "
+        "Cap for concurrent trajectories so concurrent x threads <= cores "
+        "with headroom; default (unset) uses all cores (single-solve default).",
+    )
+    ap.add_argument(
+        "--gurobi-method",
+        type=int,
+        default=None,
+        help="Set Gurobi Method (2=barrier); only used with --use-gurobi.",
+    )
+    ap.add_argument(
+        "--gurobi-crossover",
+        type=int,
+        default=None,
+        help="Set Gurobi Crossover (0=off -> interior solution, fast); only used with --use-gurobi.",
+    )
+    ap.add_argument(
+        "--gurobi-numeric-focus",
+        type=int,
+        default=None,
+        help="Set Gurobi NumericFocus (0=auto, 1-3=increasing numerical care); "
+        "only used with --use-gurobi. Needed once buildable storage widens "
+        "the objective coefficient range (~[1, 1e7]) enough that the barrier "
+        "terminates sub-optimal; 2-3 trades speed for numerical robustness.",
+    )
+    ap.add_argument(
+        "--gurobi-bar-homogeneous",
+        type=int,
+        default=None,
+        help="Set Gurobi BarHomogeneous (-1=auto, 0=off, 1=on); only used with "
+        "--use-gurobi. The homogeneous barrier is more robust on ill-"
+        "conditioned / heavily-coupled LPs (e.g. storage SOC inter-temporal "
+        "coupling); try 1 when the default barrier stalls Sub-optimal.",
+    )
+    ap.add_argument(
+        "--rep-weeks",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Override representative_weeks list (default [42]). "
+        "Named weeks (residual-peak-demand, peak-demand) remain. "
+        "E.g. --rep-weeks 42 33 gives 4-week sampling.",
+    )
+    ap.add_argument(
+        "--full-year",
+        action="store_true",
+        help="Disable all rep-week sampling (numbered AND named) so the LP "
+        "covers the full reference year. Default resolution_min=60 (hourly); "
+        "override with --resolution-min.",
+    )
+    ap.add_argument(
+        "--resolution-min",
+        type=int,
+        default=None,
+        help="Override temporal resolution in minutes (default 30 for "
+        "rep-week modes; default 60 for --full-year).",
+    )
+    ap.add_argument(
+        "--recursive-dynamic",
+        action="store_true",
+        help="Enable recursive-dynamic capacity roll-forward: after each "
+        "year's solve, extract the new-build tranche and inject all "
+        "surviving prior tranches into subsequent solves. Default "
+        "(independent-static) is unchanged when this flag is absent.",
+    )
+    ap.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume a partially-completed recursive-dynamic chain: do NOT "
+        "wipe the tranches/ and retention/ dirs on launch, so prior "
+        "periods' saved tranches + retention floors are preserved and "
+        "carried forward. Pass --periods with only the REMAINING years "
+        "(e.g. after 2030 completed, --periods 2035 2040 2045 2050). "
+        "Used to apply a per-period tolerance fallback without re-solving "
+        "already-converged earlier periods. Default (fresh chain, wipe) "
+        "is unchanged when this flag is absent.",
+    )
+    ap.add_argument(
+        "--reducible-existing",
+        action="store_true",
+        help="Enable endogenous economic retirement: make existing (ECAA) "
+        "generators a downward-only continuous capacity decision each "
+        "period, with the retained level carried forward as a monotone "
+        "non-increasing floor. Default (fixed existing fleet) is "
+        "unchanged when this flag is absent. Composes with "
+        "--recursive-dynamic.",
+    )
+    ap.add_argument(
+        "--existing-keeping-cost",
+        type=float,
+        default=0.0,
+        help="Per-MW per-period cost of keeping existing capacity (capital_cost "
+        "on the reducible existing generators). 0 = Phase-1 strict; "
+        "Phase-2 passes the AEMO fixed-OPEX so idle units are shed.",
+    )
+    ap.add_argument(
+        "--existing-fom-keeping",
+        action="store_true",
+        help="Phase-2: route each existing unit's own FOM (ecaa fom_$/kw/annum) "
+        "as its keeping-cost (capital_cost), instead of --existing-keeping-cost.",
+    )
+    ap.add_argument(
+        "--span-weight-years",
+        type=int,
+        default=None,
+        help="Phase-2 accounting fix: weight each myopic milestone period as an "
+        "N-year span, so recurring FOM counts over the span vs the one-off "
+        "disestablishment. Default: off (1-year, as the committed menu).",
+    )
+    ap.add_argument(
+        "--disestablishment-cost",
+        type=float,
+        default=0.0,
+        help="Phase-2b: one-off disestablishment/decommissioning cost ($/MW) on "
+        "retired existing capacity. A unit sheds only when FOM*span > D. "
+        "Default 0 (off).",
+    )
+    ap.add_argument(
+        "--carbon-price",
+        type=float,
+        default=0.0,
+        help="AUD/tCO2e adder on residual emissions, threaded into "
+        "config.carbon_pricing.carbon_price for every period in the "
+        "chain. Default 0 (no carbon adder).",
+    )
+    ap.add_argument(
+        "--tns-price",
+        type=float,
+        default=0.0,
+        help="AUD/tCO2 T&S cost on captured tonnes for CCS plants. "
+        "Threaded into config.carbon_pricing.tns_price. Default 0.",
+    )
+    ap.add_argument(
+        "--gas-supply-curve",
+        default=None,
+        help="Path to a gas supply curve CSV (tranche, financial_year, "
+        "cap_pj, adder_$/gj), threaded into config.gas_supply_curve."
+        "curve_csv for every period. Prices gas consumption above "
+        "each tranche boundary at an adder over the IASR baseline "
+        "gas price. Default: off (unlimited gas at IASR prices). "
+        "See mvp_pass1_power/gas_market/ for the parameterised curve.",
+    )
+    ap.add_argument(
+        "--parsed-traces-directory",
+        default="mvp_pass1_power/data/traces",
+        help="Base parsed-traces dir (isp_<dataset_year> is appended). Use "
+        "'data/trace_data' with --dataset-year 2026 for the Draft 2026 store.",
+    )
+    ap.add_argument(
+        "--dataset-year",
+        type=int,
+        default=2024,
+        help="Trace dataset year; selects isp_<year> and (==2026) triggers the "
+        "flagged-new-entrant exclusion in instrumented_runner. Default 2024.",
+    )
+    ap.add_argument(
+        "--iasr-final",
+        action="store_true",
+        help="Use FINAL 2026 ISP economics: v7.8 cache (workbook_cache_final) + "
+        "final workbook. Pair with --dataset-year 2026 + "
+        "--parsed-traces-directory data/trace_data_final.",
+    )
+    ap.add_argument(
+        "--reference-years",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Weather reference-year cycle for BOTH demand and VRE traces "
+        "(config temporal.*.reference_year_cycle). Default [2018] — note "
+        "that under the FINAL 2026 store this label holds AEMO's synthetic "
+        "RefYear5000 sequence, not historical 2018. Real historical years "
+        "2011-2017 and 2019-2025 are available as of the 2026-08 per-year "
+        "trace ingestion. One year gives a single-weather-year solve; "
+        "multiple years cycle across the model years in range.",
+    )
+    ap.add_argument(
+        "--unserved-energy-cost",
+        type=float,
+        default=10000.0,
+        help="AUD/MWh value-of-lost-load penalty on the Unserved Energy slack "
+        "generator (config unserved_energy.cost). Default 10000.0, matching "
+        "every committed frontier run. Lower to test how much of the model's "
+        "firm-gas build is driven by this penalty's strictness vs the "
+        "single-2018-year reliability standard itself (USE-penalty test).",
+    )
     args = ap.parse_args()
 
     regions = [args.filter] if args.filter else None
@@ -470,6 +637,9 @@ def main():
         "tranches_dir": str(tranches_dir) if tranches_dir else None,
         "carbon_price": args.carbon_price,
         "tns_price": args.tns_price,
+        "gas_supply_curve": args.gas_supply_curve,
+        "unserved_energy_cost": args.unserved_energy_cost,
+        "reference_years": args.reference_years if args.reference_years else [2018],
         "started_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "per_period": {},
         "cumulative_wall_clock_s": 0.0,
@@ -479,25 +649,38 @@ def main():
     seq_started = time.time()
     for year in args.periods:
         sub_run_id = f"{args.run_id}_{year}"
-        print(f"\n=== Myopic period {year} ({sub_run_id}) archetype={args.archetype} ===")
+        print(
+            f"\n=== Myopic period {year} ({sub_run_id}) archetype={args.archetype} ==="
+        )
         # capacity_expansion.resolution_min must match operational.resolution_min
         # (validator constraint in src/ispypsa/config/validators.py). Operational
         # is fixed at 30 in the template, so capacity_expansion stays 30 unless
         # the caller knows what they are doing.
         resolution_min = args.resolution_min if args.resolution_min is not None else 30
-        cfg = _write_period_config(sub_run_id, year, regions,
-                                    rep_weeks=args.rep_weeks,
-                                    full_year=args.full_year,
-                                    resolution_min=resolution_min,
-                                    carbon_price=args.carbon_price,
-                                    tns_price=args.tns_price,
-                                    parsed_traces_directory=args.parsed_traces_directory,
-                                    dataset_year=args.dataset_year,
-                                    iasr_final=args.iasr_final)
+        cfg = _write_period_config(
+            sub_run_id,
+            year,
+            regions,
+            rep_weeks=args.rep_weeks,
+            full_year=args.full_year,
+            resolution_min=resolution_min,
+            carbon_price=args.carbon_price,
+            tns_price=args.tns_price,
+            gas_supply_curve_csv=args.gas_supply_curve,
+            parsed_traces_directory=args.parsed_traces_directory,
+            dataset_year=args.dataset_year,
+            iasr_final=args.iasr_final,
+            unserved_energy_cost=args.unserved_energy_cost,
+            reference_years=args.reference_years,
+        )
         per_started = time.time()
         rec = _run_one_period(
-            cfg, sub_run_id, args.budget_min, args.archetype,
-            use_pdlp=args.use_pdlp, pdlp_tolerance=args.pdlp_tolerance,
+            cfg,
+            sub_run_id,
+            args.budget_min,
+            args.archetype,
+            use_pdlp=args.use_pdlp,
+            pdlp_tolerance=args.pdlp_tolerance,
             use_gurobi=args.use_gurobi,
             gurobi_bar_conv_tol=args.gurobi_bar_conv_tol,
             gurobi_opt_tol=args.gurobi_opt_tol,
@@ -508,7 +691,9 @@ def main():
             gurobi_numeric_focus=args.gurobi_numeric_focus,
             gurobi_bar_homogeneous=args.gurobi_bar_homogeneous,
             carried_tranches_dir=tranches_dir,
-            current_year=year if (tranches_dir is not None or retention_dir is not None) else None,
+            current_year=year
+            if (tranches_dir is not None or retention_dir is not None)
+            else None,
             reducible_existing=args.reducible_existing,
             retention_floor_dir=retention_dir,
             existing_keeping_cost=args.existing_keeping_cost,
@@ -522,7 +707,9 @@ def main():
         # capacity_built per fuel_type
         try:
             built = _extract_built_capacities(args.run_id, year, args.archetype)
-            by_fuel_gw = (built.groupby("carrier")["p_nom_opt"].sum() / 1000.0).to_dict()
+            by_fuel_gw = (
+                built.groupby("carrier")["p_nom_opt"].sum() / 1000.0
+            ).to_dict()
             rec["capacity_built_gw_by_fuel"] = by_fuel_gw
             rec["total_capacity_built_gw"] = float(built["p_nom_opt"].sum() / 1000.0)
         except Exception as e:
@@ -530,12 +717,15 @@ def main():
         if tranches_dir is not None and rec.get("status") == "completed":
             try:
                 from mvp_pass1_power.bench.recursive_dynamic import (
-                    extract_new_built_tranche, save_tranche,
+                    extract_new_built_tranche,
+                    save_tranche,
                 )
+
                 nc_path = (
                     Path("mvp_pass1_power/bench/runs_myopic")
                     / f"{sub_run_id}__{args.archetype}"
-                    / "outputs" / "capacity_expansion.nc"
+                    / "outputs"
+                    / "capacity_expansion.nc"
                 )
                 tranche = extract_new_built_tranche(nc_path, year)
                 save_tranche(tranche, tranches_dir, year)
@@ -544,11 +734,13 @@ def main():
                     "batteries_rows": int(len(tranche["batteries"])),
                     "generator_mw": float(
                         tranche["generators"]["p_nom"].sum()
-                        if not tranche["generators"].empty else 0.0
+                        if not tranche["generators"].empty
+                        else 0.0
                     ),
                     "battery_mw": float(
                         tranche["batteries"]["p_nom"].sum()
-                        if not tranche["batteries"].empty else 0.0
+                        if not tranche["batteries"].empty
+                        else 0.0
                     ),
                 }
             except Exception as e:
@@ -556,8 +748,10 @@ def main():
         if retention_dir is not None and rec.get("status") == "completed":
             try:
                 from mvp_pass1_power.bench.retirement import (
-                    extract_retained_existing, save_retention_floor,
+                    extract_retained_existing,
+                    save_retention_floor,
                 )
+
                 run_root = (
                     Path("mvp_pass1_power/bench/runs_myopic")
                     / f"{sub_run_id}__{args.archetype}"
@@ -576,7 +770,9 @@ def main():
             seq_record["peak_rss_gib_observed"], rec.get("peak_rss_gib", 0)
         )
         # Save partial after each period in case we die early.
-        (RECORDS / f"{args.run_id}.json").write_text(json.dumps(seq_record, indent=2, default=str))
+        (RECORDS / f"{args.run_id}.json").write_text(
+            json.dumps(seq_record, indent=2, default=str)
+        )
         if rec.get("status") != "completed":
             print(f"  Period {year} status: {rec.get('status')}; aborting sequence")
             break
@@ -588,20 +784,28 @@ def main():
         # itself succeeded; here we halt instead so a failed write-back surfaces
         # immediately rather than poisoning the downstream chain.
         if tranches_dir is not None and rec.get("tranche_extract_error"):
-            print(f"  Period {year} tranche extraction FAILED: "
-                  f"{rec.get('tranche_extract_error')}; halting recursive-dynamic "
-                  f"chain (next year would carry no floor and run as no-op).")
+            print(
+                f"  Period {year} tranche extraction FAILED: "
+                f"{rec.get('tranche_extract_error')}; halting recursive-dynamic "
+                f"chain (next year would carry no floor and run as no-op)."
+            )
             break
         if retention_dir is not None and rec.get("retention_extract_error"):
-            print(f"  Period {year} retention extraction FAILED: "
-                  f"{rec.get('retention_extract_error')}; halting reducible-existing "
-                  f"chain (next year would lose the monotone retirement floor).")
+            print(
+                f"  Period {year} retention extraction FAILED: "
+                f"{rec.get('retention_extract_error')}; halting reducible-existing "
+                f"chain (next year would lose the monotone retirement floor)."
+            )
             break
 
     seq_record["ended_at_iso"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     seq_record["cumulative_wall_clock_s"] = time.time() - seq_started
-    (RECORDS / f"{args.run_id}.json").write_text(json.dumps(seq_record, indent=2, default=str))
-    print(f"\n=== Done. Cumulative wall: {seq_record['cumulative_wall_clock_s']:.0f}s ===")
+    (RECORDS / f"{args.run_id}.json").write_text(
+        json.dumps(seq_record, indent=2, default=str)
+    )
+    print(
+        f"\n=== Done. Cumulative wall: {seq_record['cumulative_wall_clock_s']:.0f}s ==="
+    )
 
 
 if __name__ == "__main__":
