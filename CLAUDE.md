@@ -262,48 +262,48 @@ emits, per milestone year:
 
 ## What's in this fork
 
-Everything new lives under `mvp_pass1_power/`. Upstream ISPyPSA
+Everything new lives under `analysis/`. Upstream ISPyPSA
 (`src/ispypsa/`, `tests/`, etc.) is unchanged.
 
 ### Read in this order before starting
 
-1. **[`mvp_pass1_power/README.md`](mvp_pass1_power/README.md)** — what
+1. **[`analysis/README.md`](analysis/README.md)** — what
    the MVP demonstrates, scope honesty, four archetypes, calibration vs
    AEMO.
-2. **[`mvp_pass1_power/bench/characterisation_report.md`](mvp_pass1_power/bench/characterisation_report.md)**
+2. **[`analysis/benchmarks/characterisation_report.md`](analysis/benchmarks/characterisation_report.md)**
    — the first compute-envelope study. Seven configs from NSW 1-period
    (75 s, Optimal) to full-NEM 6-period (intractable at default HiGHS).
-3. **[`mvp_pass1_power/bench/ipm_addendum.md`](mvp_pass1_power/bench/ipm_addendum.md)**
+3. **[`analysis/benchmarks/ipm_addendum.md`](analysis/benchmarks/ipm_addendum.md)**
    — HiGHS IPM vs primal simplex. IPM stalls at
    `Start factorization 7` during IPX basis identification.
-4. **[`mvp_pass1_power/bench/ipm_nocrossover_addendum.md`](mvp_pass1_power/bench/ipm_nocrossover_addendum.md)**
+4. **[`analysis/benchmarks/ipm_nocrossover_addendum.md`](analysis/benchmarks/ipm_nocrossover_addendum.md)**
    — Disproof of the "crossover-stall" hypothesis. The stall is in IPX
    barrier, not in the final crossover.
-5. **[`mvp_pass1_power/bench/phase1_2_addendum.md`](mvp_pass1_power/bench/phase1_2_addendum.md)**
+5. **[`analysis/benchmarks/phase1_2_addendum.md`](analysis/benchmarks/phase1_2_addendum.md)**
    — PDLP at default tolerance + myopic period-decomposition.
-6. **[`mvp_pass1_power/bench/test1_test2_addendum.md`](mvp_pass1_power/bench/test1_test2_addendum.md)**
+6. **[`analysis/benchmarks/test1_test2_addendum.md`](analysis/benchmarks/test1_test2_addendum.md)**
    — Final state. **PDLP at 1e-3 tolerance solves NEM 2p in 31 min.**
    **NEM 2035 1-period extended budget converges Optimal in 22 min.**
 
 ### Code layout
 
-- [`mvp_pass1_power/archetypes/`](mvp_pass1_power/archetypes/) — four
+- [`analysis/archetypes/`](analysis/archetypes/) — four
   archetype-mutation functions that edit ISPyPSA input CSVs between
   templater and translator.
-- [`mvp_pass1_power/postprocess/`](mvp_pass1_power/postprocess/) — turns
+- [`analysis/postprocess/`](analysis/postprocess/) — turns
   a solved PyPSA Network into simple-msm CSVs. NGER emission cross-walk
   in `nger_factors.py`; cost decoupling in `extract_method_years.py`;
   CSV emission in `emit_simple_msm.py`.
-- [`mvp_pass1_power/bench/`](mvp_pass1_power/bench/) — the seven-config
+- [`analysis/benchmarks/`](analysis/benchmarks/) — the seven-config
   benchmark suite + IPM/PDLP variants + myopic driver. Wrapped by
-  [`instrumented_runner.py`](mvp_pass1_power/bench/instrumented_runner.py)
+  [`instrumented_runner.py`](analysis/benchmarks/instrumented_runner.py)
   with per-stage timing and HiGHS log parsing.
-- [`mvp_pass1_power/calibration/`](mvp_pass1_power/calibration/) —
+- [`analysis/calibration/`](analysis/calibration/) —
   side-by-side comparison vs AEMO's published 2024 ISP Step Change.
 
 ### What's NOT committed
 
-`mvp_pass1_power/.gitignore` excludes:
+`analysis/.gitignore` excludes:
 
 - `data/` — IASR workbook, wind/solar/demand traces, NGA PDF.
   Downloadable.
@@ -368,7 +368,7 @@ with overrides.**
 
 All Scope 1 combustion factors from National Greenhouse Accounts
 Factors 2024 (DCCEEW, NGER (Measurement) Determination 2008 Schedule 1).
-Cross-walk in [`postprocess/nger_factors.py`](mvp_pass1_power/postprocess/nger_factors.py).
+Cross-walk in [`postprocess/nger_factors.py`](analysis/postprocess/nger_factors.py).
 CO2, CH4 (as CO2e), N2O (as CO2e) reported separately. Multi-pollutant
 beyond CO2e is not implemented.
 
@@ -397,46 +397,46 @@ For the team conversation, the empirically-demonstrated paths are:
 uv sync
 
 # 1. Download IASR workbook + traces + NGA PDF (~1.6 GB one-time)
-curl -L -o mvp_pass1_power/data/iasr_2024_v6.0.xlsx \
+curl -L -o analysis/data/iasr_2024_v6.0.xlsx \
     https://data.openisp.au/archive/workbooks/6.0.xlsx
 uv run python -c "
 from isp_trace_parser.remote import fetch_trace_data
 from pathlib import Path
 fetch_trace_data(dataset_type='example', dataset_src='isp_2024',
-                 save_directory=Path('mvp_pass1_power/data/traces'))
+                 save_directory=Path('analysis/data/traces'))
 "
-curl -L -o mvp_pass1_power/data/NGA_Factors_2024.pdf \
+curl -L -o analysis/data/NGA_Factors_2024.pdf \
     https://www.dcceew.gov.au/sites/default/files/documents/national-greenhouse-account-factors-2024.pdf
 
 # 2. Run the four MVP archetypes at NSW-only fast config
-bash mvp_pass1_power/scripts/run_all_archetypes.sh
+bash analysis/scripts/run_all_archetypes.sh
 
 # 3. Inspect outputs
-cat mvp_pass1_power/outputs/simple_msm/method_years.csv
-cat mvp_pass1_power/outputs/simple_msm/diagnostics.csv
-cat mvp_pass1_power/calibration/calibration_report.md
+cat analysis/outputs/simple_msm/method_years.csv
+cat analysis/outputs/simple_msm/diagnostics.csv
+cat analysis/calibration/calibration_report.md
 ```
 
 To re-run a specific bench config:
 
 ```bash
 # NEM 2p PDLP at 1e-3 (the production-scale solve)
-uv run python mvp_pass1_power/bench/run_one_pdlp.py \
+uv run python analysis/benchmarks/run_one_pdlp.py \
     --run-id 05_pdlp_tol_3_nem_2period \
-    --config mvp_pass1_power/bench/configs/05_nem_2period.yaml \
+    --config analysis/benchmarks/configs/05_nem_2period.yaml \
     --pdlp-tolerance 1e-3 --budget-min 60
 
 # Or the myopic NEM 6p sequence
-uv run python mvp_pass1_power/bench/run_myopic.py \
+uv run python analysis/benchmarks/run_myopic.py \
     --run-id nem_6p_myopic_v2 \
     --periods 2025 2030 2035 2040 2045 2050 \
     --budget-min 360
 ```
 
 Bench records (JSON) under
-[`mvp_pass1_power/bench/records/`](mvp_pass1_power/bench/records/),
+[`analysis/benchmarks/records/`](analysis/benchmarks/records/),
 solver-stdout transcripts under
-[`mvp_pass1_power/bench/logs/`](mvp_pass1_power/bench/logs/).
+[`analysis/benchmarks/logs/`](analysis/benchmarks/logs/).
 
 ## Skills
 

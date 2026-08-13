@@ -5,7 +5,7 @@ import logging; logging.getLogger("pypsa").setLevel(logging.ERROR)
 ARCH = ["cost_optimal","rapid_coal_phaseout","gas_fleet_maintained",
         "storage_led","fossil_incumbent","nuclear_baseload"]
 YEARS = [2025,2030,2035,2040,2045,2050]
-BASE = "mvp_pass1_power/bench/runs_myopic"
+BASE = "analysis/benchmarks/runs_myopic"
 PREFIX = "20260526_161705"
 
 out = {}
@@ -38,5 +38,5 @@ for a in ARCH:
         }
         print(f"done {a} {y} snaps={len(n.snapshots)}", flush=True)
 
-json.dump(out, open("mvp_pass1_power/bench/extracts/extract_1week_baseline.json","w"), indent=2)
+json.dump(out, open("analysis/benchmarks/extracts/extract_1week_baseline.json","w"), indent=2)
 print("MISSING:", missing)

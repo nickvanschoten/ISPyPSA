@@ -6,9 +6,9 @@ runs exactly one config and lets the caller specify --solver-options. The
 chain.py variant of this won't work because it hardcodes simplex behaviour.
 
 Usage:
-    uv run python mvp_pass1_power/bench/run_one_ipm.py \\
+    uv run python analysis/benchmarks/run_one_ipm.py \\
         --run-id 02_ipm_nsw_2period \\
-        --config mvp_pass1_power/bench/configs/02_nsw_2period.yaml \\
+        --config analysis/benchmarks/configs/02_nsw_2period.yaml \\
         --solver-options '{"solver":"ipm"}' \\
         --budget-min 60
 """

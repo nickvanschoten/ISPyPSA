@@ -10,7 +10,7 @@ from ispypsa.data_fetch import read_csvs
 from ispypsa.pypsa_build import build_pypsa_network
 from ispypsa.pypsa_build.custom_constraints import _add_custom_constraints
 
-run = Path("mvp_pass1_power/bench/runs_myopic/diag_mindemand_2045__cost_optimal")
+run = Path("analysis/benchmarks/runs_myopic/diag_mindemand_2045__cost_optimal")
 pf = read_csvs(run / "pypsa_friendly")
 ts = run / "pypsa_friendly" / "capacity_expansion_timeseries"
 print("building min-demand model...", flush=True)

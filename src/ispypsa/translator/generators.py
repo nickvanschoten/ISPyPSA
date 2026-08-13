@@ -35,7 +35,7 @@ def _add_carbon_pricing_columns(generators: pd.DataFrame) -> pd.DataFrame:
     Capture rate keyed on `isp_technology_type` (translator constant —
     placeholder until IASR carries per-plant CCS figures). Carrier-level
     total Scope 1 CO2e factor is the canonical NGER value (mirrors
-    `mvp_pass1_power/postprocess/nger_factors.py`). The two derived columns
+    `analysis/postprocess/nger_factors.py`). The two derived columns
     are physical t/MWh quantities used downstream by:
       - the dynamic marginal-cost calc: residual × carbon_price (carbon
         adder) + captured × tns_price (T&S adder)

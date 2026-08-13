@@ -18,8 +18,8 @@ if [ ! -x ".venv/bin/python" ]; then
 fi
 
 if command -v uv >/dev/null 2>&1; then
-    exec uv run streamlit run mvp_pass1_power/dashboard/frontier_dashboard.py
+    exec uv run streamlit run analysis/dashboard/frontier_dashboard.py
 else
     echo "Note: 'uv' not on PATH; launching via the venv directly."
-    exec .venv/bin/python -m streamlit run mvp_pass1_power/dashboard/frontier_dashboard.py
+    exec .venv/bin/python -m streamlit run analysis/dashboard/frontier_dashboard.py
 fi

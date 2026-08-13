@@ -6,7 +6,7 @@ import logging; logging.getLogger("pypsa").setLevel(logging.ERROR)
 ARCH = ["cost_optimal","rapid_coal_phaseout","gas_fleet_maintained",
         "storage_led","fossil_incumbent","nuclear_baseload"]
 YEARS = [2025,2030,2035,2040,2045,2050]
-BASE = "mvp_pass1_power/bench/runs_myopic"
+BASE = "analysis/benchmarks/runs_myopic"
 
 def extract(arch, year):
     nc = f"{BASE}/nem_3week_v1_{arch}_{year}__{arch}/outputs/capacity_expansion.nc"
@@ -45,5 +45,5 @@ for a in ARCH:
         out[a][str(y)] = extract(a,y)
         print(f"done {a} {y}", flush=True)
 
-json.dump(out, open("mvp_pass1_power/bench/extracts/extract_3week_carriers.json","w"), indent=2)
+json.dump(out, open("analysis/benchmarks/extracts/extract_3week_carriers.json","w"), indent=2)
 print("WROTE _extract_72.json")

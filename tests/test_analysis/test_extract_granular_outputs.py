@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 
-from mvp_pass1_power.postprocess.extract_granular_outputs import (
+from analysis.postprocess.extract_granular_outputs import (
     _capacity_factors,
     _storage_totals,
 )

@@ -1,6 +1,6 @@
 # Streamlit theme for the frontier dashboard (v3 — CSIRO chrome).
 # Aligned to the CSIRO token layer + Plotly "frontier" template + targeted CSS
-# in mvp_pass1_power/dashboard/frontier_dashboard.py so chrome and charts read
+# in analysis/dashboard/frontier_dashboard.py so chrome and charts read
 # as one identity. Theming only — no behaviour, no data.
 #
 # CSIRO brand values are REFERENCE-MATCHED, PENDING OFFICIAL SPEC (sampled to

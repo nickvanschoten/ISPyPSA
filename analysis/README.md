@@ -348,41 +348,41 @@ inputs on first run.
 uv sync
 
 # 1. Download the 2024 IASR workbook (v6.0) — ~11 MB
-curl -L -o mvp_pass1_power/data/iasr_2024_v6.0.xlsx \
+curl -L -o analysis/data/iasr_2024_v6.0.xlsx \
      https://data.openisp.au/archive/workbooks/6.0.xlsx
 
 # 2. Download example trace data (reference year 2018) — ~1.6 GB
-mkdir -p mvp_pass1_power/data/traces
+mkdir -p analysis/data/traces
 uv run python -c "
 from isp_trace_parser.remote import fetch_trace_data
 from pathlib import Path
 fetch_trace_data(dataset_type='example', dataset_src='isp_2024',
-                 save_directory=Path('mvp_pass1_power/data/traces'))
+                 save_directory=Path('analysis/data/traces'))
 "
 
 # 3. (optional) Download NGA Factors 2024 PDF for provenance inspection
-curl -L -o mvp_pass1_power/data/NGA_Factors_2024.pdf \
+curl -L -o analysis/data/NGA_Factors_2024.pdf \
      https://www.dcceew.gov.au/sites/default/files/documents/national-greenhouse-account-factors-2024.pdf
 
 # 4. Quick smoke: run each archetype at minimal (NSW single-period) scale
 for arch in cost_optimal rapid_coal_phaseout gas_fleet_maintained \
             storage_led fossil_incumbent nuclear_baseload; do
-    uv run python mvp_pass1_power/scripts/run_workflow.py \
-        --config mvp_pass1_power/configs/minimal.yaml --archetype $arch
+    uv run python analysis/scripts/run_workflow.py \
+        --config analysis/configs/minimal.yaml --archetype $arch
 done
 # For the full-NEM 6-year production runs, use the myopic driver — see
-# CLAUDE.md "Reproduction" (mvp_pass1_power/bench/run_myopic.py).
+# CLAUDE.md "Reproduction" (analysis/benchmarks/run_myopic.py).
 
 # 5. Emit simple-msm CSVs
-uv run python -m mvp_pass1_power.postprocess.emit_simple_msm \
-    --runs-dir mvp_pass1_power/runs \
-    --workbook-cache mvp_pass1_power/data/workbook_cache \
-    --out mvp_pass1_power/outputs/simple_msm
+uv run python -m analysis.postprocess.emit_simple_msm \
+    --runs-dir analysis/runs \
+    --workbook-cache analysis/data/workbook_cache \
+    --out analysis/outputs/simple_msm
 
 # 6. Calibration report for cost-optimal
-uv run python mvp_pass1_power/calibration/compare_to_aemo.py \
-    --run mvp_pass1_power/runs/minimal_step_change__cost_optimal \
-    --out mvp_pass1_power/calibration
+uv run python analysis/calibration/compare_to_aemo.py \
+    --run analysis/runs/minimal_step_change__cost_optimal \
+    --out analysis/calibration
 ```
 
 Total reproduction time: roughly **15 minutes on a developer laptop** after
@@ -406,7 +406,7 @@ is a one-time `uv sync` to install dependencies.
 To launch manually:
 
 ```bash
-uv run streamlit run mvp_pass1_power/dashboard/dashboard.py
+uv run streamlit run analysis/dashboard/dashboard.py
 ```
 
 ---
@@ -414,7 +414,7 @@ uv run streamlit run mvp_pass1_power/dashboard/dashboard.py
 ## Repository layout
 
 ```
-mvp_pass1_power/
+analysis/
 ├── README.md                         — this file
 ├── configs/
 │   ├── minimal.yaml                  — NSW, 2050 single period (quick smoke)

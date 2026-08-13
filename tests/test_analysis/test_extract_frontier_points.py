@@ -15,7 +15,7 @@ import pandas as pd
 import pypsa
 import pytest
 
-from mvp_pass1_power.postprocess.extract_frontier_points import (
+from analysis.postprocess.extract_frontier_points import (
     _assemble_frontier_row,
     _carried_vintage_capex,
     _existing_fleet_fom,

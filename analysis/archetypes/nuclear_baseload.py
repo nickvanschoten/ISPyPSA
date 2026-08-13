@@ -32,7 +32,7 @@ Nuclear parameters (CSIRO GenCost 2024-25 Final, July 2025):
 Carrier: "Nuclear" is a first-class carrier from ISPyPSA's perspective. It is
 listed in src/ispypsa/translator/generators.py:non_fuel_carriers alongside
 Wind/Solar/Water so the translator routes zero-fuel-cost generators correctly.
-Post-processing (mvp_pass1_power/postprocess/nger_factors.py) maps Nuclear to
+Post-processing (analysis/postprocess/nger_factors.py) maps Nuclear to
 zero Scope 1 combustion emissions.
 
 Structural template:
@@ -45,7 +45,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from mvp_pass1_power.archetypes._capacity_floor import add_capacity_floor
+from analysis.archetypes._capacity_floor import add_capacity_floor
 
 log = logging.getLogger(__name__)
 

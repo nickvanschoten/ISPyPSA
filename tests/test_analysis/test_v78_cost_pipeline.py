@@ -31,7 +31,7 @@ from ispypsa.templater import (
     load_manually_extracted_tables,
 )
 
-_V78_CACHE = Path("mvp_pass1_power/data/workbook_cache_final")
+_V78_CACHE = Path("analysis/data/workbook_cache_final")
 
 
 @pytest.fixture(scope="module")

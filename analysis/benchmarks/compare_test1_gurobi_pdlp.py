@@ -14,8 +14,8 @@ from pathlib import Path
 import pandas as pd
 import pypsa
 
-BENCH = Path("mvp_pass1_power/bench")
-ROOT = Path("mvp_pass1_power")
+BENCH = Path("analysis/benchmarks")
+ROOT = Path("analysis")
 
 
 def _active_capacity_gw(nc_path: Path, year: int = 2040) -> dict[str, float]:

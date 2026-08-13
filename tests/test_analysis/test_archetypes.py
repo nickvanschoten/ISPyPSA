@@ -8,12 +8,12 @@ import logging
 import pandas as pd
 import pytest
 
-from mvp_pass1_power.archetypes.cost_optimal import apply as cost_optimal_apply
-from mvp_pass1_power.archetypes.rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
-from mvp_pass1_power.archetypes.fossil_incumbent import apply as fossil_incumbent_apply
-from mvp_pass1_power.archetypes.gas_fleet_maintained import apply as gas_fleet_maintained_apply
-from mvp_pass1_power.archetypes.nuclear_baseload import apply as nuclear_baseload_apply
-from mvp_pass1_power.archetypes.storage_led import apply as storage_led_apply
+from analysis.archetypes.cost_optimal import apply as cost_optimal_apply
+from analysis.archetypes.rapid_coal_phaseout import apply as rapid_coal_phaseout_apply
+from analysis.archetypes.fossil_incumbent import apply as fossil_incumbent_apply
+from analysis.archetypes.gas_fleet_maintained import apply as gas_fleet_maintained_apply
+from analysis.archetypes.nuclear_baseload import apply as nuclear_baseload_apply
+from analysis.archetypes.storage_led import apply as storage_led_apply
 
 # Minimal empty DataFrames with the column schemas each archetype function accesses.
 # Used in tests that focus on one table and need an inert placeholder for the other.
@@ -375,7 +375,7 @@ def test_nuclear_baseload_skips_gracefully_when_no_thermal_template(csv_str_to_d
     bc = pd.DataFrame(columns=["technology", "2024_25_$/mw"])
     tables = {"new_entrant_generators": ne, "new_entrant_build_costs": bc}
 
-    with caplog.at_level(logging.WARNING, logger="mvp_pass1_power.archetypes.nuclear_baseload"):
+    with caplog.at_level(logging.WARNING, logger="analysis.archetypes.nuclear_baseload"):
         result = nuclear_baseload_apply(tables, config=None)
 
     assert result is tables
@@ -385,7 +385,7 @@ def test_nuclear_baseload_skips_gracefully_when_no_thermal_template(csv_str_to_d
 def test_nuclear_baseload_warns_and_skips_when_new_entrant_table_missing(caplog):
     tables = {"some_other_table": pd.DataFrame()}
 
-    with caplog.at_level(logging.WARNING, logger="mvp_pass1_power.archetypes.nuclear_baseload"):
+    with caplog.at_level(logging.WARNING, logger="analysis.archetypes.nuclear_baseload"):
         result = nuclear_baseload_apply(tables, config=None)
 
     assert result is tables
@@ -504,7 +504,7 @@ def test_gas_fleet_maintained_skips_year_when_existing_already_meets_floor(csv_s
     }
     config = _StubConfig(investment_periods=[2030])
 
-    with caplog.at_level(logging.INFO, logger="mvp_pass1_power.archetypes._capacity_floor"):
+    with caplog.at_level(logging.INFO, logger="analysis.archetypes._capacity_floor"):
         result = gas_fleet_maintained_apply(tables, config)
 
     assert result["custom_constraints_lhs"].empty
@@ -566,7 +566,7 @@ def test_capacity_floor_warns_when_mandate_year_not_in_investment_periods(csv_st
     }
     config = _StubConfig(investment_periods=[2030])
 
-    with caplog.at_level(logging.WARNING, logger="mvp_pass1_power.archetypes._capacity_floor"):
+    with caplog.at_level(logging.WARNING, logger="analysis.archetypes._capacity_floor"):
         result = gas_fleet_maintained_apply(tables, config)
 
     assert (
@@ -585,7 +585,7 @@ def test_capacity_floor_warns_when_mandate_year_not_in_investment_periods(csv_st
 
 
 def test_maintenance_overlay_adds_premium_to_coal_within_eol_window(csv_str_to_df):
-    from mvp_pass1_power.archetypes._maintenance_overlay import apply as overlay_apply
+    from analysis.archetypes._maintenance_overlay import apply as overlay_apply
 
     # Coal closing in 5 years from first period 2030 -> closes 2035.
     # Premium = (10 - 5) / 10 * 50 = 25.0 AUD/kW/yr.
@@ -612,7 +612,7 @@ def test_maintenance_overlay_adds_premium_to_coal_within_eol_window(csv_str_to_d
 
 
 def test_maintenance_overlay_uses_separate_gas_window_and_max(csv_str_to_df):
-    from mvp_pass1_power.archetypes._maintenance_overlay import apply as overlay_apply
+    from analysis.archetypes._maintenance_overlay import apply as overlay_apply
 
     # Gas closing 2 years from first period 2030 -> 2032.
     # Premium = (5 - 2) / 5 * 20 = 12.0 AUD/kW/yr.
@@ -639,7 +639,7 @@ def test_maintenance_overlay_uses_separate_gas_window_and_max(csv_str_to_df):
 
 
 def test_maintenance_overlay_leaves_non_thermal_units_unchanged(csv_str_to_df):
-    from mvp_pass1_power.archetypes._maintenance_overlay import apply as overlay_apply
+    from analysis.archetypes._maintenance_overlay import apply as overlay_apply
 
     ecaa = csv_str_to_df("""
         generator,  fuel_type,  closure_year,  fom_$/kw/annum
@@ -663,7 +663,7 @@ def test_maintenance_overlay_pre_pass_runs_for_every_archetype(csv_str_to_df):
     # End-to-end: invoke the wrapped APPLY_ARCHETYPE entry for cost_optimal and
     # confirm the overlay's coal premium has been applied before the archetype
     # mutation runs.
-    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+    from analysis.archetypes import APPLY_ARCHETYPE
 
     ecaa = csv_str_to_df("""
         generator,  fuel_type,    closure_year,  fom_$/kw/annum
@@ -751,7 +751,7 @@ def minimal_templater_output(csv_str_to_df):
     "nuclear_baseload",
 ])
 def test_every_wrapped_archetype_runs_against_minimal_inputs(archetype_id, minimal_templater_output):
-    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+    from analysis.archetypes import APPLY_ARCHETYPE
 
     config = _StubConfig(investment_periods=[2030, 2040, 2050])
 
@@ -772,7 +772,7 @@ def test_every_wrapped_archetype_runs_against_minimal_inputs(archetype_id, minim
 
 
 def test_production_archetypes_registry_lists_six_entries():
-    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE, PRODUCTION_ARCHETYPES
+    from analysis.archetypes import APPLY_ARCHETYPE, PRODUCTION_ARCHETYPES
 
     expected = {
         "cost_optimal",
@@ -793,7 +793,7 @@ def test_production_archetypes_registry_lists_six_entries():
 
 
 def test_repowering_extends_wind_closure_year_by_20_years_and_adds_fom_premium(csv_str_to_df):
-    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+    from analysis.archetypes._repowering import apply as repowering_apply
 
     # Wind closing 2045 — 15 years from first period 2030. After repowering:
     # closure_year = 2065. fom premium = 1000 / (15 + 20) = 28.5714... AUD/kW/yr.
@@ -813,7 +813,7 @@ def test_repowering_extends_wind_closure_year_by_20_years_and_adds_fom_premium(c
 
 
 def test_repowering_uses_separate_solar_capex(csv_str_to_df):
-    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+    from analysis.archetypes._repowering import apply as repowering_apply
 
     # Solar closing 2040 — 10 years from first period 2030.
     # premium = 800 / (10 + 20) = 26.6667 AUD/kW/yr.
@@ -833,7 +833,7 @@ def test_repowering_uses_separate_solar_capex(csv_str_to_df):
 
 
 def test_repowering_leaves_thermal_and_hydro_unchanged(csv_str_to_df):
-    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+    from analysis.archetypes._repowering import apply as repowering_apply
 
     ecaa = csv_str_to_df("""
         generator,  fuel_type,    closure_year,  fom_$/kw/annum
@@ -854,7 +854,7 @@ def test_repowering_leaves_thermal_and_hydro_unchanged(csv_str_to_df):
 
 
 def test_repowering_skips_already_retired_vre(csv_str_to_df):
-    from mvp_pass1_power.archetypes._repowering import apply as repowering_apply
+    from analysis.archetypes._repowering import apply as repowering_apply
 
     ecaa = csv_str_to_df("""
         generator,  fuel_type,  closure_year,  fom_$/kw/annum
@@ -906,7 +906,7 @@ def test_nuclear_baseload_adds_floor_at_2045_and_2050(csv_str_to_df):
 
 
 def test_biomass_cap_adds_ceiling_at_each_binding_year(csv_str_to_df):
-    from mvp_pass1_power.archetypes._biomass_cap import apply as cap_apply
+    from analysis.archetypes._biomass_cap import apply as cap_apply
 
     ne = csv_str_to_df("""
         generator,    fuel_type,  technology_type, lifetime
@@ -959,7 +959,7 @@ def test_biomass_cap_adds_ceiling_at_each_binding_year(csv_str_to_df):
 
 
 def test_biomass_cap_runs_under_every_wrapped_archetype(minimal_templater_output):
-    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+    from analysis.archetypes import APPLY_ARCHETYPE
     # Add a biomass new-entrant row so the cap has something to constrain.
     minimal_templater_output["new_entrant_generators"] = pd.concat([
         minimal_templater_output["new_entrant_generators"],
@@ -1000,7 +1000,7 @@ def test_biomass_cap_runs_under_every_wrapped_archetype(minimal_templater_output
 
 
 def test_biomass_feedstock_cost_reprices_every_financial_year(csv_str_to_df):
-    from mvp_pass1_power.archetypes._biomass_feedstock_cost import (
+    from analysis.archetypes._biomass_feedstock_cost import (
         _SCALED_BIOMASS_FEEDSTOCK_COST_GJ,
         apply as feedstock_apply,
     )
@@ -1023,7 +1023,7 @@ def test_biomass_feedstock_cost_reprices_every_financial_year(csv_str_to_df):
 
 
 def test_biomass_feedstock_cost_leaves_other_price_tables_untouched(csv_str_to_df):
-    from mvp_pass1_power.archetypes._biomass_feedstock_cost import apply as feedstock_apply
+    from analysis.archetypes._biomass_feedstock_cost import apply as feedstock_apply
 
     biomass_prices = csv_str_to_df("""
         2029_30_$/gj,  2049_50_$/gj
@@ -1043,7 +1043,7 @@ def test_biomass_feedstock_cost_leaves_other_price_tables_untouched(csv_str_to_d
 
 
 def test_biomass_feedstock_cost_logs_the_reprice(csv_str_to_df, caplog):
-    from mvp_pass1_power.archetypes._biomass_feedstock_cost import apply as feedstock_apply
+    from analysis.archetypes._biomass_feedstock_cost import apply as feedstock_apply
 
     biomass_prices = csv_str_to_df("""
         2029_30_$/gj,  2039_40_$/gj,  2049_50_$/gj
@@ -1064,7 +1064,7 @@ def test_biomass_feedstock_cost_logs_the_reprice(csv_str_to_df, caplog):
 def test_biomass_feedstock_cost_stands_down_when_supply_curve_configured(
     csv_str_to_df, caplog
 ):
-    from mvp_pass1_power.archetypes._biomass_feedstock_cost import apply as feedstock_apply
+    from analysis.archetypes._biomass_feedstock_cost import apply as feedstock_apply
 
     biomass_prices = csv_str_to_df("""
         2029_30_$/gj,  2049_50_$/gj

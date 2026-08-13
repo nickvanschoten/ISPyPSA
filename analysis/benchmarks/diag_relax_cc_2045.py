@@ -12,7 +12,7 @@ from pathlib import Path
 from ispypsa.data_fetch import read_csvs
 from ispypsa.pypsa_build import build_pypsa_network
 
-run = Path("mvp_pass1_power/bench/runs_myopic/pilot_nem_150_v75_r2_2045__cost_optimal")
+run = Path("analysis/benchmarks/runs_myopic/pilot_nem_150_v75_r2_2045__cost_optimal")
 pf = read_csvs(run / "pypsa_friendly")
 ts = run / "pypsa_friendly" / "capacity_expansion_timeseries"
 dropped = [k for k in pf if k.startswith("custom_constraints")]

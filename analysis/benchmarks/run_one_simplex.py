@@ -4,9 +4,9 @@ Mirrors run_one_ipm.py / run_one_pdlp.py but uses HiGHS defaults (primal
 simplex). Used for Test 2: extended-budget NEM 2035 single-period.
 
 Usage:
-    uv run python mvp_pass1_power/bench/run_one_simplex.py \\
+    uv run python analysis/benchmarks/run_one_simplex.py \\
         --run-id 09_nem_1period_2035_extended \\
-        --config mvp_pass1_power/bench/configs/09_nem_1period_2035.yaml \\
+        --config analysis/benchmarks/configs/09_nem_1period_2035.yaml \\
         --budget-min 240
 """
 

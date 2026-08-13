@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from mvp_pass1_power.postprocess.nger_factors import (
+from analysis.postprocess.nger_factors import (
     GWP_AR5_NGER,
     GWP_AR6_IPCC,
     co2e_per_mwh,

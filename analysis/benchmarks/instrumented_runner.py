@@ -8,8 +8,8 @@ Wraps the standard run_workflow pipeline with:
 Writes a JSON record summarising the run to bench/records/<run_id>.json.
 
 Usage:
-    uv run python mvp_pass1_power/bench/instrumented_runner.py \
-        --config mvp_pass1_power/bench/configs/nem_3period.yaml \
+    uv run python analysis/benchmarks/instrumented_runner.py \
+        --config analysis/benchmarks/configs/nem_3period.yaml \
         --run-id nem_3period \
         --archetype cost_optimal
 """
@@ -316,8 +316,8 @@ def _run_staged_pipeline(
         create_pypsa_friendly_inputs,
         create_pypsa_friendly_timeseries_inputs,
     )
-    from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
-    from mvp_pass1_power.bench.flagged_exclusions_2026 import (
+    from analysis.archetypes import APPLY_ARCHETYPE
+    from analysis.benchmarks.flagged_exclusions_2026 import (
         exclude_ecaa_without_trace,
         exclude_flagged_new_entrants,
         normalize_2026_rez_ids,
@@ -414,7 +414,7 @@ def _run_staged_pipeline(
     # still get their p_max_pu / marginal_cost wiring downstream unchanged.
     reducible_existing_names: list = []
     if reducible_existing:
-        from mvp_pass1_power.bench.retirement import (
+        from analysis.benchmarks.retirement import (
             load_retention_floor,
             make_existing_reducible,
         )
@@ -447,7 +447,7 @@ def _run_staged_pipeline(
     # (not the vintage year's). The carried row references the base mapping
     # by sharing the original new-entrant's marginal_cost field value.
     if carried_tranches_dir is not None and current_year is not None:
-        from mvp_pass1_power.bench.recursive_dynamic import (
+        from analysis.benchmarks.recursive_dynamic import (
             adjust_capacity_caps_for_carried,
             inject_carried_tranches,
             load_tranches,

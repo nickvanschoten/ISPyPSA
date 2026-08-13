@@ -5,7 +5,7 @@ Reads every bench/records/*.json and produces:
   - characterisation_summary.csv — machine-readable row per run
 
 Usage:
-    uv run python mvp_pass1_power/bench/compile_report.py
+    uv run python analysis/benchmarks/compile_report.py
 """
 
 from __future__ import annotations

@@ -1,15 +1,15 @@
 """Run an ISPyPSA workflow end-to-end for a single archetype.
 
 Usage:
-    uv run python mvp_pass1_power/scripts/run_workflow.py \\
-        --config mvp_pass1_power/configs/baseline.yaml \\
+    uv run python analysis/scripts/run_workflow.py \\
+        --config analysis/configs/baseline.yaml \\
         --archetype cost_optimal
 
 The archetype name controls a post-templater mutation pass that edits ISPyPSA
 input CSVs (and/or custom_constraints_rhs.csv) to enforce archetype-defining
 constraints before translation to PyPSA-friendly tables.
 
-Archetypes are defined in mvp_pass1_power/archetypes/<archetype>.py and exposed
+Archetypes are defined in analysis/archetypes/<archetype>.py and exposed
 through the archetype registry.
 """
 
@@ -19,7 +19,7 @@ import sys
 import time
 from pathlib import Path
 
-# Ensure mvp_pass1_power is importable.
+# Ensure analysis is importable.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ispypsa.config import load_config
@@ -40,14 +40,14 @@ from ispypsa.translator import (
     create_pypsa_friendly_timeseries_inputs,
 )
 
-from mvp_pass1_power.archetypes import APPLY_ARCHETYPE
+from analysis.archetypes import APPLY_ARCHETYPE
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--archetype", required=True,
-                        help="Archetype id from mvp_pass1_power.archetypes")
+                        help="Archetype id from analysis.archetypes")
     args = parser.parse_args()
 
     configure_logging()

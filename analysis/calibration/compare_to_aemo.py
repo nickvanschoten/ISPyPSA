@@ -6,9 +6,9 @@ aemo_2024_isp_step_change.md for sources). Produces calibration_report.md with
 side-by-side numbers, divergence percentages, and honest interpretation.
 
 Usage:
-    uv run python mvp_pass1_power/calibration/compare_to_aemo.py \\
-        --run mvp_pass1_power/runs/baseline_step_change__cost_optimal \\
-        --out mvp_pass1_power/calibration
+    uv run python analysis/calibration/compare_to_aemo.py \\
+        --run analysis/runs/baseline_step_change__cost_optimal \\
+        --out analysis/calibration
 
 Methodological caveats baked into the report (kept here so the calibration
 output cannot be read without the reader seeing them):

@@ -42,10 +42,10 @@ expects:
 # Run the post-processor
 
 ```bash
-uv run python -m mvp_pass1_power.postprocess.emit_simple_msm \
-    --runs-dir mvp_pass1_power/runs \
-    --workbook-cache mvp_pass1_power/data/workbook_cache \
-    --out mvp_pass1_power/outputs/simple_msm
+uv run python -m analysis.postprocess.emit_simple_msm \
+    --runs-dir analysis/runs \
+    --workbook-cache analysis/data/workbook_cache \
+    --out analysis/outputs/simple_msm
 ```
 
 Outputs:
@@ -73,7 +73,7 @@ fuel component (Pass 2 prices fuels itself via cross-sector commodity
 flows).
 
 The decoupling, in
-[`extract_method_years.py`](../../../mvp_pass1_power/postprocess/extract_method_years.py):
+[`extract_method_years.py`](../../../analysis/postprocess/extract_method_years.py):
 
 1. Read pypsa-friendly `generators.csv` — preserves
    `isp_heat_rate_gj/mwh`, `isp_vom_$/mwh_sent_out`,
@@ -113,7 +113,7 @@ Underlying legal basis: National Greenhouse and Energy Reporting
 (Measurement) Determination 2008, Schedule 1.
 
 The cross-walk lives in
-[`postprocess/nger_factors.py`](../../../mvp_pass1_power/postprocess/nger_factors.py):
+[`postprocess/nger_factors.py`](../../../analysis/postprocess/nger_factors.py):
 
 | ISPyPSA fuel_type | NGA Table | NGA fuel name | Total kg CO2e/GJ |
 |---|---|---|---:|
@@ -145,7 +145,7 @@ inspecting code.
 
 # Adding a new archetype
 
-1. Add a function to `mvp_pass1_power/archetypes/<archetype_id>.py`:
+1. Add a function to `analysis/archetypes/<archetype_id>.py`:
 
 ```python
 def apply(ispypsa_tables, config):
@@ -153,18 +153,18 @@ def apply(ispypsa_tables, config):
     return ispypsa_tables
 ```
 
-2. Register it in `mvp_pass1_power/archetypes/__init__.py`'s
+2. Register it in `analysis/archetypes/__init__.py`'s
    `APPLY_ARCHETYPE` dict.
 
 3. Add an entry to `ARCHETYPE_CATALOGUE` in
-   [`emit_simple_msm.py`](../../../mvp_pass1_power/postprocess/emit_simple_msm.py)
+   [`emit_simple_msm.py`](../../../analysis/postprocess/emit_simple_msm.py)
    with `method_id`, `short_name`, `description`, and any bounds.
 
 4. Run the archetype:
 
 ```bash
-uv run python mvp_pass1_power/scripts/run_workflow.py \
-    --config mvp_pass1_power/configs/fast.yaml \
+uv run python analysis/scripts/run_workflow.py \
+    --config analysis/configs/fast.yaml \
     --archetype <archetype_id>
 ```
 

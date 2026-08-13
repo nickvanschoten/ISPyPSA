@@ -3,9 +3,9 @@
 Mirrors run_one_ipm.py but passes --use-pdlp to the instrumented runner.
 
 Usage:
-    uv run python mvp_pass1_power/bench/run_one_pdlp.py \\
+    uv run python analysis/benchmarks/run_one_pdlp.py \\
         --run-id 02_pdlp_nsw_2period \\
-        --config mvp_pass1_power/bench/configs/02_nsw_2period.yaml \\
+        --config analysis/benchmarks/configs/02_nsw_2period.yaml \\
         --budget-min 180
 """
 

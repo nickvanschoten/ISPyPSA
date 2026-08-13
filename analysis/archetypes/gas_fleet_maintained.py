@@ -24,7 +24,7 @@ Levers:
      non-retired + new entrants active at the milestone year).
 """
 
-from mvp_pass1_power.archetypes._capacity_floor import add_capacity_floor
+from analysis.archetypes._capacity_floor import add_capacity_floor
 
 _GAS_FLOOR_MW_BY_YEAR = {2030: 12_500, 2035: 12_500}
 

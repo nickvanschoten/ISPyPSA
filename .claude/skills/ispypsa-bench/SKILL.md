@@ -4,7 +4,7 @@ description: Run an ISPyPSA compute-envelope benchmark configuration and interpr
 ---
 
 Run and interpret ISPyPSA benchmark configurations under
-[`mvp_pass1_power/bench/`](../../../mvp_pass1_power/bench/).
+[`analysis/benchmarks/`](../../../analysis/benchmarks/).
 
 # When to use
 
@@ -18,7 +18,7 @@ Run and interpret ISPyPSA benchmark configurations under
 
 # Layout
 
-- **Configs**: [`bench/configs/*.yaml`](../../../mvp_pass1_power/bench/configs/)
+- **Configs**: [`bench/configs/*.yaml`](../../../analysis/benchmarks/configs/)
   numbered 01–09. Each is a standalone ISPyPSA config; differences are
   scenario filter (NSW vs full NEM) and investment-period list.
 - **Runner scripts**:
@@ -33,7 +33,7 @@ Run and interpret ISPyPSA benchmark configurations under
 - **Logs**: `bench/logs/*.log` — full HiGHS solver stdout per run.
 
 All three solver-specific runners share
-[`instrumented_runner.py`](../../../mvp_pass1_power/bench/instrumented_runner.py)
+[`instrumented_runner.py`](../../../analysis/benchmarks/instrumented_runner.py)
 which wraps the ISPyPSA workflow with per-stage timing and HiGHS log
 parsing.
 
@@ -41,31 +41,31 @@ parsing.
 
 ```bash
 # Default simplex (HiGHS dual)
-uv run python mvp_pass1_power/bench/run_one_simplex.py \
+uv run python analysis/benchmarks/run_one_simplex.py \
     --run-id 04_nem_1period \
-    --config mvp_pass1_power/bench/configs/04_nem_1period.yaml \
+    --config analysis/benchmarks/configs/04_nem_1period.yaml \
     --budget-min 240
 
 # IPM, default with crossover
-uv run python mvp_pass1_power/bench/run_one_ipm.py \
+uv run python analysis/benchmarks/run_one_ipm.py \
     --run-id 02_ipm_nsw_2period \
-    --config mvp_pass1_power/bench/configs/02_nsw_2period.yaml \
+    --config analysis/benchmarks/configs/02_nsw_2period.yaml \
     --budget-min 60
 
 # IPM without crossover
-uv run python mvp_pass1_power/bench/run_one_ipm.py \
+uv run python analysis/benchmarks/run_one_ipm.py \
     --run-id 02_ipm_nocross_nsw_2period \
-    --config mvp_pass1_power/bench/configs/02_nsw_2period.yaml \
+    --config analysis/benchmarks/configs/02_nsw_2period.yaml \
     --no-crossover --budget-min 60
 
 # PDLP at 1e-3 tolerance — the production-scale path
-uv run python mvp_pass1_power/bench/run_one_pdlp.py \
+uv run python analysis/benchmarks/run_one_pdlp.py \
     --run-id 05_pdlp_tol_3_nem_2period \
-    --config mvp_pass1_power/bench/configs/05_nem_2period.yaml \
+    --config analysis/benchmarks/configs/05_nem_2period.yaml \
     --pdlp-tolerance 1e-3 --budget-min 180
 
 # Myopic sequence (default simplex per period)
-uv run python mvp_pass1_power/bench/run_myopic.py \
+uv run python analysis/benchmarks/run_myopic.py \
     --run-id nem_6p_myopic_v2 \
     --periods 2025 2030 2035 2040 2045 2050 \
     --budget-min 360
@@ -121,7 +121,7 @@ Three IPM-specific signals:
    this is **IPX's internal basis identification during barrier**, NOT
    the final crossover. **`run_crossover=off` does NOT skip this step**
    on ISPyPSA LPs. Verified in
-   [`ipm_nocrossover_addendum.md`](../../../mvp_pass1_power/bench/ipm_nocrossover_addendum.md).
+   [`ipm_nocrossover_addendum.md`](../../../analysis/benchmarks/ipm_nocrossover_addendum.md).
 2. **Factorization advancing** — `Start factorization 1` → `2` → ... over
    minutes is healthy. **`Start factorization 7` then silence for >30
    minutes** is the classic stall on this LP family; the basis matrix
@@ -198,7 +198,7 @@ to resolve at all.
 If a budget hits or you kill manually, use:
 
 ```bash
-uv run python mvp_pass1_power/bench/capture_partial.py \
+uv run python analysis/benchmarks/capture_partial.py \
     <run_id> --reason "..." --wall-clock-s <s> --peak-rss-gib <gib>
 ```
 
@@ -211,10 +211,10 @@ table.
 
 ```bash
 # Main characterisation report from all records
-uv run python mvp_pass1_power/bench/compile_report.py
+uv run python analysis/benchmarks/compile_report.py
 
 # IPM-vs-simplex addendum side-by-side
-uv run python mvp_pass1_power/bench/compile_ipm_addendum.py
+uv run python analysis/benchmarks/compile_ipm_addendum.py
 ```
 
 The other addenda (`ipm_nocrossover_addendum.md`,

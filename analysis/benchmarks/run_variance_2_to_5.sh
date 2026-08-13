@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../.."
 
 for i in 2 3 4 5; do
   echo "=== Variance sub-study run $i / 5 ==="
-  uv run --no-sync python mvp_pass1_power/bench/run_myopic.py \
+  uv run --no-sync python analysis/benchmarks/run_myopic.py \
     --run-id "p81vs_pdlp_r${i}" \
     --periods 2040 \
     --archetype cost_optimal \

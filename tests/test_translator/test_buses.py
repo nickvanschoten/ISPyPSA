@@ -92,7 +92,7 @@ def test_create_pypsa_friendly_bus_timeseries_data_sub_regions(tmp_path):
     expected_trace = expected_trace.reset_index(drop=True)
     # Negative net demand (rooftop exports exceeding local gross demand) must pass
     # through unclipped — see src/ispypsa/translator/buses.py docstring and
-    # mvp_pass1_power/bench/rooftop_clip_fix_scoping.md. The test fixture contains
+    # analysis/benchmarks/rooftop_clip_fix_scoping.md. The test fixture contains
     # negative values; this assert keeps the regression coverage explicit if the
     # fixture or function behaviour changes.
     assert (expected_trace["value"] < 0.0).any(), (
@@ -162,7 +162,7 @@ def test_create_pypsa_friendly_bus_timeseries_data_nem_regions(tmp_path):
     expected_trace = expected_trace.reset_index(drop=True)
     # Negative net demand (rooftop exports exceeding local gross demand) must pass
     # through unclipped — see src/ispypsa/translator/buses.py docstring and
-    # mvp_pass1_power/bench/rooftop_clip_fix_scoping.md.
+    # analysis/benchmarks/rooftop_clip_fix_scoping.md.
     assert (expected_trace["value"] < 0.0).any(), (
         "Test fixture has no negative values — regression coverage for "
         "negative-net-demand pass-through is no longer meaningful."

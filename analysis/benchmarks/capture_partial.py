@@ -4,7 +4,7 @@ Used when a benchmark run is interrupted externally (chain killed, OS signal)
 so the log file has data but no record was emitted by instrumented_runner.
 
 Usage:
-    uv run python mvp_pass1_power/bench/capture_partial.py 02_nsw_2period \
+    uv run python analysis/benchmarks/capture_partial.py 02_nsw_2period \
         --reason "killed externally — HiGHS not converging at default settings"
 """
 

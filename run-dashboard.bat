@@ -121,7 +121,7 @@ echo Starting dashboard.
 echo It will open in your default browser at http://localhost:8501
 echo Press Ctrl+C in this window to stop the server.
 echo.
-"%UV%" run streamlit run mvp_pass1_power\dashboard\frontier_dashboard.py
+"%UV%" run streamlit run analysis\dashboard\frontier_dashboard.py
 
 REM Keep the window open after Streamlit exits so any final messages stay visible.
 echo.

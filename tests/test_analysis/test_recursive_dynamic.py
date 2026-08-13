@@ -15,7 +15,7 @@ import pandas as pd
 import pypsa
 import pytest
 
-from mvp_pass1_power.bench.recursive_dynamic import (
+from analysis.benchmarks.recursive_dynamic import (
     _extract_new_built_generators,
     _extract_new_built_storage_units,
     adjust_capacity_caps_for_carried,

@@ -135,7 +135,7 @@ def create_pypsa_friendly_bus_demand_timeseries(
         # (~1.7 TWh/year NEM-wide at 2018-baseline; larger at growth-scaled years).
         # Previously clipped to 0 by commit 8ec1c4b (2025-11-27); the clip was
         # undocumented and reverted after empirical scoping showed it was not
-        # load-bearing. See mvp_pass1_power/bench/rooftop_clip_fix_scoping.md.
+        # load-bearing. See analysis/benchmarks/rooftop_clip_fix_scoping.md.
         # datetime in nanoseconds required by PyPSA
         node_trace["datetime"] = node_trace["datetime"].astype("datetime64[ns]")
         demand_traces[demand_node] = node_trace

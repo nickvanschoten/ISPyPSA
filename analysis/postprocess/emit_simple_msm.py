@@ -1,10 +1,10 @@
 """Emit simple-msm-shaped CSVs from one or more solved ISPyPSA archetype runs.
 
 Usage:
-    uv run python -m mvp_pass1_power.postprocess.emit_simple_msm \
-        --runs-dir mvp_pass1_power/runs \
-        --workbook-cache mvp_pass1_power/data/workbook_cache \
-        --out mvp_pass1_power/outputs/simple_msm
+    uv run python -m analysis.postprocess.emit_simple_msm \
+        --runs-dir analysis/runs \
+        --workbook-cache analysis/data/workbook_cache \
+        --out analysis/outputs/simple_msm
 
 Produces:
     methods.csv        — one row per archetype

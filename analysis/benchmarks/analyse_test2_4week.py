@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pypsa
 
-BENCH = Path("mvp_pass1_power/bench")
+BENCH = Path("analysis/benchmarks")
 
 
 def _disaggregated_capacity(nc_path: Path, year: int = 2040) -> dict[str, float]:

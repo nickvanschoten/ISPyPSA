@@ -14,8 +14,8 @@ from pathlib import Path
 import pandas as pd
 import pypsa
 
-BENCH = Path("mvp_pass1_power/bench")
-ROOT = Path("mvp_pass1_power")
+BENCH = Path("analysis/benchmarks")
+ROOT = Path("analysis")
 
 # Phase 7 sample 1 outlier values (from phase7_granular/capacity_gw.csv rows 31-40)
 PHASE7_SAMPLE_1 = {

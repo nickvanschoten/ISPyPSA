@@ -1,9 +1,9 @@
 paths:
-  run_directory: "mvp_pass1_power/bench/runs"
+  run_directory: "analysis/benchmarks/runs"
   ispypsa_run_name: bench_01_nsw_1p_v60clean
-  parsed_traces_directory: "mvp_pass1_power/data/traces"
-  workbook_path: "mvp_pass1_power/data/iasr_2024_v6.0.xlsx"
-  parsed_workbook_cache: "mvp_pass1_power/data/_v60_smoke_cache"
+  parsed_traces_directory: "analysis/data/traces"
+  workbook_path: "analysis/data/iasr_2024_v6.0.xlsx"
+  parsed_workbook_cache: "analysis/data/_v60_smoke_cache"
 
 trace_data:
   dataset_type: example

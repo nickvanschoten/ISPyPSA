@@ -2,11 +2,11 @@
 # Phase 1 final gate at production configuration.
 
 paths:
-  run_directory: "mvp_pass1_power/bench/runs"
+  run_directory: "analysis/benchmarks/runs"
   ispypsa_run_name: bench_02_nsw_2period_v74
-  parsed_traces_directory: "mvp_pass1_power/data/traces"
+  parsed_traces_directory: "analysis/data/traces"
   workbook_path: "iasr inputs/2025-inputs-and-assumptions-workbook.xlsm"
-  parsed_workbook_cache: "mvp_pass1_power/data/_v74_smoke_cache"
+  parsed_workbook_cache: "analysis/data/_v74_smoke_cache"
 
 trace_data:
   dataset_type: example

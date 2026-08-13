@@ -8,7 +8,7 @@ import pypsa
 import pandas as pd
 import numpy as np
 
-BASE = "mvp_pass1_power/bench/runs_myopic/prod2026_c0_{y}__cost_optimal/outputs/capacity_expansion.nc"
+BASE = "analysis/benchmarks/runs_myopic/prod2026_c0_{y}__cost_optimal/outputs/capacity_expansion.nc"
 REN = {"Wind", "Solar", "Biomass", "Hydro", "Water", "Pumped Hydro"}
 FOSSIL = {"Black Coal", "Brown Coal", "Gas", "Liquid Fuel"}
 YEARS = [2030, 2035, 2040, 2045, 2050]

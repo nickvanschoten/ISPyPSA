@@ -6,7 +6,7 @@ Dependencies (not in pyproject.toml — install separately for dashboard use):
     pip install streamlit plotly
 
 Run:
-    streamlit run mvp_pass1_power/dashboard/dashboard.py
+    streamlit run analysis/dashboard/dashboard.py
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# Ensure the repo root is on sys.path so `from mvp_pass1_power...` imports
+# Ensure the repo root is on sys.path so `from analysis...` imports
 # resolve when streamlit launches this script via plain python (e.g. the
 # `.venv\Scripts\python.exe -m streamlit run ...` fallback in
 # run-dashboard.bat). Under `uv run streamlit ...` the editable install
@@ -28,7 +28,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-from mvp_pass1_power.postprocess.extract_dispatch_timeseries import (
+from analysis.postprocess.extract_dispatch_timeseries import (
     extract_dispatch_timeseries,
     find_run_dir,
     list_available_runs,
@@ -609,7 +609,7 @@ def _render_calibration(data_dir: Path) -> None:
                     "weeks, overstating the operational trace (POE50 "
                     "OPSO_MODELLING) by ~8–12 % in the near term. See "
                     "Methodology tab → demand framing and "
-                    "`bench/extracts/demand_diagnostic.py`."
+                    "`benchmarks/extracts/demand_diagnostic.py`."
                 )
             elif year == 2050:
                 st.info(
@@ -1029,7 +1029,7 @@ fuel pricing.
 
 ### Code reference
 
-`mvp_pass1_power/postprocess/extract_method_years.py:295-328` computes
+`analysis/postprocess/extract_method_years.py:295-328` computes
 the three values from the solved PyPSA Network:
 
   - `output_cost_per_unit` — what the Intensity Curves tab plots
@@ -1059,7 +1059,7 @@ def _methodology_solver_pdlp() -> None:
         st.markdown(r"""
 ### Why HiGHS PDLP, not simplex
 
-Phase 1 bench characterisation (`mvp_pass1_power/bench/*_addendum.md`)
+Phase 1 bench characterisation (`analysis/benchmarks/*_addendum.md`)
 established that:
 
 - **HiGHS default primal simplex** degenerates in Phase 2 on the
@@ -1164,7 +1164,7 @@ def _methodology_scenario() -> None:
     with st.expander("Scenario and structural choices", expanded=True):
         st.markdown("""
 **Scenario:** AEMO 2024 IASR Step Change (`scenario: "Step Change"` in
-`mvp_pass1_power/configs/baseline.yaml`). Sourced from the
+`analysis/configs/baseline.yaml`). Sourced from the
 [IASR 2024 v6.0 workbook](https://aemo.com.au/energy-systems/major-publications/integrated-system-plan-isp/2024-integrated-system-plan-isp).
 
 **Spatial granularity:** 16 NEM sub-regions per IASR (`regional_granularity: sub_regions`).
@@ -1194,7 +1194,7 @@ def _methodology_capacity_factors() -> None:
 | Wind | AEMO IASR per-zone trace data (2018 reference year) | `p_max_pu` per zone per resource type from `isp_trace_parser` |
 | Solar | AEMO IASR per-zone trace data | as above |
 | Conventional hydro (Water) | Synthesised monthly profile from AEMO Generation Information NEM long-run averages | Uniform across facilities, annual mean ~37% — see `_HYDRO_MONTHLY_CF` in `src/ispypsa/pypsa_build/generators.py` |
-| Pumped storage | Per-facility hardcoded in `mvp_pass1_power/archetypes/_pumped_storage_fix.py` | See PHES table below |
+| Pumped storage | Per-facility hardcoded in `analysis/archetypes/_pumped_storage_fix.py` | See PHES table below |
 | Nuclear | IEA *Projected Costs of Generating Electricity 2020* baseload range (85–95%) | Not enforced as p_max_pu; LP-determined via build economics |
 | Coal, gas, biomass | LP-determined | Bounded only by IASR seasonal MW ratings + maintenance derate |
 
@@ -1516,7 +1516,7 @@ dispatch mix shifted.
 - *Remaining limitations* (accepted for MVP): uniform monthly hydro CF profile
   applied to all Water-carrier generators (no per-facility variation; AEMO
   Generation Information per-facility data is out of scope); pumped storage
-  parameters hardcoded in `mvp_pass1_power/archetypes/_pumped_storage_fix.py`
+  parameters hardcoded in `analysis/archetypes/_pumped_storage_fix.py`
   (the IASR workbook does not carry energy capacity or round-trip efficiency
   for PHES, and `isp-workbook-parser` would need an upstream extension);
   Shoalhaven dispatches at 3.1% CF in cost_optimal 2050 — an LP economic
@@ -1570,7 +1570,7 @@ def main() -> None:
         "~17 % vs full annual resolution. **Cross-archetype relative rankings "
         "— the dashboard's intended use — survive the resolution upgrade; "
         "absolute capacity / cost levels do not.** See "
-        "`mvp_pass1_power/bench/phase81_test3_addendum.md` and "
+        "`analysis/benchmarks/phase81_test3_addendum.md` and "
         "`STATUS_PRE_REDESIGN.md` for the full state."
     )
 

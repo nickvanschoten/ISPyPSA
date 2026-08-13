@@ -5,7 +5,7 @@ actual NetCDF lives at runs_myopic/<sub_run_id>_<year>__cost_optimal/outputs/
 where <sub_run_id> already contains the year (e.g. nsw_6p_myopic_2025).
 
 Usage:
-    uv run python mvp_pass1_power/bench/extract_myopic_capacities.py nsw_6p_myopic
+    uv run python analysis/benchmarks/extract_myopic_capacities.py nsw_6p_myopic
 """
 
 import argparse

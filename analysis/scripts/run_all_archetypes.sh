@@ -7,32 +7,32 @@
 
 set -euo pipefail
 
-CONFIG="${CONFIG:-mvp_pass1_power/configs/fast.yaml}"
-RUNS_DIR="mvp_pass1_power/runs"
-WORKBOOK_CACHE="mvp_pass1_power/data/workbook_cache"
-OUT_DIR="mvp_pass1_power/outputs/simple_msm"
+CONFIG="${CONFIG:-analysis/configs/fast.yaml}"
+RUNS_DIR="analysis/runs"
+WORKBOOK_CACHE="analysis/data/workbook_cache"
+OUT_DIR="analysis/outputs/simple_msm"
 
 for arch in cost_optimal rapid_coal_phaseout gas_fleet_maintained storage_led fossil_incumbent nuclear_baseload; do
     echo "=== Running archetype: $arch ==="
-    uv run python mvp_pass1_power/scripts/run_workflow.py \
+    uv run python analysis/scripts/run_workflow.py \
         --config "$CONFIG" --archetype "$arch"
 done
 
 echo "=== Emitting simple-msm CSVs ==="
-uv run python -m mvp_pass1_power.postprocess.emit_simple_msm \
+uv run python -m analysis.postprocess.emit_simple_msm \
     --runs-dir "$RUNS_DIR" --workbook-cache "$WORKBOOK_CACHE" --out "$OUT_DIR"
 
 echo "=== Building calibration report ==="
 # Run name in fast.yaml is "fast_step_change", so the cost_optimal run dir is
 # fast_step_change__cost_optimal.
 RUN_NAME=$(grep '^  ispypsa_run_name:' "$CONFIG" | awk '{print $2}')
-uv run python mvp_pass1_power/calibration/compare_to_aemo.py \
+uv run python analysis/calibration/compare_to_aemo.py \
     --run "$RUNS_DIR/${RUN_NAME}__cost_optimal" \
-    --out mvp_pass1_power/calibration
+    --out analysis/calibration
 
 echo "Done. See:"
 echo "  - $OUT_DIR/methods.csv"
 echo "  - $OUT_DIR/method_years.csv"
 echo "  - $OUT_DIR/diagnostics.csv"
 echo "  - $OUT_DIR/nger_factor_table.csv"
-echo "  - mvp_pass1_power/calibration/calibration_report.md"
+echo "  - analysis/calibration/calibration_report.md"

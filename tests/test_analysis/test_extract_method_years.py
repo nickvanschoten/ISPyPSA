@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from mvp_pass1_power.postprocess.extract_method_years import (
+from analysis.postprocess.extract_method_years import (
     _annual_fuel_cost,
     _fuel_price_per_mwh,
     _load_fuel_price_tables,

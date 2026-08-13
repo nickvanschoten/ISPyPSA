@@ -6,7 +6,7 @@ configuration times out at the wall-clock budget given, capture-on-timeout
 records a "timed_out" record so the curve has a data point.
 
 Usage:
-    uv run python mvp_pass1_power/bench/run_chain.py 02 03 04 05 06 07
+    uv run python analysis/benchmarks/run_chain.py 02 03 04 05 06 07
 """
 
 import argparse

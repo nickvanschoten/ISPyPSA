@@ -26,7 +26,7 @@ investment period, optionally injects carried tranches (if
 the newly-built tranche, then moves to the next period.
 
 Usage:
-    uv run python mvp_pass1_power/bench/run_myopic.py \\
+    uv run python analysis/benchmarks/run_myopic.py \\
         --run-id nsw_6p_myopic \\
         --filter NSW \\
         --periods 2025 2030 2035 2040 2045 2050 \\
@@ -47,9 +47,9 @@ from pathlib import Path
 import pandas as pd
 import psutil
 
-# Add the project root to sys.path so `from mvp_pass1_power.bench.recursive_dynamic
-# import ...` resolves at runtime. `uv run python mvp_pass1_power/bench/run_myopic.py`
-# only puts the script's directory (mvp_pass1_power/bench/) on sys.path; without this
+# Add the project root to sys.path so `from analysis.benchmarks.recursive_dynamic
+# import ...` resolves at runtime. `uv run python analysis/benchmarks/run_myopic.py`
+# only puts the script's directory (analysis/benchmarks/) on sys.path; without this
 # the recursive-dynamic tranche extraction silently fails with ImportError caught by
 # the try/except below, and the chain proceeds as a no-op carrying nothing forward.
 # instrumented_runner.py:30 and probe_persistence.py:43 use the same idiom.
@@ -72,7 +72,7 @@ def _write_period_config(
     tns_price: float = 0.0,
     gas_supply_curve_csv: str | None = None,
     biomass_supply_curve_csv: str | None = None,
-    parsed_traces_directory: str = "mvp_pass1_power/data/traces",
+    parsed_traces_directory: str = "analysis/data/traces",
     dataset_year: int = 2024,
     iasr_final: bool = False,
     unserved_energy_cost: float = 10000.0,
@@ -108,21 +108,21 @@ def _write_period_config(
         workbook_path = (
             "iasr inputs/2026 ISP Final/2026-isp-inputs-and-assumptions-workbook.xlsm"
         )
-        workbook_cache = "mvp_pass1_power/data/workbook_cache_final"
+        workbook_cache = "analysis/data/workbook_cache_final"
         iasr_version = "7.8"
     elif dataset_year == 2026:
         workbook_path = (
             "iasr inputs/Draft 2026 ISP Inputs and Assumptions workbook.xlsx"
         )
-        workbook_cache = "mvp_pass1_power/data/workbook_cache_v75"
+        workbook_cache = "analysis/data/workbook_cache_v75"
         iasr_version = "7.5"
     else:
         workbook_path = "iasr inputs/2025-inputs-and-assumptions-workbook.xlsm"
-        workbook_cache = "mvp_pass1_power/data/workbook_cache"
+        workbook_cache = "analysis/data/workbook_cache"
         iasr_version = "7.4"
     cfg_text = f"""# Auto-generated myopic config for {run_id} year {year}
 paths:
-  run_directory: "mvp_pass1_power/bench/runs_myopic"
+  run_directory: "analysis/benchmarks/runs_myopic"
   ispypsa_run_name: {run_id}
   parsed_traces_directory: "{parsed_traces_directory}"
   workbook_path: "{workbook_path}"
@@ -331,7 +331,7 @@ def _extract_built_capacities(run_id: str, year: int, archetype: str) -> pd.Data
     import pypsa
 
     nc_path = (
-        Path("mvp_pass1_power/bench/runs_myopic")
+        Path("analysis/benchmarks/runs_myopic")
         / f"{run_id}_{year}__{archetype}"
         / "outputs"
         / "capacity_expansion.nc"
@@ -553,7 +553,7 @@ def main():
         "curve_csv for every period. Prices gas consumption above "
         "each tranche boundary at an adder over the IASR baseline "
         "gas price. Default: off (unlimited gas at IASR prices). "
-        "See mvp_pass1_power/gas_market/ for the parameterised curve.",
+        "See analysis/gas_market/ for the parameterised curve.",
     )
     ap.add_argument(
         "--biomass-supply-curve",
@@ -569,7 +569,7 @@ def main():
     )
     ap.add_argument(
         "--parsed-traces-directory",
-        default="mvp_pass1_power/data/traces",
+        default="analysis/data/traces",
         help="Base parsed-traces dir (isp_<dataset_year> is appended). Use "
         "'data/trace_data' with --dataset-year 2026 for the Draft 2026 store.",
     )
@@ -617,7 +617,7 @@ def main():
     # (carried_tranches_dir stays None), so default behaviour is bit-identical
     # to the pre-recursive-dynamic code path.
     tranches_dir = (
-        Path("mvp_pass1_power/bench/runs_myopic") / args.run_id / "tranches"
+        Path("analysis/benchmarks/runs_myopic") / args.run_id / "tranches"
         if args.recursive_dynamic
         else None
     )
@@ -635,7 +635,7 @@ def main():
     # tranches_dir, a fresh chain starts clean so a rerun does not inherit stale
     # retained levels from a different configuration.
     retention_dir = (
-        Path("mvp_pass1_power/bench/runs_myopic") / args.run_id / "retention"
+        Path("analysis/benchmarks/runs_myopic") / args.run_id / "retention"
         if args.reducible_existing
         else None
     )
@@ -735,13 +735,13 @@ def main():
             rec["capacity_extract_error"] = str(e)
         if tranches_dir is not None and rec.get("status") == "completed":
             try:
-                from mvp_pass1_power.bench.recursive_dynamic import (
+                from analysis.benchmarks.recursive_dynamic import (
                     extract_new_built_tranche,
                     save_tranche,
                 )
 
                 nc_path = (
-                    Path("mvp_pass1_power/bench/runs_myopic")
+                    Path("analysis/benchmarks/runs_myopic")
                     / f"{sub_run_id}__{args.archetype}"
                     / "outputs"
                     / "capacity_expansion.nc"
@@ -766,13 +766,13 @@ def main():
                 rec["tranche_extract_error"] = str(e)
         if retention_dir is not None and rec.get("status") == "completed":
             try:
-                from mvp_pass1_power.bench.retirement import (
+                from analysis.benchmarks.retirement import (
                     extract_retained_existing,
                     save_retention_floor,
                 )
 
                 run_root = (
-                    Path("mvp_pass1_power/bench/runs_myopic")
+                    Path("analysis/benchmarks/runs_myopic")
                     / f"{sub_run_id}__{args.archetype}"
                 )
                 floor = extract_retained_existing(run_root, year)
@@ -799,7 +799,7 @@ def main():
         # next year would inherit an empty floor and run as bit-identical to a
         # greenfield standalone — corrupting the chain silently. The pre-fix bug
         # at step3_chain_p200_8760 logged `tranche_extract_error: "No module named
-        # 'mvp_pass1_power'"` and the chain proceeded anyway because the solve
+        # 'analysis'"` and the chain proceeded anyway because the solve
         # itself succeeded; here we halt instead so a failed write-back surfaces
         # immediately rather than poisoning the downstream chain.
         if tranches_dir is not None and rec.get("tranche_extract_error"):

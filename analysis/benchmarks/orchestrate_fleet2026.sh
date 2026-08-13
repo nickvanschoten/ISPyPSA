@@ -9,13 +9,13 @@ for cp in "${TRAJ[@]}"; do
   while [ "$(jobs -rp | wc -l)" -ge "$MAXJ" ]; do sleep 120; done
   echo "$(date '+%H:%M:%S') launching c${cp}"
   (
-    PYTHONPATH=. uv run python mvp_pass1_power/bench/run_myopic.py \
+    PYTHONPATH=. uv run python analysis/benchmarks/run_myopic.py \
       --run-id prod2026_c${cp} --periods 2030 2035 2040 2045 2050 \
       --recursive-dynamic --full-year \
       --use-gurobi --gurobi-method 2 --gurobi-crossover 0 --gurobi-bar-conv-tol 1e-4 \
       --carbon-price ${cp} --dataset-year 2026 \
       --parsed-traces-directory data/trace_data --budget-min 720 \
-      > mvp_pass1_power/bench/logs/prod2026_c${cp}.chain.log 2>&1
+      > analysis/benchmarks/logs/prod2026_c${cp}.chain.log 2>&1
   ) &
   sleep 60   # stagger so the two solves' peak factorization phases don't align
 done

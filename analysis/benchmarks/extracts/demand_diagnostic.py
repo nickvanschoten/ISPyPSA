@@ -23,7 +23,7 @@ load to isolate the annualisation bias from the definitional gap.
 import pandas as pd
 
 TRACE = (
-    "mvp_pass1_power/data/traces/isp_2024/demand/"
+    "analysis/data/traces/isp_2024/demand/"
     "scenario=Step Change/reference_year=2018/data_0.parquet"
 )
 MILESTONES = [2025, 2030, 2035, 2040, 2045, 2050]

@@ -146,10 +146,10 @@ a menu model, and adder separation of $1–2/GJ keeps steps distinct).
 Usage:
 
 ```bash
-uv run python mvp_pass1_power/bench/run_myopic.py \
+uv run python analysis/benchmarks/run_myopic.py \
     --run-id gsc_c550 --periods 2025 2030 2035 2040 2045 2050 \
     --carbon-price 550 --tns-price 0 \
-    --gas-supply-curve mvp_pass1_power/gas_market/gas_supply_curve_central.csv \
+    --gas-supply-curve analysis/gas_market/gas_supply_curve_central.csv \
     ... (other production flags as per the ccx chain)
 ```
 

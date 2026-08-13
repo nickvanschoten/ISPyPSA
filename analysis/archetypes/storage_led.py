@@ -31,7 +31,7 @@ Levers:
   3. PyPSA custom_constraints floor on storage power per milestone year.
 """
 
-from mvp_pass1_power.archetypes._capacity_floor import add_capacity_floor
+from analysis.archetypes._capacity_floor import add_capacity_floor
 
 _STORAGE_FLOOR_MW_BY_YEAR = {
     2025:  3_445,

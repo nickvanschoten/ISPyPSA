@@ -65,7 +65,7 @@ _GENERATOR_ATTRIBUTE_ORDER = [
 ]
 
 # Total Scope 1 CO2e (CO2 + CH4_CO2e + N2O_CO2e), kg/GJ, by ISPyPSA carrier.
-# Mirrors the NGER cross-walk in mvp_pass1_power/postprocess/nger_factors.py
+# Mirrors the NGER cross-walk in analysis/postprocess/nger_factors.py
 # (_NGER_FACTORS_KG_CO2E_PER_GJ). Translator-side copy because src/ispypsa
 # cannot import from the project-specific postprocess layer; keep in sync if
 # either dict changes. The values are NGA Factors 2024 Tables 4, 5, 8.

@@ -23,7 +23,7 @@ import logging
 warnings.filterwarnings("ignore")
 logging.getLogger("pypsa").setLevel(logging.ERROR)
 
-RUNS = "mvp_pass1_power/bench/runs_myopic"
+RUNS = "analysis/benchmarks/runs_myopic"
 NC_1E3 = f"{RUNS}/nem_3week_v1_cost_optimal_2050__cost_optimal/outputs/capacity_expansion.nc"
 NC_1E4 = f"{RUNS}/probe_1e4_cost_optimal_2050__cost_optimal/outputs/capacity_expansion.nc"
 

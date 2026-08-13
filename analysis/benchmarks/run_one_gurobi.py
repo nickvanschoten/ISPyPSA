@@ -6,9 +6,9 @@ runner, which calls `solve_model(solver_name="gurobi")` and lets Gurobi pick
 its default algorithm.
 
 Usage:
-    uv run python mvp_pass1_power/bench/run_one_gurobi.py \\
+    uv run python analysis/benchmarks/run_one_gurobi.py \\
         --run-id 02_gurobi_nsw_2period \\
-        --config mvp_pass1_power/bench/configs/02_nsw_2period.yaml \\
+        --config analysis/benchmarks/configs/02_nsw_2period.yaml \\
         --budget-min 60
 """
 

@@ -12,7 +12,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-BENCH = Path("mvp_pass1_power/bench")
+BENCH = Path("analysis/benchmarks")
 LOGS = BENCH / "logs"
 RECORDS = BENCH / "records"
 

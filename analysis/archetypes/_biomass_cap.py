@@ -68,7 +68,7 @@ import logging
 
 import pandas as pd
 
-from mvp_pass1_power.archetypes._capacity_floor import add_capacity_cap
+from analysis.archetypes._capacity_floor import add_capacity_cap
 
 log = logging.getLogger(__name__)
 

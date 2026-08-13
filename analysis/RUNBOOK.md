@@ -194,7 +194,7 @@ differs by region). Both are Pass-3 refinements.
 ### Command
 
 ```powershell
-uv run python mvp_pass1_power/bench/run_production.py `
+uv run python analysis/benchmarks/run_production.py `
     --periods 2025 2030 2035 2040 2045 2050 `
     --budget-min 720 `
     --gurobi-fallback
@@ -260,7 +260,7 @@ To populate this table after runs complete:
 import json
 from pathlib import Path
 
-rec = json.loads(Path("mvp_pass1_power/bench/records/production_run_{timestamp}.json").read_text())
+rec = json.loads(Path("analysis/benchmarks/records/production_run_{timestamp}.json").read_text())
 for arch, s in rec["per_archetype"].items():
     print(arch, s["periods_solved"], s["periods_failed"], s["total_wall_s"], s["peak_rss_gib"])
 ```
@@ -272,10 +272,10 @@ for arch, s in rec["per_archetype"].items():
 ### simple-msm contract CSVs
 
 ```powershell
-uv run python -m mvp_pass1_power.postprocess.emit_simple_msm `
-    --runs-dir mvp_pass1_power/bench/runs_myopic `
-    --workbook-cache mvp_pass1_power/data/workbook_cache `
-    --out mvp_pass1_power/outputs/simple_msm
+uv run python -m analysis.postprocess.emit_simple_msm `
+    --runs-dir analysis/benchmarks/runs_myopic `
+    --workbook-cache analysis/data/workbook_cache `
+    --out analysis/outputs/simple_msm
 ```
 
 Outputs: `methods.csv`, `method_years.csv`, `diagnostics.csv`, `nger_factor_table.csv`.
@@ -288,13 +288,13 @@ coal and gas commodity costs (fuel costs subtracted via heat-rate × IASR fuel p
 
 ```python
 from pathlib import Path
-from mvp_pass1_power.postprocess.extract_granular_outputs import emit_granular_outputs
-from mvp_pass1_power.archetypes import PRODUCTION_ARCHETYPES
+from analysis.postprocess.extract_granular_outputs import emit_granular_outputs
+from analysis.archetypes import PRODUCTION_ARCHETYPES
 
 emit_granular_outputs(
-    runs_dir=Path("mvp_pass1_power/bench/runs_myopic"),
-    workbook_cache=Path("mvp_pass1_power/data/workbook_cache"),
-    out_dir=Path("mvp_pass1_power/outputs/granular"),
+    runs_dir=Path("analysis/benchmarks/runs_myopic"),
+    workbook_cache=Path("analysis/data/workbook_cache"),
+    out_dir=Path("analysis/outputs/granular"),
     archetype_catalogue=PRODUCTION_ARCHETYPES,
 )
 ```
@@ -397,7 +397,7 @@ Physical mass columns `diagnostic_ch4_physical_kg_per_mwh` and
 **GWP-basis switching** without re-running the pipeline. The dashboard GWP toggle uses:
 
 ```python
-from mvp_pass1_power.postprocess.nger_factors import co2e_per_mwh, GWP_AR5_NGER, GWP_AR6_IPCC
+from analysis.postprocess.nger_factors import co2e_per_mwh, GWP_AR5_NGER, GWP_AR6_IPCC
 
 # AR6 recalculation in the dashboard
 co2e = co2e_per_mwh(
@@ -431,8 +431,8 @@ electricity generation; calcination etc. are in other NGER facility categories).
 pip install streamlit plotly
 
 # Launch
-uv run streamlit run mvp_pass1_power/dashboard/dashboard.py -- `
-    --data-dir mvp_pass1_power/outputs
+uv run streamlit run analysis/dashboard/dashboard.py -- `
+    --data-dir analysis/outputs
 ```
 
 Four panels:
@@ -449,8 +449,8 @@ CSV download buttons are on the Intensity Curves panel (filtered to visible arch
 
 ### If IASR workbook is updated
 
-1. Replace `mvp_pass1_power/data/iasr_2024_v6.0.xlsx` with the new workbook.
-2. Clear `mvp_pass1_power/data/workbook_cache/` to force re-parsing.
+1. Replace `analysis/data/iasr_2024_v6.0.xlsx` with the new workbook.
+2. Clear `analysis/data/workbook_cache/` to force re-parsing.
 3. Re-run the production suite (Section 3).
 4. Re-run the post-processing (Section 5).
 5. Re-launch the dashboard to reload CSVs.
@@ -466,7 +466,7 @@ Re-run the two post-processing commands in Section 5 only.
 
 ```powershell
 # IASR workbook
-curl -L -o mvp_pass1_power/data/iasr_2024_v6.0.xlsx `
+curl -L -o analysis/data/iasr_2024_v6.0.xlsx `
     https://data.openisp.au/archive/workbooks/6.0.xlsx
 
 # Wind/solar/demand traces
@@ -475,19 +475,19 @@ from isp_trace_parser.remote import fetch_trace_data
 from pathlib import Path
 fetch_trace_data(
     dataset_type='example', dataset_year=2024,
-    save_directory=Path('mvp_pass1_power/data/traces')
+    save_directory=Path('analysis/data/traces')
 )
 "
 
 # NGA Factors PDF (provenance only — factors are hardcoded in nger_factors.py)
-curl -L -o mvp_pass1_power/data/NGA_Factors_2024.pdf `
+curl -L -o analysis/data/NGA_Factors_2024.pdf `
     https://www.dcceew.gov.au/sites/default/files/documents/national-greenhouse-account-factors-2024.pdf
 ```
 
 ### Checking what solved networks are available
 
 ```powershell
-Get-ChildItem mvp_pass1_power/bench/runs_myopic -Recurse -Filter capacity_expansion.nc |
+Get-ChildItem analysis/benchmarks/runs_myopic -Recurse -Filter capacity_expansion.nc |
     Select-Object FullName, LastWriteTime
 ```
 
