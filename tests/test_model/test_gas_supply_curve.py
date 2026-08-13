@@ -81,9 +81,9 @@ def _solve(network):
 
 
 def _tranche_solution_pj(network, period):
-    solution = network.model.variables[f"gas_supply_purchases_gj_{period}"].solution
+    solution = network.model.variables[f"gas_supply_purchases_tj_{period}"].solution
     return {
-        str(tranche): float(solution.sel(gas_tranche=tranche)) / 1.0e6
+        str(tranche): float(solution.sel(gas_tranche=tranche)) / 1.0e3
         for tranche in solution.gas_tranche.values
     }
 
@@ -172,7 +172,7 @@ def test_no_gas_generators_logs_warning_and_adds_nothing(caplog):
         "Gas supply curve configured but the network has no gas generators, "
         "so no gas supply curve constraints were added."
     ) in caplog.text
-    assert "gas_supply_purchases_gj_2025" not in network.model.variables
+    assert "gas_supply_purchases_tj_2025" not in network.model.variables
 
 
 def test_missing_heat_rate_with_no_peer_raises():

@@ -51,13 +51,13 @@ def extract_gas_supply_curve_usage(network, gas_supply_curve):
 
     rows = []
     for period in network.investment_periods:
-        variable_name = f"gas_supply_purchases_gj_{period}"
+        variable_name = f"gas_supply_purchases_tj_{period}"
         if variable_name not in network.model.variables:
             continue
         solution = network.model.variables[variable_name].solution
         tranches = gas_supply_curve[gas_supply_curve["investment_period"] == period]
         for _, tranche in tranches.iterrows():
-            used_pj = float(solution.sel(gas_tranche=tranche["tranche"])) / 1.0e6
+            used_pj = float(solution.sel(gas_tranche=tranche["tranche"])) / 1.0e3
             rows.append(
                 {
                     "investment_period": period,

@@ -113,8 +113,13 @@ level shift for large volumes**, not fine slope detail.
 ReEDS-style supply curve anchored at a reference point, implemented natively in
 linopy (the structure TIMES calls a multi-stepped supply curve):
 
-- Per investment period `y`, tranche purchase variables `q_t ≥ 0` (GJ/yr),
-  `q_t ≤ cap_t` (uncapped backstop mandatory — validated at translate time).
+- Per investment period `y`, tranche purchase variables `q_t ≥ 0` (**TJ/yr** —
+  originally GJ, which put tranche bounds at ~1e8 against a model otherwise
+  spanning ~1e0–1e5; HiGHS warned of excessive bounds and cuPDLP-C terminated at
+  iteration 0 with a spurious `Optimal` on an infeasible point on the rep-week
+  NEM LP, 2026-08-13. TJ lands caps ~1e5, adders ~1e4, coupling coefficients
+  ~1e-3–0.2 inside the model's range), `q_t ≤ cap_t` (uncapped backstop
+  mandatory — validated at translate time).
 - Coupling: `Σ_g Σ_s w_s · HR_g · p_{g,s} ≤ Σ_t q_t` over all Gas-carrier generators
   (weighted-energy-sum; `w_s` are snapshot weightings summing to 8760, so the budget
   is annual regardless of span-weighting; heat rates from the pypsa-friendly

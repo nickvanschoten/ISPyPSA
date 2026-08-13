@@ -6,7 +6,14 @@ import pandas as pd
 import pypsa
 import xarray as xr
 
-_GJ_PER_PJ = 1.0e6
+# Tranche purchase variables are denominated in TJ/year. GJ puts tranche caps at
+# ~1e8-inf against a model whose other variables are ~1e0-1e5; HiGHS then warns of
+# excessive column bounds and cuPDLP-C can terminate at iteration 0 with a spurious
+# Optimal on an infeasible point (observed on the rep-week NEM LP). TJ lands the
+# caps (~1e5), objective coefficients (~1e4) and burn-coupling coefficients
+# (~1e-3-0.2) all inside the model's existing magnitude range.
+_TJ_PER_PJ = 1.0e3
+_GJ_PER_TJ = 1.0e3
 
 
 def _add_gas_supply_curve(
@@ -18,7 +25,7 @@ def _add_gas_supply_curve(
 
     Generator marginal costs already carry the IASR baseline gas price, so each
     tranche prices only a premium ('adder_$/gj') above that baseline. Per
-    investment period, tranche purchase variables buy annual gas energy (GJ) up
+    investment period, tranche purchase variables buy annual gas energy (TJ) up
     to each tranche's cap, and total annual gas burn (generation of Gas-carrier
     generators weighted by snapshot weightings and heat rates) must be covered
     by tranche purchases. The LP fills cheap tranches first, so gas consumed
@@ -92,13 +99,13 @@ def _fill_missing_heat_rates_from_technology_medians(
 def _add_tranche_purchase_variables(
     model: linopy.Model, tranches: pd.DataFrame, period: int
 ) -> linopy.Variable:
-    """One purchase variable (GJ/year) per tranche, bounded by the tranche cap."""
-    caps_gj = (tranches["cap_pj"] * _GJ_PER_PJ).fillna(np.inf)
+    """One purchase variable (TJ/year) per tranche, bounded by the tranche cap."""
+    caps_tj = (tranches["cap_pj"] * _TJ_PER_PJ).fillna(np.inf)
     coords = pd.Index(tranches["tranche"], name="gas_tranche")
     return model.add_variables(
         lower=xr.DataArray(np.zeros(len(tranches)), coords=[coords]),
-        upper=xr.DataArray(caps_gj.to_numpy(), coords=[coords]),
-        name=f"gas_supply_purchases_gj_{period}",
+        upper=xr.DataArray(caps_tj.to_numpy(), coords=[coords]),
+        name=f"gas_supply_purchases_tj_{period}",
     )
 
 
@@ -108,22 +115,22 @@ def _constrain_gas_burn_to_purchases(
     purchases: linopy.Variable,
     period: int,
 ) -> None:
-    """Requires the period's annual gas burn (GJ) to be covered by tranche purchases."""
+    """Requires the period's annual gas burn (TJ) to be covered by tranche purchases."""
     p = network.model.variables.Generator_p.loc[:, heat_rates.index.to_list()]
     weights = network.snapshot_weightings["generators"].to_numpy()
     in_period = (network.snapshots.get_level_values(0) == period).astype(float)
     # Outer product of per-snapshot annualisation weights (zeroed outside the
-    # period) and per-generator heat rates gives each Generator_p entry's GJ
+    # period) and per-generator heat rates gives each Generator_p entry's TJ
     # contribution. Built with the variable's own coords so xarray aligns
     # rather than clashing with linopy's snapshot MultiIndex.
-    gj_per_mw = xr.DataArray(
-        np.outer(weights * in_period, heat_rates.to_numpy()),
+    tj_per_mw = xr.DataArray(
+        np.outer(weights * in_period, heat_rates.to_numpy() / _GJ_PER_TJ),
         coords=p.coords,
         dims=p.dims,
     )
-    annual_gas_gj = (p * gj_per_mw).sum()
+    annual_gas_tj = (p * tj_per_mw).sum()
     network.model.add_constraints(
-        annual_gas_gj - purchases.sum() <= 0, name=f"gas_supply_curve_{period}"
+        annual_gas_tj - purchases.sum() <= 0, name=f"gas_supply_curve_{period}"
     )
 
 
@@ -136,7 +143,7 @@ def _add_tranche_premiums_to_objective(
     """Prices tranche purchases at their adders, weighted like other operational costs."""
     objective_weight = float(network.investment_period_weightings["objective"][period])
     adders = xr.DataArray(
-        tranches["adder_$/gj"].to_numpy() * objective_weight,
+        tranches["adder_$/gj"].to_numpy() * _GJ_PER_TJ * objective_weight,
         coords=[pd.Index(tranches["tranche"], name="gas_tranche")],
     )
     network.model.objective = network.model.objective + (adders * purchases).sum()
