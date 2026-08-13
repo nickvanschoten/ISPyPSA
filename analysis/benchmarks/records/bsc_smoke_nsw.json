@@ -1,0 +1,70 @@
+{
+  "run_id": "bsc_smoke_nsw",
+  "kind": "myopic_sequential",
+  "archetype": "cost_optimal",
+  "regions_filter": [
+    "NSW"
+  ],
+  "periods": [
+    2040
+  ],
+  "recursive_dynamic": false,
+  "tranches_dir": null,
+  "carbon_price": 550.0,
+  "tns_price": 0.0,
+  "gas_supply_curve": "mvp_pass1_power/gas_market/gas_supply_curve_central.csv",
+  "biomass_supply_curve": "mvp_pass1_power/bioenergy_market/biomass_supply_curve_central.csv",
+  "unserved_energy_cost": 10000.0,
+  "reference_years": [
+    2018
+  ],
+  "started_at_iso": "2026-08-13T13:59:23",
+  "per_period": {
+    "2040": {
+      "run_id": "bsc_smoke_nsw_2040",
+      "config": "C:\\Users\\van538\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\bsc_smoke_nsw_2040.yaml",
+      "archetype": "cost_optimal",
+      "solver_options": null,
+      "started_at": 1786593564.161682,
+      "started_at_iso": "2026-08-13T13:59:24",
+      "iasr_load_s": 2.445346799911931,
+      "templating_s": 3.4213597998023033,
+      "translation_s": 8.088215899886563,
+      "pypsa_build_s": 21.666381699964404,
+      "solve_s": 1470.7908274999354,
+      "solve_ok": true,
+      "save_network_s": 0.623161599971354,
+      "extract_results_s": 1.440591299906373,
+      "annual_generation_mwh_by_period": {
+        "2040": 85904025.72280818
+      },
+      "wall_clock_s": 1518.9757491999771,
+      "status": "completed",
+      "peak_rss_bytes": 1575936000,
+      "peak_rss_gib": 1.3893852233886719,
+      "lp_rows": 734030,
+      "lp_cols": 336818,
+      "lp_nonzeros": 1369477,
+      "model_status": "Optimal",
+      "highs_run_time_s": 1458.16,
+      "simplex_iterations": 498846,
+      "ipm_iterations": null,
+      "ipm_final_pinf": null,
+      "ipm_final_dinf": null,
+      "ipm_final_gap": null,
+      "objective_value": 9217257894.0,
+      "per_period_wall_s": 1522.5402626991272,
+      "per_period_peak_gib": 1.3893852233886719,
+      "capacity_built_gw_by_fuel": {
+        "Biomass": 0.20903394508031506,
+        "Gas": 4.042350089454018,
+        "Solar": 13.591434565876392,
+        "Wind": 4.238235809336105
+      },
+      "total_capacity_built_gw": 22.08105440974683
+    }
+  },
+  "cumulative_wall_clock_s": 1539.8437032699585,
+  "peak_rss_gib_observed": 1.3893852233886719,
+  "ended_at_iso": "2026-08-13T14:25:03"
+}

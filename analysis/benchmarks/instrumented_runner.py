@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 _LICENSE_RETRY_MAX_WAIT_S = 36000  # 10 h
 
 
-def extract_gas_supply_curve_usage(network, gas_supply_curve):
+def extract_fuel_supply_curve_usage(network, fuel_supply_curve, carrier):
     """Reads solved tranche purchases into a tidy per-period usage table (PJ).
 
     The tranche variables live only in the in-process linopy model (not the
@@ -51,13 +51,16 @@ def extract_gas_supply_curve_usage(network, gas_supply_curve):
 
     rows = []
     for period in network.investment_periods:
-        variable_name = f"gas_supply_purchases_tj_{period}"
+        variable_name = f"{carrier.lower()}_supply_purchases_tj_{period}"
         if variable_name not in network.model.variables:
             continue
         solution = network.model.variables[variable_name].solution
-        tranches = gas_supply_curve[gas_supply_curve["investment_period"] == period]
+        tranches = fuel_supply_curve[fuel_supply_curve["investment_period"] == period]
         for _, tranche in tranches.iterrows():
-            used_pj = float(solution.sel(gas_tranche=tranche["tranche"])) / 1.0e3
+            used_pj = (
+                float(solution.sel({f"{carrier.lower()}_tranche": tranche["tranche"]}))
+                / 1.0e3
+            )
             rows.append(
                 {
                     "investment_period": period,
@@ -571,12 +574,20 @@ def _run_staged_pipeline(
     results["regions_and_zones_mapping"] = extract_regions_and_zones_mapping(
         ispypsa_tables
     )
-    if "gas_supply_curve" in pypsa_friendly:
-        usage = extract_gas_supply_curve_usage(
-            network, pypsa_friendly["gas_supply_curve"]
+    for curve_table, carrier in [
+        ("gas_supply_curve", "Gas"),
+        ("biomass_supply_curve", "Biomass"),
+    ]:
+        if curve_table not in pypsa_friendly:
+            continue
+        usage = extract_fuel_supply_curve_usage(
+            network, pypsa_friendly[curve_table], carrier
         )
-        results["gas_supply_curve_usage"] = usage
-        print("\n=== GAS SUPPLY CURVE USAGE (PJ by tranche) ===", flush=True)
+        results[f"{curve_table}_usage"] = usage
+        print(
+            f"\n=== {carrier.upper()} SUPPLY CURVE USAGE (PJ by tranche) ===",
+            flush=True,
+        )
         print(usage.to_string(index=False), flush=True)
     write_csvs(results, tables_dir)
     timings["extract_results_s"] = time.perf_counter() - t

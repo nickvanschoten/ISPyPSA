@@ -5,7 +5,7 @@ import pypsa
 
 from ispypsa.pypsa_build.buses import _update_buses_demand_timeseries
 from ispypsa.pypsa_build.custom_constraints import _add_custom_constraints
-from ispypsa.pypsa_build.gas_supply_curve import _add_gas_supply_curve
+from ispypsa.pypsa_build.fuel_supply_curve import _add_fuel_supply_curve
 from ispypsa.pypsa_build.generators import _update_generators_availability_timeseries
 
 
@@ -101,10 +101,19 @@ def update_network_timeseries(
         pypsa_friendly_input_tables["custom_constraints_lhs"],
     )
 
-    # The gas supply curve lives in the linopy model too, so it also needs re-adding.
+    # The fuel supply curves live in the linopy model too, so they also need re-adding.
     if "gas_supply_curve" in pypsa_friendly_input_tables:
-        _add_gas_supply_curve(
+        _add_fuel_supply_curve(
             network,
             pypsa_friendly_input_tables["gas_supply_curve"],
             pypsa_friendly_input_tables["generators"],
+            "Gas",
+        )
+
+    if "biomass_supply_curve" in pypsa_friendly_input_tables:
+        _add_fuel_supply_curve(
+            network,
+            pypsa_friendly_input_tables["biomass_supply_curve"],
+            pypsa_friendly_input_tables["generators"],
+            "Biomass",
         )

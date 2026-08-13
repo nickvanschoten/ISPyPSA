@@ -137,11 +137,11 @@ a menu model, and adder separation of $1–2/GJ keeps steps distinct).
 
 ## 5. Implementation map
 
-- Config: `gas_supply_curve.curve_csv` ([validators.py](../../src/ispypsa/config/validators.py), default off — omitting the block changes nothing).
-- Translator: [`gas_supply_curve.py`](../../src/ispypsa/translator/gas_supply_curve.py) validates the CSV (columns, per-period coverage, uncapped backstop) and emits the `gas_supply_curve` pypsa-friendly table.
-- LP: [`pypsa_build/gas_supply_curve.py`](../../src/ispypsa/pypsa_build/gas_supply_curve.py), called from `build_pypsa_network` after `_add_custom_constraints`, and re-added on the operational-stage model rebuild in `update.py`.
+- Config: `gas_supply_curve.curve_csv` (shared `FuelSupplyCurveConfig` in [validators.py](../../src/ispypsa/config/validators.py), default off — omitting the block changes nothing).
+- Translator: [`fuel_supply_curve.py`](../../src/ispypsa/translator/fuel_supply_curve.py) validates the CSV (columns, per-period coverage, uncapped backstop) and emits the `gas_supply_curve` pypsa-friendly table.
+- LP: [`pypsa_build/fuel_supply_curve.py`](../../src/ispypsa/pypsa_build/fuel_supply_curve.py) — carrier-generalised since the biomass curve landed (see [BIOMASS_SUPPLY_CURVE.md](../bioenergy_market/BIOMASS_SUPPLY_CURVE.md)); called with carrier "Gas" from `build_pypsa_network` after `_add_custom_constraints`, and re-added on the operational-stage model rebuild in `update.py`.
 - Runner: `run_myopic.py --gas-supply-curve <csv>` threads the path into every period config; `instrumented_runner.py` prints and saves `gas_supply_curve_usage.csv` (per-period tranche fills in PJ + premium cost) alongside the other capacity-expansion tables.
-- Tests: `tests/test_model/test_gas_supply_curve.py` (micro-LP solves: tranche filling order, premium in objective, per-period budget reset, span-weight scaling, no-gas warning, missing-heat-rate raise), `tests/test_translator/test_gas_supply_curve.py`.
+- Tests: `tests/test_model/test_fuel_supply_curve.py` (micro-LP solves: tranche filling order, premium in objective, per-period budget reset, span-weight scaling, no-fuel warning, missing-heat-rate raise, gas+biomass coexistence), `tests/test_translator/test_fuel_supply_curve.py`.
 
 Usage:
 

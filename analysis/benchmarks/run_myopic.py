@@ -71,6 +71,7 @@ def _write_period_config(
     carbon_price: float = 0.0,
     tns_price: float = 0.0,
     gas_supply_curve_csv: str | None = None,
+    biomass_supply_curve_csv: str | None = None,
     parsed_traces_directory: str = "mvp_pass1_power/data/traces",
     dataset_year: int = 2024,
     iasr_final: bool = False,
@@ -190,6 +191,10 @@ carbon_pricing:
 """
     if gas_supply_curve_csv is not None:
         cfg_text += f'gas_supply_curve:\n  curve_csv: "{gas_supply_curve_csv}"\n'
+    if biomass_supply_curve_csv is not None:
+        cfg_text += (
+            f'biomass_supply_curve:\n  curve_csv: "{biomass_supply_curve_csv}"\n'
+        )
     cfg_path.write_text(cfg_text)
     return cfg_path
 
@@ -551,6 +556,18 @@ def main():
         "See mvp_pass1_power/gas_market/ for the parameterised curve.",
     )
     ap.add_argument(
+        "--biomass-supply-curve",
+        default=None,
+        help="Path to a biomass feedstock supply curve CSV (tranche, "
+        "financial_year, cap_pj, adder_$/gj), threaded into "
+        "config.biomass_supply_curve.curve_csv for every period. Prices "
+        "biomass feedstock consumption above each tranche boundary at an "
+        "adder over the IASR baseline biomass price, and disables the flat "
+        "$6/GJ feedstock re-price pre-pass. Default: off (flat re-priced "
+        "feedstock, unlimited volume). See analysis/bioenergy_market/ "
+        "for the parameterised curve.",
+    )
+    ap.add_argument(
         "--parsed-traces-directory",
         default="mvp_pass1_power/data/traces",
         help="Base parsed-traces dir (isp_<dataset_year> is appended). Use "
@@ -638,6 +655,7 @@ def main():
         "carbon_price": args.carbon_price,
         "tns_price": args.tns_price,
         "gas_supply_curve": args.gas_supply_curve,
+        "biomass_supply_curve": args.biomass_supply_curve,
         "unserved_energy_cost": args.unserved_energy_cost,
         "reference_years": args.reference_years if args.reference_years else [2018],
         "started_at_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -667,6 +685,7 @@ def main():
             carbon_price=args.carbon_price,
             tns_price=args.tns_price,
             gas_supply_curve_csv=args.gas_supply_curve,
+            biomass_supply_curve_csv=args.biomass_supply_curve,
             parsed_traces_directory=args.parsed_traces_directory,
             dataset_year=args.dataset_year,
             iasr_final=args.iasr_final,

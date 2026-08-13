@@ -69,13 +69,16 @@ Caveats / Pass-1 limitations
      Preserving Tully would require adding a fuel_cost_mapping_col to the
      Biomass carrier (an upstream src/ispypsa change) — not worth it here.
   2. A single flat price loses the "cheap residue runs first, then scaled
-     feedstock" shape. The rigorous version is a feedstock supply curve
-     (residue tier limited + rising scaled tier), which needs a
-     custom-constraints weighted-energy-sum extension + a post-injection
-     carried-membership step (~2-4 days, 5-7 files). That is the confirmed
-     Pass-3 refinement (Option 2); this flat price is the conservative
-     Pass-1 approximation (it slightly over-prices the small genuine-residue
-     slice, biasing biomass *down* — the safe direction for a menu).
+     feedstock" shape. The rigorous version is the config-gated biomass
+     feedstock supply curve (`config.biomass_supply_curve.curve_csv`,
+     residue tier limited + rising scaled tiers; see
+     analysis/bioenergy_market/BIOMASS_SUPPLY_CURVE.md). When that
+     curve is configured this pre-pass stands down: the IASR residue price
+     stays in generator marginal costs as the curve's tranche-1 baseline
+     and the tranches price everything beyond residue volumes. This flat
+     price remains the conservative default when the curve is off (it
+     slightly over-prices the small genuine-residue slice, biasing biomass
+     *down* — the safe direction for a menu).
   3. New-entrant VOM is empty for *all* thermal new entrants (gas and
      biomass alike) — a systematic templater gap, not biomass-specific.
      Adding VOM to biomass only would tilt the biomass-vs-gas merit order
@@ -105,6 +108,13 @@ _SCALED_BIOMASS_FEEDSTOCK_COST_GJ = 6.0
 
 def apply(ispypsa_tables: dict[str, pd.DataFrame], config) -> dict[str, pd.DataFrame]:
     """Re-price biomass feedstock to the scaled beyond-residue delivered cost."""
+    if config.biomass_supply_curve.curve_csv is not None:
+        log.info(
+            "Biomass feedstock supply curve configured; leaving the IASR "
+            "residue-tier baseline price in place (the curve prices scaled "
+            "feedstock above it), so the flat re-price pre-pass is skipped"
+        )
+        return ispypsa_tables
     biomass_prices = ispypsa_tables["biomass_prices"]
     price_columns = _fuel_price_columns(biomass_prices)
     ispypsa_tables["biomass_prices"] = _set_feedstock_cost(

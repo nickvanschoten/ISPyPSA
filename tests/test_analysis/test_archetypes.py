@@ -401,12 +401,15 @@ def test_nuclear_baseload_warns_and_skips_when_new_entrant_table_missing(caplog)
 
 
 class _StubConfig:
-    """Minimal stand-in for ModelConfig — exposes only the chain the helper reads."""
+    """Minimal stand-in for ModelConfig — exposes only the chains the helpers read."""
 
-    def __init__(self, investment_periods):
+    def __init__(self, investment_periods, biomass_supply_curve_csv=None):
         self.temporal = type("T", (), {
             "capacity_expansion": type("C", (), {"investment_periods": investment_periods})()
         })()
+        self.biomass_supply_curve = type(
+            "B", (), {"curve_csv": biomass_supply_curve_csv}
+        )()
 
 
 _EMPTY_CC_LHS = pd.DataFrame(columns=["constraint_id", "term_type", "term_id", "coefficient"])
@@ -1008,7 +1011,7 @@ def test_biomass_feedstock_cost_reprices_every_financial_year(csv_str_to_df):
     """)
     tables = {"biomass_prices": biomass_prices}
 
-    result = feedstock_apply(tables, config=None)
+    result = feedstock_apply(tables, _StubConfig(investment_periods=[2030]))
 
     expected = csv_str_to_df(f"""
         2029_30_$/gj,                        2039_40_$/gj,                        2049_50_$/gj
@@ -1032,7 +1035,7 @@ def test_biomass_feedstock_cost_leaves_other_price_tables_untouched(csv_str_to_d
     """)
     tables = {"biomass_prices": biomass_prices, "gas_prices": gas_prices.copy()}
 
-    result = feedstock_apply(tables, config=None)
+    result = feedstock_apply(tables, _StubConfig(investment_periods=[2030]))
 
     # Gas price table (also has $/gj columns) must be left untouched — the
     # pre-pass only re-prices the biomass table it is handed by name.
@@ -1048,9 +1051,38 @@ def test_biomass_feedstock_cost_logs_the_reprice(csv_str_to_df, caplog):
     """)
 
     with caplog.at_level("INFO"):
-        feedstock_apply({"biomass_prices": biomass_prices}, config=None)
+        feedstock_apply(
+            {"biomass_prices": biomass_prices}, _StubConfig(investment_periods=[2030])
+        )
 
     assert (
         "Biomass feedstock re-priced to 6.0 $/GJ "
         "(IRENA locally-collected tier) across 3 financial years"
+    ) in caplog.text
+
+
+def test_biomass_feedstock_cost_stands_down_when_supply_curve_configured(
+    csv_str_to_df, caplog
+):
+    from mvp_pass1_power.archetypes._biomass_feedstock_cost import apply as feedstock_apply
+
+    biomass_prices = csv_str_to_df("""
+        2029_30_$/gj,  2049_50_$/gj
+        0.661895,      0.661895
+    """)
+    config = _StubConfig(
+        investment_periods=[2030],
+        biomass_supply_curve_csv="bioenergy_market/biomass_supply_curve_central.csv",
+    )
+
+    with caplog.at_level("INFO"):
+        result = feedstock_apply({"biomass_prices": biomass_prices.copy()}, config)
+
+    # The IASR residue-tier baseline must survive untouched — it is the
+    # supply curve's tranche-1 price.
+    pd.testing.assert_frame_equal(result["biomass_prices"], biomass_prices)
+    assert (
+        "Biomass feedstock supply curve configured; leaving the IASR "
+        "residue-tier baseline price in place (the curve prices scaled "
+        "feedstock above it), so the flat re-price pre-pass is skipped"
     ) in caplog.text

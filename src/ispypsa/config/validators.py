@@ -159,16 +159,17 @@ class CarbonPricingConfig(BaseModel):
     tns_price: float = 0.0  # AUD/tCO2 on captured tonnes (CCS opex)
 
 
-class GasSupplyCurveConfig(BaseModel):
-    """Stepped supply curve for gas consumed by gas-fired generation.
+class FuelSupplyCurveConfig(BaseModel):
+    """Stepped supply curve for one fuel consumed by that fuel's generators.
 
     `curve_csv` points to a CSV defining annual price-quantity tranches
     (columns: tranche, financial_year, cap_pj, adder_$/gj). Tranche adders are
-    premiums above the IASR baseline gas prices already embedded in generator
+    premiums above the IASR baseline fuel prices already embedded in generator
     marginal costs, so the LP faces a convex piecewise-linear fuel cost that
-    rises with total gas consumption (ReEDS/IPM-style supply curve anchored at
-    the IASR reference price). Default None leaves gas supply unlimited at the
-    IASR price (the pre-existing behaviour).
+    rises with total fuel consumption (ReEDS/IPM-style supply curve anchored at
+    the IASR reference price). Default None leaves the fuel's supply unlimited
+    at the IASR price (the pre-existing behaviour). Used for gas
+    (`gas_supply_curve`) and biomass feedstock (`biomass_supply_curve`).
     """
 
     curve_csv: str | None = None
@@ -185,7 +186,8 @@ class ModelConfig(BaseModel):
     unserved_energy: UnservedEnergyConfig
     trace_data: TraceDataConfig = TraceDataConfig()
     carbon_pricing: CarbonPricingConfig = CarbonPricingConfig()
-    gas_supply_curve: GasSupplyCurveConfig = GasSupplyCurveConfig()
+    gas_supply_curve: FuelSupplyCurveConfig = FuelSupplyCurveConfig()
+    biomass_supply_curve: FuelSupplyCurveConfig = FuelSupplyCurveConfig()
     filter_by_nem_regions: list[str] | None = None
     filter_by_isp_sub_regions: list[str] | None = None
     solver: Literal[
