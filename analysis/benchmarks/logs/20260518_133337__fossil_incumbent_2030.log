@@ -1,109 +1,0 @@
-
-=== SOLVE START ===
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/117 [00:00<?, ?it/s]Writing constraints.:   3%|[38;2;128;191;255m3         [0m| 4/117 [00:00<00:06, 16.19it/s]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 6/117 [00:00<00:12,  9.08it/s]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 7/117 [00:00<00:13,  8.01it/s]Writing constraints.:   9%|[38;2;128;191;255m8         [0m| 10/117 [00:00<00:09, 11.66it/s]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 13/117 [00:01<00:07, 14.64it/s]Writing constraints.:  14%|[38;2;128;191;255m#3        [0m| 16/117 [00:01<00:05, 16.84it/s]Writing constraints.:  16%|[38;2;128;191;255m#6        [0m| 19/117 [00:01<00:05, 18.38it/s]Writing constraints.:  19%|[38;2;128;191;255m#8        [0m| 22/117 [00:01<00:04, 19.58it/s]Writing constraints.:  21%|[38;2;128;191;255m##1       [0m| 25/117 [00:01<00:06, 15.32it/s]Writing constraints.:  23%|[38;2;128;191;255m##3       [0m| 27/117 [00:01<00:06, 14.65it/s]Writing constraints.:  29%|[38;2;128;191;255m##9       [0m| 34/117 [00:02<00:03, 24.97it/s]Writing constraints.:  38%|[38;2;128;191;255m###7      [0m| 44/117 [00:02<00:01, 40.88it/s]Writing constraints.:  49%|[38;2;128;191;255m####8     [0m| 57/117 [00:02<00:00, 61.77it/s]Writing constraints.:  61%|[38;2;128;191;255m######    [0m| 71/117 [00:02<00:00, 80.38it/s]Writing constraints.:  73%|[38;2;128;191;255m#######2  [0m| 85/117 [00:02<00:00, 94.97it/s]Writing constraints.:  84%|[38;2;128;191;255m########3 [0m| 98/117 [00:02<00:00, 94.71it/s]Writing constraints.:  96%|[38;2;128;191;255m#########5[0m| 112/117 [00:02<00:00, 104.63it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 117/117 [00:02<00:00, 43.42it/s] 
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 85.11it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-_z_2025m has 684472 rows; 312776 cols; 1258261 nonzeros
-Coefficient ranges:
-  Matrix  [2e-05, 8e+00]
-  Cost    [2e+02, 7e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [4e-04, 1e+05]
-WARNING: Problem has some excessively large costs
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -3
-Presolving model
-167653 rows, 240404 cols, 618855 nonzeros  1s
-155381 rows, 186931 cols, 556029 nonzeros  2s
-Dependent equations search running on 42388 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.01s (limit = 1000.00s)
-154252 rows, 185802 cols, 561913 nonzeros  2s
-Presolve reductions: rows 154252(-530220); columns 185802(-126974); nonzeros 561913(-696348) 
-Solving the presolved LP
-Using EKK dual simplex solver - serial
-  Iteration        Objective     Infeasibilities num(sum)
-          0    -2.3940996810e+10 Ph1: 38126(4.8644e+07); Du: 12096(2.3941e+07) 3s
-      43909     2.0678110509e+09 Pr: 27168(2.50049e+07); Du: 0(1.61206e-06) 9s
-      47565     2.3461172225e+09 Pr: 28319(3.54618e+07); Du: 0(1.56609e-06) 14s
-      56912     2.7211968561e+09 Pr: 28030(1.78676e+09); Du: 0(1.06812e-06) 20s
-      64700     2.9881984020e+09 Pr: 34418(1.8667e+09); Du: 0(6.19024e-07) 25s
-      69280     3.0843787845e+09 Pr: 29841(6.93771e+07); Du: 0(6.6411e-07) 30s
-      77794     3.2118486207e+09 Pr: 27366(1.06894e+08); Du: 0(3.53241e-07) 35s
-      84684     3.3076755089e+09 Pr: 23104(3.1842e+06); Du: 0(3.81391e-07) 42s
-      90054     3.3992706867e+09 Pr: 24308(6.75648e+06); Du: 0(4.78486e-07) 48s
-      93912     3.4330689112e+09 Pr: 29161(5.13308e+07); Du: 0(4.57053e-07) 53s
-      98106     3.4574878472e+09 Pr: 19392(5.93349e+06); Du: 0(5.76652e-07) 59s
-     101997     3.4904650412e+09 Pr: 23693(1.06231e+07); Du: 0(4.04128e-07) 64s
-     105625     3.5199141155e+09 Pr: 23305(4.55249e+06); Du: 0(5.1e-07) 71s
-     109214     3.5552339749e+09 Pr: 23347(1.18925e+07); Du: 0(5.71408e-07) 77s
-     113785     3.5944308068e+09 Pr: 20571(5.63512e+06); Du: 0(6.74986e-07) 83s
-     118612     3.6331938621e+09 Pr: 21822(4.19051e+06); Du: 0(4.98972e-07) 89s
-     122901     3.6462017651e+09 Pr: 22048(4.40124e+06); Du: 0(4.85045e-07) 95s
-     128138     3.7043003132e+09 Pr: 20728(4.94961e+06); Du: 0(5.27086e-07) 100s
-     133891     3.7891581993e+09 Pr: 20188(3.55629e+06); Du: 0(4.83415e-07) 106s
-     139582     3.8150160272e+09 Pr: 18430(1.23641e+06); Du: 0(5.43907e-07) 111s
-     143569     3.8243129179e+09 Pr: 18741(2.65012e+06); Du: 0(5.32718e-07) 116s
-     149872     3.8368084375e+09 Pr: 17346(1.54292e+06); Du: 0(5.11134e-07) 123s
-     158981     3.9001958366e+09 Pr: 19903(3.5892e+06); Du: 0(5.50201e-07) 128s
-     168174     4.0695876512e+09 Pr: 20136(1.50983e+07); Du: 0(8.03601e-07) 135s
-     171166     4.0839174705e+09 Pr: 18954(4.72534e+06); Du: 0(5.35486e-07) 140s
-     176390     4.0919111890e+09 Pr: 17117(1.3552e+06); Du: 0(4.92207e-07) 147s
-     184148     4.1358631752e+09 Pr: 11344(514668); Du: 0(4.44816e-07) 152s
-     191254     4.1840819017e+09 Pr: 14664(1.27159e+06); Du: 0(5.78365e-07) 157s
-     198915     4.2635735525e+09 Pr: 12456(4.40609e+06); Du: 0(8.9621e-07) 164s
-     203883     4.2902736605e+09 Pr: 10797(288572); Du: 0(4.69368e-07) 169s
-     212005     4.3444964835e+09 Pr: 10661(1.10192e+06); Du: 0(4.68865e-07) 174s
-     219832     4.3933941105e+09 Pr: 8759(406493); Du: 0(4.32792e-07) 180s
-     226734     4.4270113361e+09 Pr: 8202(97339.1); Du: 0(8.0511e-07) 186s
-     233791     4.5029677337e+09 Pr: 10587(1.69081e+06); Du: 0(3.82252e-07) 191s
-     240382     4.5261132962e+09 Pr: 7614(155659); Du: 0(2.41351e-07) 197s
-     247972     4.5612266217e+09 Pr: 5256(55545.7); Du: 0(4.58042e-07) 202s
-     256140     4.5805704890e+09 Pr: 3606(22414.8); Du: 0(2.84275e-07) 209s
-     266315     4.6241581603e+09 Pr: 32(17.7245); Du: 0(3.84185e-07) 214s
-     266430     4.6238713575e+09 Pr: 0(0); Du: 0(1.65895e-10) 214s
-     266430     4.6238713575e+09 Pr: 0(0); Du: 0(1.65895e-10) 214s
-
-Performed postsolve
-Solving the original LP from the solution after postsolve
-
-Model name          : linopy-problem-_z_2025m
-Model status        : Optimal
-Simplex   iterations: 266430
-Objective value     :  4.6238713575e+09
-P-D objective error :  6.4968807826e-14
-HiGHS run time      :        215.20
-
-=== SOLVE END ===
-{
-  "run_id": "20260518_133337__fossil_incumbent_2030",
-  "config": "D:\\van538\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\20260518_133337__fossil_incumbent_2030_2030.yaml",
-  "archetype": "fossil_incumbent",
-  "solver_options": null,
-  "started_at": 1779075391.8068552,
-  "started_at_iso": "2026-05-18T13:36:31",
-  "iasr_load_s": 0.22049430012702942,
-  "templating_s": 1.2547621000558138,
-  "translation_s": 16.65361380018294,
-  "pypsa_build_s": 28.905517499893904,
-  "solve_s": 228.99053190089762,
-  "solve_ok": true,
-  "save_network_s": 0.9079017993062735,
-  "extract_results_s": 1.6255981996655464,
-  "annual_generation_mwh_by_period": {
-    "2030": 230450266.38861567
-  },
-  "wall_clock_s": 287.3445653989911,
-  "status": "completed",
-  "peak_rss_bytes": 1787576320,
-  "peak_rss_gib": 1.6648101806640625,
-  "lp_rows": 684472,
-  "lp_cols": 312776,
-  "lp_nonzeros": 1258261,
-  "model_status": "Optimal",
-  "highs_run_time_s": 215.2,
-  "simplex_iterations": 266430,
-  "ipm_iterations": null,
-  "ipm_final_pinf": null,
-  "ipm_final_dinf": null,
-  "ipm_final_gap": null,
-  "objective_value": 4623871357.5
-}

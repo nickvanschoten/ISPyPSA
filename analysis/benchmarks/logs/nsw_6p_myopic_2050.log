@@ -1,92 +1,0 @@
-
-=== SOLVE START ===
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/87 [00:00<?, ?it/s]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 5/87 [00:00<00:01, 42.71it/s]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 10/87 [00:00<00:02, 27.23it/s]Writing constraints.:  17%|[38;2;128;191;255m#7        [0m| 15/87 [00:00<00:02, 33.52it/s]Writing constraints.:  24%|[38;2;128;191;255m##4       [0m| 21/87 [00:00<00:01, 40.54it/s]Writing constraints.:  30%|[38;2;128;191;255m##9       [0m| 26/87 [00:00<00:01, 36.41it/s]Writing constraints.:  45%|[38;2;128;191;255m####4     [0m| 39/87 [00:00<00:00, 60.08it/s]Writing constraints.:  60%|[38;2;128;191;255m#####9    [0m| 52/87 [00:00<00:00, 78.75it/s]Writing constraints.:  75%|[38;2;128;191;255m#######4  [0m| 65/87 [00:01<00:00, 92.12it/s]Writing constraints.:  91%|[38;2;128;191;255m######### [0m| 79/87 [00:01<00:00, 102.59it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 87/87 [00:01<00:00, 72.33it/s] 
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 232.26it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-6jjm5il4 has 167850 rows; 77404 cols; 319253 nonzeros
-Coefficient ranges:
-  Matrix  [5e-06, 8e+00]
-  Cost    [2e+02, 5e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [7e-04, 1e+05]
-WARNING: Problem has some excessively large costs
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -3
-Presolving model
-55657 rows, 55458 cols, 172392 nonzeros  0s
-Dependent equations search running on 9396 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.00s (limit = 1000.00s)
-52647 rows, 48315 cols, 174164 nonzeros  0s
-Presolve reductions: rows 52647(-115203); columns 48315(-29089); nonzeros 174164(-145089) 
-Solving the presolved LP
-Using EKK dual simplex solver - serial
-  Iteration        Objective     Infeasibilities num(sum)
-          0    -1.1334033736e+10 Ph1: 11439(1.48567e+07); Du: 4032(1.1334e+07) 1s
-      14274     8.2323157545e+08 Pr: 6663(7.49947e+07); Du: 0(1.46639e-07) 6s
-      17107     2.7230440900e+09 Pr: 8676(1.01817e+08); Du: 0(1.46641e-07) 11s
-      20191     4.2661439279e+09 Pr: 12675(9.20528e+07); Du: 0(2.29203e-07) 17s
-      22872     4.9054687622e+09 Pr: 11501(3.01559e+08); Du: 0(2.87859e-07) 22s
-      25281     5.8210104471e+09 Pr: 11199(8.78671e+08); Du: 0(1.86797e-07) 28s
-      27620     6.8520285912e+09 Pr: 10122(5.21814e+08); Du: 0(1.99429e-07) 33s
-      29833     9.3193140168e+09 Pr: 9035(5.50815e+08); Du: 0(2.64497e-07) 38s
-      34226     1.1258843672e+10 Pr: 10921(8.32643e+08); Du: 0(5.71942e-07) 44s
-      37470     1.2990492841e+10 Pr: 10406(1.12584e+08); Du: 0(5.07667e-07) 49s
-      41185     1.3697056352e+10 Pr: 9252(2.80008e+07); Du: 0(3.06674e-07) 55s
-      43388     1.4178471134e+10 Pr: 11880(8.96745e+07); Du: 0(4.12149e-07) 60s
-      47261     1.4754198208e+10 Pr: 10745(1.46663e+08); Du: 0(2.16351e-07) 65s
-      51676     1.6528125451e+10 Pr: 6791(1.8178e+07); Du: 0(1.45416e-07) 71s
-      55489     1.7637835327e+10 Pr: 9033(8.57433e+08); Du: 0(2.28932e-07) 76s
-      59522     1.8446549671e+10 Pr: 4191(996479); Du: 0(2.53749e-08) 82s
-      62347     1.8692588488e+10 Pr: 6388(1.43523e+07); Du: 0(2.681e-08) 87s
-      66137     1.8792976686e+10 Pr: 2873(704177); Du: 0(2.56123e-08) 92s
-      67834     1.8856497629e+10 Pr: 0(0); Du: 1(2.38547e-07) 95s
-      67834     1.8856497629e+10 Pr: 0(0); Du: 1(2.38547e-07) 95s
-
-Performed postsolve
-Solving the original LP from the solution after postsolve
-Using EKK primal simplex solver
-  Iteration        Objective     Infeasibilities num(sum)
-      67834     1.8856497629e+10 Pr: 0(0); Du: 1(2.00868e-07) 95s
-      67834     1.8856497629e+10 Pr: 0(0); Du: 1(2.00868e-07) 95s
-
-Model name          : linopy-problem-6jjm5il4
-Model status        : Optimal
-Simplex   iterations: 67834
-Objective value     :  1.8856497629e+10
-P-D objective error :  1.0823128861e-14
-HiGHS run time      :         95.19
-
-=== SOLVE END ===
-{
-  "run_id": "nsw_6p_myopic_2050",
-  "config": "C:\\Users\\van538\\Documents\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\nsw_6p_myopic_2050_2050.yaml",
-  "archetype": "cost_optimal",
-  "solver_options": null,
-  "started_at": 1778714146.560452,
-  "started_at_iso": "2026-05-14T09:15:46",
-  "iasr_load_s": 0.31033059999754187,
-  "templating_s": 1.5319827999919653,
-  "translation_s": 6.859250399997109,
-  "pypsa_build_s": 12.066770800011,
-  "solve_s": 100.25913870001386,
-  "solve_ok": true,
-  "save_network_s": 0.5815721000108169,
-  "extract_results_s": 0.5667447000014363,
-  "annual_generation_mwh_by_period": {
-    "2050": 106387219.23424089
-  },
-  "wall_clock_s": 129.08747199999925,
-  "status": "completed",
-  "peak_rss_bytes": 934612992,
-  "peak_rss_gib": 0.8704261779785156,
-  "lp_rows": 167850,
-  "lp_cols": 77404,
-  "lp_nonzeros": 319253,
-  "model_status": "Optimal",
-  "highs_run_time_s": 95.19,
-  "simplex_iterations": 67834,
-  "ipm_iterations": null,
-  "ipm_final_pinf": null,
-  "ipm_final_dinf": null,
-  "ipm_final_gap": null,
-  "objective_value": 18856497629.0
-}

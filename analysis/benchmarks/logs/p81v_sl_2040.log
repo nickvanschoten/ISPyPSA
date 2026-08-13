@@ -1,47 +1,0 @@
-WARNING: biomass_cap: mandate years [2025, 2030, 2035, 2045, 2050] not in investment_periods [2040]; skipping those years
-WARNING: storage_floor: mandate years [2025, 2030, 2035, 2045, 2050] not in investment_periods [2040]; skipping those years
-
-=== SOLVE START ===
-solver_options: {'solver': 'pdlp', 'pdlp_optimality_tolerance': 0.001, 'primal_feasibility_tolerance': 0.001, 'dual_feasibility_tolerance': 0.001}
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/278 [00:00<?, ?it/s]Writing constraints.:   1%|[38;2;128;191;255m1         [0m| 4/278 [00:08<10:03,  2.20s/it]Writing constraints.:   2%|[38;2;128;191;255m1         [0m| 5/278 [00:18<18:29,  4.07s/it]Writing constraints.:   2%|[38;2;128;191;255m2         [0m| 6/278 [00:29<27:40,  6.10s/it]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 7/278 [00:43<36:53,  8.17s/it]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 8/278 [00:45<29:01,  6.45s/it]Writing constraints.:   3%|[38;2;128;191;255m3         [0m| 9/278 [00:47<23:03,  5.14s/it]Writing constraints.:   4%|[38;2;128;191;255m3         [0m| 10/278 [00:48<18:12,  4.08s/it]Writing constraints.:   4%|[38;2;128;191;255m3         [0m| 11/278 [00:50<14:38,  3.29s/it]Writing constraints.:   4%|[38;2;128;191;255m4         [0m| 12/278 [00:52<13:07,  2.96s/it]Writing constraints.:   5%|[38;2;128;191;255m4         [0m| 13/278 [00:54<12:07,  2.75s/it]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 14/278 [00:56<11:04,  2.52s/it]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 15/278 [00:58<10:36,  2.42s/it]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 16/278 [01:00<10:03,  2.30s/it]Writing constraints.:   6%|[38;2;128;191;255m6         [0m| 17/278 [01:02<09:34,  2.20s/it]Writing constraints.:   6%|[38;2;128;191;255m6         [0m| 18/278 [01:04<08:44,  2.02s/it]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 19/278 [01:06<09:00,  2.09s/it]Writing constraints.:   7%|[38;2;128;191;255m7         [0m| 20/278 [01:08<08:48,  2.05s/it]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 21/278 [01:10<08:42,  2.03s/it]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 22/278 [01:12<08:06,  1.90s/it]Writing constraints.:   8%|[38;2;128;191;255m8         [0m| 23/278 [01:14<08:26,  1.99s/it]Writing constraints.:   9%|[38;2;128;191;255m8         [0m| 24/278 [01:27<22:30,  5.32s/it]Writing constraints.:   9%|[38;2;128;191;255m8         [0m| 25/278 [01:29<18:28,  4.38s/it]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 26/278 [01:36<21:38,  5.15s/it]Writing constraints.:  10%|[38;2;128;191;255m9         [0m| 27/278 [01:36<15:15,  3.65s/it]Writing constraints.:  10%|[38;2;128;191;255m#         [0m| 28/278 [01:36<10:46,  2.59s/it]Writing constraints.:  10%|[38;2;128;191;255m#         [0m| 29/278 [01:36<07:39,  1.85s/it]Writing constraints.:  11%|[38;2;128;191;255m#         [0m| 30/278 [01:37<05:34,  1.35s/it]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 31/278 [01:37<04:05,  1.01it/s]Writing constraints.:  12%|[38;2;128;191;255m#1        [0m| 33/278 [01:37<02:20,  1.74it/s]Writing constraints.:  13%|[38;2;128;191;255m#2        [0m| 35/278 [01:37<01:33,  2.61it/s]Writing constraints.:  13%|[38;2;128;191;255m#2        [0m| 36/278 [01:37<01:22,  2.92it/s]Writing constraints.:  13%|[38;2;128;191;255m#3        [0m| 37/278 [01:37<01:14,  3.24it/s]Writing constraints.:  17%|[38;2;128;191;255m#6        [0m| 47/278 [01:38<00:18, 12.79it/s]Writing constraints.:  21%|[38;2;128;191;255m##        [0m| 57/278 [01:38<00:09, 23.59it/s]Writing constraints.:  23%|[38;2;128;191;255m##3       [0m| 64/278 [01:38<00:07, 27.14it/s]Writing constraints.:  27%|[38;2;128;191;255m##6       [0m| 75/278 [01:38<00:05, 39.79it/s]Writing constraints.:  31%|[38;2;128;191;255m###       [0m| 86/278 [01:38<00:03, 51.77it/s]Writing constraints.:  34%|[38;2;128;191;255m###3      [0m| 94/278 [01:38<00:03, 52.99it/s]Writing constraints.:  38%|[38;2;128;191;255m###7      [0m| 105/278 [01:38<00:02, 59.51it/s]Writing constraints.:  42%|[38;2;128;191;255m####2     [0m| 117/278 [01:38<00:02, 71.70it/s]Writing constraints.:  46%|[38;2;128;191;255m####6     [0m| 128/278 [01:39<00:01, 79.72it/s]Writing constraints.:  50%|[38;2;128;191;255m####9     [0m| 138/278 [01:39<00:01, 79.11it/s]Writing constraints.:  54%|[38;2;128;191;255m#####3    [0m| 150/278 [01:39<00:01, 87.73it/s]Writing constraints.:  58%|[38;2;128;191;255m#####7    [0m| 161/278 [01:39<00:01, 92.30it/s]Writing constraints.:  63%|[38;2;128;191;255m######2   [0m| 174/278 [01:39<00:01, 101.04it/s]Writing constraints.:  67%|[38;2;128;191;255m######6   [0m| 186/278 [01:39<00:00, 106.23it/s]Writing constraints.:  72%|[38;2;128;191;255m#######1  [0m| 199/278 [01:39<00:00, 111.04it/s]Writing constraints.:  76%|[38;2;128;191;255m#######5  [0m| 211/278 [01:39<00:00, 110.75it/s]Writing constraints.:  80%|[38;2;128;191;255m########  [0m| 223/278 [01:39<00:00, 110.30it/s]Writing constraints.:  85%|[38;2;128;191;255m########4 [0m| 235/278 [01:40<00:00, 109.73it/s]Writing constraints.:  89%|[38;2;128;191;255m########8 [0m| 247/278 [01:40<00:00, 105.08it/s]Writing constraints.:  94%|[38;2;128;191;255m#########3[0m| 260/278 [01:40<00:00, 108.68it/s]Writing constraints.:  97%|[38;2;128;191;255m#########7[0m| 271/278 [01:40<00:00, 84.87it/s] Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 278/278 [01:40<00:00,  2.76it/s]
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.:  50%|[38;2;128;191;255m#####     [0m| 4/8 [00:02<00:02,  1.64it/s]Writing continuous variables.:  62%|[38;2;128;191;255m######2   [0m| 5/8 [00:02<00:01,  1.86it/s]Writing continuous variables.:  75%|[38;2;128;191;255m#######5  [0m| 6/8 [00:03<00:01,  1.98it/s]Writing continuous variables.:  88%|[38;2;128;191;255m########7 [0m| 7/8 [00:03<00:00,  2.08it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:04<00:00,  1.99it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:04<00:00,  1.92it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-f44gpi_a has 37508305 rows; 17234592 cols; 68699915 nonzeros
-Coefficient ranges:
-  Matrix  [1e-06, 8e+00]
-  Cost    [4e+00, 3e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [3e-05, 3e+05]
-WARNING: Problem has some excessively large costs
-WARNING: Problem has some excessively small row bounds
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -2
-Presolving model
-9147312 rows, 13020442 cols, 33633566 nonzeros  102s
-Dependent equations search running on 2435209 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.84s (limit = 1000.00s)
-8806749 rows, 10284239 cols, 32119685 nonzeros  264s
-Presolve reductions: rows 8806749(-28701556); columns 10284239(-6950353); nonzeros 32119685(-36580230) 
-Solving the presolved LP
-Solving with cuPDLP-C
-Using cost norm =  6.21e+06 and RHS norm =  1.93e+06
---------------------------------------------------
-running scaling
-- use Ruiz scaling
-- use PC scaling
---------------------------------------------------
-     Iter       Primal.Obj         Dual.Obj        Gap  Primal.Inf  Dual.Inf    Time
-        0  +5.09103489e+08  +5.09103489e+08  +0.00e+00    7.70e-01  7.88e-04    738s [L]
-     4000  +1.83305394e+10  -3.67209464e+09  +1.00e+00    1.14e-04  5.92e-03 3171518 [A]
-     8000  +1.65247969e+10  +1.39191373e+10  +8.56e-02    1.57e-03  1.21e-03 6300126 [A]
-    12000  +1.62082205e+10  +1.52309067e+10  +3.11e-02    1.62e-03  1.23e-04 9422225 [A]
-    16000  +1.61612950e+10  +1.54852580e+10  +2.14e-02    1.15e-03  5.10e-05 1251893 [A]
-    20000  +1.62201249e+10  +1.56268896e+10  +1.86e-02    6.89e-04  2.46e-05 1562192 [A]
-    24000  +1.62214999e+10  +1.56693561e+10  +1.73e-02    5.19e-04  1.60e-05 1875115 [A]
-    28000  +1.62023402e+10  +1.57446145e+10  +1.43e-02    4.91e-04  1.24e-05 2192883 [A]
-    32000  +1.61897633e+10  +1.57532975e+10  +1.37e-02    4.05e-04  1.02e-05 2499280 [A]
-    36000  +1.61580694e+10  +1.57747285e+10  +1.20e-02    3.81e-04  8.99e-06 2803954 [A]
-    40000  +1.61499123e+10  +1.57870528e+10  +1.14e-02    3.73e-04  5.97e-06 3106535 [A]
-    44000  +1.61216131e+10  +1.58072412e+10  +9.85e-03    3.47e-04  4.09e-06 3403739 [A]
-    48000  +1.61188529e+10  +1.58139035e+10  +9.55e-03    3.18e-04  4.03e-06 3702590 [A]
-    52000  +1.61141101e+10  +1.58193135e+10  +9.23e-03    3.09e-04  3.00e-06 4006994 [A]
-    56000  +1.61108354e+10  +1.58226579e+10  +9.02e-03    2.80e-04  2.18e-06 4308571 [A]

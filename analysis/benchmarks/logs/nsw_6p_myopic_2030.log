@@ -1,81 +1,0 @@
-
-=== SOLVE START ===
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/88 [00:00<?, ?it/s]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 6/88 [00:00<00:01, 43.22it/s]Writing constraints.:  12%|[38;2;128;191;255m#2        [0m| 11/88 [00:00<00:01, 45.84it/s]Writing constraints.:  19%|[38;2;128;191;255m#9        [0m| 17/88 [00:00<00:01, 48.50it/s]Writing constraints.:  27%|[38;2;128;191;255m##7       [0m| 24/88 [00:00<00:01, 47.47it/s]Writing constraints.:  38%|[38;2;128;191;255m###7      [0m| 33/88 [00:00<00:00, 60.28it/s]Writing constraints.:  62%|[38;2;128;191;255m######2   [0m| 55/88 [00:00<00:00, 103.67it/s]Writing constraints.:  89%|[38;2;128;191;255m########8 [0m| 78/88 [00:00<00:00, 134.09it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 88/88 [00:00<00:00, 98.76it/s] 
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 241.65it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-ib2o85z9 has 232026 rows; 106972 cols; 423087 nonzeros
-Coefficient ranges:
-  Matrix  [7e-06, 8e+00]
-  Cost    [2e+02, 5e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [7e-04, 1e+05]
-WARNING: Problem has some excessively large costs
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -3
-Presolving model
-60724 rows, 80078 cols, 212177 nonzeros  0s
-Dependent equations search running on 15389 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.00s (limit = 1000.00s)
-58640 rows, 67427 cols, 206825 nonzeros  0s
-Presolve reductions: rows 58640(-173386); columns 67427(-39545); nonzeros 206825(-216262) 
-Solving the presolved LP
-Using EKK dual simplex solver - serial
-  Iteration        Objective     Infeasibilities num(sum)
-          0    -8.6647068527e+09 Ph1: 14247(1.87978e+07); Du: 4032(8.66471e+06) 0s
-      31203     1.4722523715e+09 Pr: 12418(2.5249e+07); Du: 0(4.52017e-08) 5s
-      43686     1.9133610502e+09 Pr: 9403(7.27291e+06); Du: 0(9.59446e-08) 11s
-      52579     2.1269571890e+09 Pr: 9765(4.51452e+07); Du: 0(2.83848e-07) 16s
-      59819     2.2532539237e+09 Pr: 11949(9.28189e+06); Du: 0(2.87396e-07) 21s
-      65315     2.3437166785e+09 Pr: 10555(1.14932e+07); Du: 0(8.40803e-08) 26s
-      70160     2.4185830561e+09 Pr: 10386(6.80263e+07); Du: 0(1.56383e-07) 31s
-      75694     2.4731608733e+09 Pr: 7052(4.77511e+06); Du: 0(2.38514e-07) 36s
-      81848     2.5717124738e+09 Pr: 7857(4.52803e+06); Du: 0(3.12989e-07) 41s
-      87911     2.6189625005e+09 Pr: 7711(2.04427e+07); Du: 0(2.0587e-07) 47s
-      95204     2.6838936592e+09 Pr: 5305(4.29673e+06); Du: 0(3.10696e-07) 52s
-     103619     2.7351808626e+09 Pr: 2780(266906); Du: 0(1.9137e-07) 57s
-     104365     2.7353916836e+09 Pr: 0(0); Du: 0(5.2457e-10) 57s
-
-Performed postsolve
-Solving the original LP from the solution after postsolve
-
-Model name          : linopy-problem-ib2o85z9
-Model status        : Optimal
-Simplex   iterations: 104365
-Objective value     :  2.7353916836e+09
-P-D objective error :  3.8437856632e-14
-HiGHS run time      :         57.67
-
-=== SOLVE END ===
-{
-  "run_id": "nsw_6p_myopic_2030",
-  "config": "C:\\Users\\van538\\Documents\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\nsw_6p_myopic_2030_2030.yaml",
-  "archetype": "cost_optimal",
-  "solver_options": null,
-  "started_at": 1778713800.8396113,
-  "started_at_iso": "2026-05-14T09:10:00",
-  "iasr_load_s": 0.12670610001077875,
-  "templating_s": 0.6427569000079529,
-  "translation_s": 3.900610400000005,
-  "pypsa_build_s": 8.05336360000365,
-  "solve_s": 60.5266174999997,
-  "solve_ok": true,
-  "save_network_s": 0.326471100008348,
-  "extract_results_s": 0.2903514999925392,
-  "annual_generation_mwh_by_period": {
-    "2030": 85963678.59512529
-  },
-  "wall_clock_s": 78.54314570000861,
-  "status": "completed",
-  "peak_rss_bytes": 843014144,
-  "peak_rss_gib": 0.7851181030273438,
-  "lp_rows": 232026,
-  "lp_cols": 106972,
-  "lp_nonzeros": 423087,
-  "model_status": "Optimal",
-  "highs_run_time_s": 57.67,
-  "simplex_iterations": 104365,
-  "ipm_iterations": null,
-  "ipm_final_pinf": null,
-  "ipm_final_dinf": null,
-  "ipm_final_gap": null,
-  "objective_value": 2735391683.6
-}

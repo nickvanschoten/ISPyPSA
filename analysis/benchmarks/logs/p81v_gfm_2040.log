@@ -1,120 +1,0 @@
-WARNING: biomass_cap: mandate years [2025, 2030, 2035, 2045, 2050] not in investment_periods [2040]; skipping those years
-WARNING: gas_floor: mandate years [2030, 2035] not in investment_periods [2040]; skipping those years
-
-=== SOLVE START ===
-solver_options: {'solver': 'pdlp', 'pdlp_optimality_tolerance': 0.001, 'primal_feasibility_tolerance': 0.001, 'dual_feasibility_tolerance': 0.001}
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/277 [00:00<?, ?it/s]Writing constraints.:   0%|[38;2;128;191;255m          [0m| 1/277 [00:00<00:36,  7.64it/s]Writing constraints.:   1%|[38;2;128;191;255m1         [0m| 4/277 [00:09<11:55,  2.62s/it]Writing constraints.:   2%|[38;2;128;191;255m1         [0m| 5/277 [00:19<20:27,  4.51s/it]Writing constraints.:   2%|[38;2;128;191;255m2         [0m| 6/277 [00:31<30:53,  6.84s/it]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 7/277 [00:48<43:19,  9.63s/it]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 8/277 [00:50<33:14,  7.41s/it]Writing constraints.:   3%|[38;2;128;191;255m3         [0m| 9/277 [00:52<26:01,  5.83s/it]Writing constraints.:   4%|[38;2;128;191;255m3         [0m| 10/277 [00:54<20:33,  4.62s/it]Writing constraints.:   4%|[38;2;128;191;255m3         [0m| 11/277 [00:55<16:19,  3.68s/it]Writing constraints.:   4%|[38;2;128;191;255m4         [0m| 12/277 [00:57<14:03,  3.18s/it]Writing constraints.:   5%|[38;2;128;191;255m4         [0m| 13/277 [00:59<12:12,  2.77s/it]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 14/277 [01:01<10:44,  2.45s/it]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 15/277 [01:03<10:21,  2.37s/it]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 16/277 [01:05<09:46,  2.25s/it]Writing constraints.:   6%|[38;2;128;191;255m6         [0m| 17/277 [01:07<09:16,  2.14s/it]Writing constraints.:   6%|[38;2;128;191;255m6         [0m| 18/277 [01:08<08:24,  1.95s/it]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 19/277 [01:10<08:26,  1.96s/it]Writing constraints.:   7%|[38;2;128;191;255m7         [0m| 20/277 [01:12<08:14,  1.92s/it]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 21/277 [01:14<08:13,  1.93s/it]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 22/277 [01:16<07:46,  1.83s/it]Writing constraints.:   8%|[38;2;128;191;255m8         [0m| 23/277 [01:17<07:54,  1.87s/it]Writing constraints.:   9%|[38;2;128;191;255m8         [0m| 24/277 [01:29<19:42,  4.67s/it]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 25/277 [01:32<18:10,  4.33s/it]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 26/277 [01:39<21:06,  5.05s/it]Writing constraints.:  10%|[38;2;128;191;255m9         [0m| 27/277 [01:39<14:52,  3.57s/it]Writing constraints.:  10%|[38;2;128;191;255m#         [0m| 28/277 [01:39<10:40,  2.57s/it]Writing constraints.:  10%|[38;2;128;191;255m#         [0m| 29/277 [01:40<08:05,  1.96s/it]Writing constraints.:  11%|[38;2;128;191;255m#         [0m| 30/277 [01:40<05:56,  1.44s/it]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 31/277 [01:40<04:25,  1.08s/it]Writing constraints.:  12%|[38;2;128;191;255m#1        [0m| 32/277 [01:40<03:17,  1.24it/s]Writing constraints.:  12%|[38;2;128;191;255m#2        [0m| 34/277 [01:41<01:57,  2.08it/s]Writing constraints.:  13%|[38;2;128;191;255m#2        [0m| 35/277 [01:41<01:36,  2.50it/s]Writing constraints.:  13%|[38;2;128;191;255m#2        [0m| 36/277 [01:41<01:18,  3.08it/s]Writing constraints.:  13%|[38;2;128;191;255m#3        [0m| 37/277 [01:41<01:06,  3.63it/s]Writing constraints.:  16%|[38;2;128;191;255m#6        [0m| 45/277 [01:41<00:17, 12.92it/s]Writing constraints.:  19%|[38;2;128;191;255m#9        [0m| 54/277 [01:41<00:09, 24.20it/s]Writing constraints.:  23%|[38;2;128;191;255m##3       [0m| 64/277 [01:41<00:05, 37.33it/s]Writing constraints.:  27%|[38;2;128;191;255m##7       [0m| 76/277 [01:42<00:03, 52.78it/s]Writing constraints.:  30%|[38;2;128;191;255m###       [0m| 84/277 [01:42<00:03, 57.70it/s]Writing constraints.:  35%|[38;2;128;191;255m###4      [0m| 96/277 [01:42<00:02, 71.32it/s]Writing constraints.:  38%|[38;2;128;191;255m###7      [0m| 105/277 [01:42<00:03, 46.25it/s]Writing constraints.:  42%|[38;2;128;191;255m####1     [0m| 116/277 [01:42<00:02, 56.85it/s]Writing constraints.:  45%|[38;2;128;191;255m####4     [0m| 124/277 [01:42<00:02, 52.58it/s]Writing constraints.:  48%|[38;2;128;191;255m####8     [0m| 133/277 [01:43<00:02, 58.21it/s]Writing constraints.:  51%|[38;2;128;191;255m#####     [0m| 141/277 [01:43<00:02, 58.11it/s]Writing constraints.:  56%|[38;2;128;191;255m#####5    [0m| 155/277 [01:43<00:01, 71.40it/s]Writing constraints.:  59%|[38;2;128;191;255m#####8    [0m| 163/277 [01:43<00:01, 68.26it/s]Writing constraints.:  62%|[38;2;128;191;255m######1   [0m| 171/277 [01:43<00:01, 69.92it/s]Writing constraints.:  65%|[38;2;128;191;255m######4   [0m| 179/277 [01:43<00:01, 71.19it/s]Writing constraints.:  68%|[38;2;128;191;255m######7   [0m| 187/277 [01:43<00:01, 70.67it/s]Writing constraints.:  70%|[38;2;128;191;255m#######   [0m| 195/277 [01:43<00:01, 62.08it/s]Writing constraints.:  74%|[38;2;128;191;255m#######4  [0m| 206/277 [01:44<00:00, 73.26it/s]Writing constraints.:  79%|[38;2;128;191;255m#######9  [0m| 219/277 [01:44<00:00, 85.97it/s]Writing constraints.:  84%|[38;2;128;191;255m########3 [0m| 232/277 [01:44<00:00, 97.54it/s]Writing constraints.:  88%|[38;2;128;191;255m########8 [0m| 245/277 [01:44<00:00, 105.90it/s]Writing constraints.:  93%|[38;2;128;191;255m#########3[0m| 258/277 [01:44<00:00, 111.16it/s]Writing constraints.:  98%|[38;2;128;191;255m#########7[0m| 271/277 [01:44<00:00, 114.86it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 277/277 [01:44<00:00,  2.65it/s] 
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.:  25%|[38;2;128;191;255m##5       [0m| 2/8 [00:00<00:00, 19.23it/s]Writing continuous variables.:  50%|[38;2;128;191;255m#####     [0m| 4/8 [00:03<00:03,  1.06it/s]Writing continuous variables.:  62%|[38;2;128;191;255m######2   [0m| 5/8 [00:03<00:02,  1.30it/s]Writing continuous variables.:  75%|[38;2;128;191;255m#######5  [0m| 6/8 [00:04<00:01,  1.48it/s]Writing continuous variables.:  88%|[38;2;128;191;255m########7 [0m| 7/8 [00:04<00:00,  1.66it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:04<00:00,  1.82it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:04<00:00,  1.63it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-9z74kyhg has 39194880 rows; 18077904 cols; 72494603 nonzeros
-Coefficient ranges:
-  Matrix  [1e-06, 8e+00]
-  Cost    [4e+00, 3e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [3e-05, 3e+05]
-WARNING: Problem has some excessively large costs
-WARNING: Problem has some excessively small row bounds
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -2
-Presolving model
-10412207 rows, 13863754 cols, 37006574 nonzeros  116s
-Dependent equations search running on 2435209 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.89s (limit = 1000.00s)
-10071644 rows, 11127551 cols, 35492693 nonzeros  287s
-Presolve reductions: rows 10071644(-29123236); columns 11127551(-6950353); nonzeros 35492693(-37001910) 
-Solving the presolved LP
-Solving with cuPDLP-C
-Using cost norm =  6.29e+06 and RHS norm =  1.93e+06
---------------------------------------------------
-running scaling
-- use Ruiz scaling
-- use PC scaling
---------------------------------------------------
-     Iter       Primal.Obj         Dual.Obj        Gap  Primal.Inf  Dual.Inf    Time
-        0  +5.09103489e+08  +5.09103489e+08  +0.00e+00    7.70e-01  4.85e-03    773s [L]
-     4000  +1.37495797e+10  +1.14103220e+10  +9.30e-02    6.59e-04  1.02e-03 3681883 [A]
-     8000  +1.35412203e+10  +1.30152482e+10  +1.98e-02    1.37e-03  7.22e-05 7313689 [A]
-    12000  +1.35056235e+10  +1.33116782e+10  +7.23e-03    1.71e-03  1.30e-05 1093176 [A]
-    16000  +1.34929132e+10  +1.33996831e+10  +3.47e-03    1.90e-03  3.73e-06 1454856 [A]
-    20000  +1.34912668e+10  +1.34388277e+10  +1.95e-03    1.31e-03  1.96e-06 1818408 [A]
-    24000  +1.34891198e+10  +1.34461606e+10  +1.59e-03    9.00e-04  5.03e-07 2185750 [A]
-    28000  +1.34848552e+10  +1.34473595e+10  +1.39e-03    6.55e-04  1.04e-06 2543025 [A]
-    32000  +1.34802467e+10  +1.34511431e+10  +1.08e-03    6.61e-04  1.31e-06 2895559 [A]
-    35840  +1.34776813e+10  +1.34508539e+10  +9.96e-04    8.56e-04  5.98e-07 3229624 [L]
-
-Solving information:        Optimal current solution.
-          Primal objective: +1.34776813e+10
-            Dual objective: +1.34508539e+10
-   Primal infeas (abs/rel): 1.65e+03 / 8.56e-04
-     Dual infeas (abs/rel): 3.76e+00 / 5.98e-07
-     Duality gap (abs/rel): 2.68e+07 / 9.96e-04
-      Number of iterations: 35840
-
-WARNING: Solution optimality conditions: Before postsolve
-num/max 2328113 /     76.3 (relative      0 / 0.000218) primal infeasibilities     (tolerance = 1e-03)
-num/max   8089 /     0.42 (relative      0 / 6.91e-07)   dual infeasibilities     (tolerance = 1e-03)
-num/max      0 / 1.03e-10 (relative      0 / 2.95e-16) primal residual errors     (tolerance = 1e-07)
-num/max 1591970 /      2.9 (relative     24 / 4.77e-06)   dual residual errors     (tolerance = 1e-07)
-                                         1 / 0.000223  P-D objective error        (tolerance = 1e-07)
-WARNING: LP solver claims optimality, but with
-WARNING:    num/max     24 / 4.77e-06 relative   dual residual errors (tolerance = 1e-07)
-WARNING:                     0.000223 relative P-D objective error    (tolerance = 1e-07)
-WARNING: Model status changed from "Optimal" to "Unknown" since relative violation of tolerances is 2.23e+03
-
-Performed postsolve
-
-Model name          : linopy-problem-9z74kyhg
-Model status        : Unknown
-PDLP      iterations: 35840
-Objective value     :  1.3477681276e+10
-P-D objective error :  9.7325029106e-04
-HiGHS run time      :      32633.23
-WARNING: Solution status unknown. Trying to parse solution.
-WARNING: Solution parsed successfully.
-
-=== SOLVE END ===
-{
-  "run_id": "p81v_gfm_2040",
-  "config": "C:\\Users\\van538\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\p81v_gfm_2040.yaml",
-  "archetype": "gas_fleet_maintained",
-  "solver_options": {
-    "solver": "pdlp",
-    "pdlp_optimality_tolerance": 0.001,
-    "primal_feasibility_tolerance": 0.001,
-    "dual_feasibility_tolerance": 0.001
-  },
-  "started_at": 1780418414.7844574,
-  "started_at_iso": "2026-06-03T02:40:14",
-  "iasr_load_s": 0.4492470994591713,
-  "templating_s": 1.4402548987418413,
-  "translation_s": 94.79777530021966,
-  "pypsa_build_s": 156.04173759929836,
-  "solve_s": 33795.093250799924,
-  "solve_ok": true,
-  "save_network_s": 16.833101898431778,
-  "extract_results_s": 95.77958399988711,
-  "annual_generation_mwh_by_period": {
-    "2040": 240802048.27809346
-  },
-  "wall_clock_s": 34173.778284100816,
-  "status": "completed",
-  "peak_rss_bytes": 32271564800,
-  "peak_rss_gib": 30.05523681640625,
-  "lp_rows": 39194880,
-  "lp_cols": 18077904,
-  "lp_nonzeros": 72494603,
-  "model_status": "Unknown",
-  "highs_run_time_s": 32633.23,
-  "simplex_iterations": null,
-  "ipm_iterations": null,
-  "ipm_final_pinf": null,
-  "ipm_final_dinf": null,
-  "ipm_final_gap": null,
-  "objective_value": 13477681276.0,
-  "pdlp_iterations": 35840,
-  "pdlp_final_pinf_abs": 1650.0,
-  "pdlp_final_pinf_rel": 0.000856,
-  "pdlp_final_dinf_abs": 3.76,
-  "pdlp_final_dinf_rel": 5.98e-07,
-  "pdlp_final_gap_abs": 26800000.0,
-  "pdlp_final_gap_rel": 0.000996
-}

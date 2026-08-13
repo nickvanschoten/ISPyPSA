@@ -9,12 +9,13 @@ benchmarks/runs_myopic/
 # Auto-generated myopic per-period configs (rebuilt by run_myopic.py)
 benchmarks/configs_myopic/
 
+# Solver stdout transcripts (large, regenerable; summarised in benchmarks/records/)
+benchmarks/logs/
+
 # Python bytecode
 __pycache__/
 *.py[cod]
 
-# Override parent .gitignore to keep simple-msm deliverables and solver logs.
+# Override parent .gitignore to keep simple-msm deliverables.
 # These are the artefacts the team needs to inspect without re-running solves.
 !outputs/simple_msm/*.csv
-!benchmarks/logs/*.log
-!benchmarks/logs/*.txt

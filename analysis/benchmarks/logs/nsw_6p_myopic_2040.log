@@ -1,84 +1,0 @@
-
-=== SOLVE START ===
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/88 [00:00<?, ?it/s]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 6/88 [00:00<00:01, 49.91it/s]Writing constraints.:  12%|[38;2;128;191;255m#2        [0m| 11/88 [00:00<00:01, 44.86it/s]Writing constraints.:  22%|[38;2;128;191;255m##1       [0m| 19/88 [00:00<00:01, 56.38it/s]Writing constraints.:  28%|[38;2;128;191;255m##8       [0m| 25/88 [00:00<00:01, 54.50it/s]Writing constraints.:  44%|[38;2;128;191;255m####4     [0m| 39/88 [00:00<00:00, 82.16it/s]Writing constraints.:  69%|[38;2;128;191;255m######9   [0m| 61/88 [00:00<00:00, 124.73it/s]Writing constraints.:  98%|[38;2;128;191;255m#########7[0m| 86/88 [00:00<00:00, 156.94it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 88/88 [00:00<00:00, 111.67it/s]
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 207.42it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-ghjekyz5 has 220602 rows; 101596 cols; 404933 nonzeros
-Coefficient ranges:
-  Matrix  [5e-06, 8e+00]
-  Cost    [2e+02, 5e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [7e-04, 1e+05]
-WARNING: Problem has some excessively large costs
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -3
-Presolving model
-60046 rows, 75259 cols, 205324 nonzeros  0s
-Dependent equations search running on 14314 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.00s (limit = 1000.00s)
-57565 rows, 63701 cols, 203960 nonzeros  0s
-Presolve reductions: rows 57565(-163037); columns 63701(-37895); nonzeros 203960(-200973) 
-Solving the presolved LP
-Using EKK dual simplex solver - serial
-  Iteration        Objective     Infeasibilities num(sum)
-          0    -1.0634490913e+10 Ph1: 13058(1.71654e+07); Du: 4032(1.06345e+07) 0s
-      19880     2.0130195077e+09 Pr: 9873(1.50517e+08); Du: 0(6.10935e-08) 5s
-      28315     3.5797811702e+09 Pr: 11850(4.48327e+08); Du: 0(3.40451e-07) 10s
-      34878     4.4497231818e+09 Pr: 12016(1.36793e+08); Du: 0(2.51369e-07) 16s
-      40226     5.0296017817e+09 Pr: 10758(6.97581e+07); Du: 0(3.0143e-07) 21s
-      46243     6.2035003539e+09 Pr: 10478(4.77836e+07); Du: 0(3.54795e-07) 26s
-      54248     7.3977729608e+09 Pr: 10162(1.06552e+07); Du: 0(3.41844e-12) 31s
-      60268     8.4149855275e+09 Pr: 12039(1.38558e+08); Du: 0(1.08745e-07) 37s
-      70472     1.0065480828e+10 Pr: 7042(9.43279e+06); Du: 0(9.90008e-08) 42s
-      78081     1.0647828253e+10 Pr: 4087(1.58797e+06); Du: 0(2.25247e-07) 47s
-      83614     1.0803075223e+10 Pr: 0(0); Du: 1(3.66774e-07) 51s
-      83614     1.0803075223e+10 Pr: 0(0); Du: 1(3.66774e-07) 51s
-
-Performed postsolve
-Solving the original LP from the solution after postsolve
-Using EKK primal simplex solver
-  Iteration        Objective     Infeasibilities num(sum)
-      83614     1.0803075223e+10 Pr: 0(0); Du: 1(3.61576e-07) 51s
-      83614     1.0803075223e+10 Pr: 0(0); Du: 1(3.61576e-07) 51s
-
-Model name          : linopy-problem-ghjekyz5
-Model status        : Optimal
-Simplex   iterations: 83614
-Objective value     :  1.0803075223e+10
-P-D objective error :  1.4654154789e-14
-HiGHS run time      :         51.34
-
-=== SOLVE END ===
-{
-  "run_id": "nsw_6p_myopic_2040",
-  "config": "C:\\Users\\van538\\Documents\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\nsw_6p_myopic_2040_2040.yaml",
-  "archetype": "cost_optimal",
-  "solver_options": null,
-  "started_at": 1778714001.1689882,
-  "started_at_iso": "2026-05-14T09:13:21",
-  "iasr_load_s": 0.1480340999987675,
-  "templating_s": 0.8060009000037098,
-  "translation_s": 3.9183388000092236,
-  "pypsa_build_s": 7.746075699993526,
-  "solve_s": 54.05664809999871,
-  "solve_ok": true,
-  "save_network_s": 0.27481149999948684,
-  "extract_results_s": 0.25812719999521505,
-  "annual_generation_mwh_by_period": {
-    "2040": 98772637.49578975
-  },
-  "wall_clock_s": 72.44264959999418,
-  "status": "completed",
-  "peak_rss_bytes": 980615168,
-  "peak_rss_gib": 0.91326904296875,
-  "lp_rows": 220602,
-  "lp_cols": 101596,
-  "lp_nonzeros": 404933,
-  "model_status": "Optimal",
-  "highs_run_time_s": 51.34,
-  "simplex_iterations": 83614,
-  "ipm_iterations": null,
-  "ipm_final_pinf": null,
-  "ipm_final_dinf": null,
-  "ipm_final_gap": null,
-  "objective_value": 10803075223.0
-}

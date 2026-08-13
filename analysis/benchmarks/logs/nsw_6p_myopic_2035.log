@@ -1,83 +1,0 @@
-
-=== SOLVE START ===
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/88 [00:00<?, ?it/s]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 5/88 [00:00<00:01, 42.65it/s]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 10/88 [00:00<00:02, 30.25it/s]Writing constraints.:  18%|[38;2;128;191;255m#8        [0m| 16/88 [00:00<00:01, 38.31it/s]Writing constraints.:  24%|[38;2;128;191;255m##3       [0m| 21/88 [00:00<00:01, 39.91it/s]Writing constraints.:  30%|[38;2;128;191;255m##9       [0m| 26/88 [00:00<00:01, 37.37it/s]Writing constraints.:  44%|[38;2;128;191;255m####4     [0m| 39/88 [00:00<00:00, 62.45it/s]Writing constraints.:  59%|[38;2;128;191;255m#####9    [0m| 52/88 [00:00<00:00, 81.27it/s]Writing constraints.:  78%|[38;2;128;191;255m#######8  [0m| 69/88 [00:01<00:00, 101.67it/s]Writing constraints.:  98%|[38;2;128;191;255m#########7[0m| 86/88 [00:01<00:00, 115.79it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 88/88 [00:01<00:00, 77.86it/s] 
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:00<00:00, 161.25it/s]
-Running HiGHS 1.12.0 (git hash: 755a8e0): Copyright (c) 2025 HiGHS under MIT licence terms
-LP linopy-problem-1cz1ex_5 has 228330 rows; 105292 cols; 419094 nonzeros
-Coefficient ranges:
-  Matrix  [1e-05, 8e+00]
-  Cost    [2e+02, 5e+06]
-  Bound   [0e+00, 0e+00]
-  RHS     [3e-03, 1e+05]
-WARNING: Problem has some excessively large costs
-WARNING:    Consider scaling the objective by 1e-1, or setting the user_objective_scale option to -3
-Presolving model
-62452 rows, 83703 cols, 218922 nonzeros  0s
-Dependent equations search running on 15275 equations with time limit of 1000.00s
-Dependent equations search removed 0 rows and 0 nonzeros in 0.00s (limit = 1000.00s)
-60590 rows, 68288 cols, 210378 nonzeros  0s
-Presolve reductions: rows 60590(-167740); columns 68288(-37004); nonzeros 210378(-208716) 
-Solving the presolved LP
-Using EKK dual simplex solver - serial
-  Iteration        Objective     Infeasibilities num(sum)
-          0    -9.6820924831e+09 Ph1: 14913(1.9647e+07); Du: 4032(9.68209e+06) 0s
-      25309     1.0781581972e+09 Pr: 13014(5.37752e+07); Du: 0(5.71301e-07) 6s
-      35039     1.5349307444e+09 Pr: 9301(5.61781e+08); Du: 0(5.44702e-07) 11s
-      40794     1.7127035577e+09 Pr: 10184(2.00606e+07); Du: 0(6.97077e-07) 16s
-      49194     1.9741175106e+09 Pr: 11366(5.74159e+07); Du: 0(6.26595e-07) 21s
-      54207     2.1502197720e+09 Pr: 12150(3.84569e+08); Du: 0(5.46532e-07) 27s
-      60354     2.4047714480e+09 Pr: 12427(2.67783e+08); Du: 0(3.31542e-07) 32s
-      65197     2.4574434983e+09 Pr: 12462(1.05338e+07); Du: 0(4.31436e-07) 37s
-      71547     2.5493812850e+09 Pr: 7822(1.06724e+07); Du: 0(4.89997e-07) 42s
-      77879     2.6045966730e+09 Pr: 12409(2.68843e+07); Du: 0(1.91741e-07) 47s
-      83355     2.6475089764e+09 Pr: 10158(5.6797e+07); Du: 0(2.8092e-07) 52s
-      89905     2.7048605255e+09 Pr: 12518(4.56192e+07); Du: 0(2.95413e-07) 58s
-      97119     2.7830211695e+09 Pr: 8002(8.7886e+07); Du: 0(3.30794e-08) 63s
-     105322     2.8407518226e+09 Pr: 3084(532757); Du: 0(2.62452e-07) 68s
-     108853     2.8425004547e+09 Pr: 0(0); Du: 0(2.22618e-08) 70s
-
-Performed postsolve
-Solving the original LP from the solution after postsolve
-
-Model name          : linopy-problem-1cz1ex_5
-Model status        : Optimal
-Simplex   iterations: 108853
-Objective value     :  2.8425004547e+09
-P-D objective error :  2.7343691940e-14
-HiGHS run time      :         70.38
-
-=== SOLVE END ===
-{
-  "run_id": "nsw_6p_myopic_2035",
-  "config": "C:\\Users\\van538\\Documents\\GitHub\\ISPyPSA\\mvp_pass1_power\\bench\\configs_myopic\\nsw_6p_myopic_2035_2035.yaml",
-  "archetype": "cost_optimal",
-  "solver_options": null,
-  "started_at": 1778713881.0333686,
-  "started_at_iso": "2026-05-14T09:11:21",
-  "iasr_load_s": 3.359358700006851,
-  "templating_s": 0.7650723000115249,
-  "translation_s": 5.006624500005273,
-  "pypsa_build_s": 11.509634799993364,
-  "solve_s": 73.82585029999609,
-  "solve_ok": true,
-  "save_network_s": 0.29927350000070874,
-  "extract_results_s": 0.280444299991359,
-  "annual_generation_mwh_by_period": {
-    "2035": 75956859.63715559
-  },
-  "wall_clock_s": 119.04051439999603,
-  "status": "completed",
-  "peak_rss_bytes": 984899584,
-  "peak_rss_gib": 0.9172592163085938,
-  "lp_rows": 228330,
-  "lp_cols": 105292,
-  "lp_nonzeros": 419094,
-  "model_status": "Optimal",
-  "highs_run_time_s": 70.38,
-  "simplex_iterations": 108853,
-  "ipm_iterations": null,
-  "ipm_final_pinf": null,
-  "ipm_final_dinf": null,
-  "ipm_final_gap": null,
-  "objective_value": 2842500454.7
-}

@@ -1,166 +1,0 @@
-
-=== SOLVE START ===
-Writing constraints.:   0%|[38;2;128;191;255m          [0m| 0/276 [00:00<?, ?it/s]Writing constraints.:   1%|[38;2;128;191;255m1         [0m| 4/276 [00:03<04:24,  1.03it/s]Writing constraints.:   2%|[38;2;128;191;255m1         [0m| 5/276 [00:07<07:49,  1.73s/it]Writing constraints.:   2%|[38;2;128;191;255m2         [0m| 6/276 [00:27<30:24,  6.76s/it]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 7/276 [00:52<52:23, 11.69s/it]Writing constraints.:   3%|[38;2;128;191;255m2         [0m| 8/276 [00:52<38:17,  8.57s/it]Writing constraints.:   3%|[38;2;128;191;255m3         [0m| 9/276 [00:53<28:06,  6.32s/it]Writing constraints.:   4%|[38;2;128;191;255m3         [0m| 10/276 [00:56<22:49,  5.15s/it]Writing constraints.:   4%|[38;2;128;191;255m3         [0m| 11/276 [00:58<19:01,  4.31s/it]Writing constraints.:   4%|[38;2;128;191;255m4         [0m| 12/276 [00:59<14:18,  3.25s/it]Writing constraints.:   5%|[38;2;128;191;255m4         [0m| 13/276 [00:59<10:56,  2.49s/it]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 14/276 [01:02<10:56,  2.51s/it]Writing constraints.:   5%|[38;2;128;191;255m5         [0m| 15/276 [01:05<11:52,  2.73s/it]Writing constraints.:   6%|[38;2;128;191;255m5         [0m| 16/276 [01:06<09:14,  2.13s/it]Writing constraints.:   6%|[38;2;128;191;255m6         [0m| 17/276 [01:07<07:22,  1.71s/it]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 18/276 [01:09<08:23,  1.95s/it]Writing constraints.:   7%|[38;2;128;191;255m6         [0m| 19/276 [01:12<10:02,  2.34s/it]Writing constraints.:   7%|[38;2;128;191;255m7         [0m| 20/276 [01:13<07:57,  1.87s/it]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 21/276 [01:14<06:27,  1.52s/it]Writing constraints.:   8%|[38;2;128;191;255m7         [0m| 22/276 [01:16<07:43,  1.82s/it]Writing constraints.:   8%|[38;2;128;191;255m8         [0m| 23/276 [01:20<09:33,  2.27s/it]Writing constraints.:   9%|[38;2;128;191;255m8         [0m| 24/276 [01:25<12:48,  3.05s/it]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 25/276 [01:34<20:22,  4.87s/it]Writing constraints.:   9%|[38;2;128;191;255m9         [0m| 26/276 [01:40<21:53,  5.25s/it]Writing constraints.:  10%|[38;2;128;191;255m9         [0m| 27/276 [01:40<15:24,  3.71s/it]Writing constraints.:  11%|[38;2;128;191;255m#         [0m| 29/276 [01:40<08:23,  2.04s/it]Writing constraints.:  11%|[38;2;128;191;255m#         [0m| 30/276 [01:40<06:26,  1.57s/it]Writing constraints.:  11%|[38;2;128;191;255m#1        [0m| 31/276 [01:40<04:51,  1.19s/it]Writing constraints.:  12%|[38;2;128;191;255m#1        [0m| 33/276 [01:41<02:52,  1.41it/s]Writing constraints.:  13%|[38;2;128;191;255m#2        [0m| 35/276 [01:41<01:53,  2.13it/s]Writing constraints.:  13%|[38;2;128;191;255m#3        [0m| 37/276 [01:41<01:21,  2.92it/s]Writing constraints.:  18%|[38;2;128;191;255m#8        [0m| 50/276 [01:41<00:19, 11.59it/s]Writing constraints.:  24%|[38;2;128;191;255m##3       [0m| 65/276 [01:41<00:08, 23.78it/s]Writing constraints.:  29%|[38;2;128;191;255m##8       [0m| 80/276 [01:41<00:05, 37.69it/s]Writing constraints.:  34%|[38;2;128;191;255m###4      [0m| 95/276 [01:41<00:03, 52.77it/s]Writing constraints.:  38%|[38;2;128;191;255m###8      [0m| 106/276 [01:41<00:02, 61.84it/s]Writing constraints.:  44%|[38;2;128;191;255m####3     [0m| 121/276 [01:42<00:01, 77.57it/s]Writing constraints.:  49%|[38;2;128;191;255m####9     [0m| 136/276 [01:42<00:01, 91.26it/s]Writing constraints.:  55%|[38;2;128;191;255m#####4    [0m| 151/276 [01:42<00:01, 103.10it/s]Writing constraints.:  60%|[38;2;128;191;255m######    [0m| 166/276 [01:42<00:00, 113.18it/s]Writing constraints.:  66%|[38;2;128;191;255m######5   [0m| 181/276 [01:42<00:00, 121.40it/s]Writing constraints.:  71%|[38;2;128;191;255m#######1  [0m| 196/276 [01:42<00:00, 127.98it/s]Writing constraints.:  76%|[38;2;128;191;255m#######6  [0m| 211/276 [01:42<00:00, 133.26it/s]Writing constraints.:  82%|[38;2;128;191;255m########1 [0m| 226/276 [01:42<00:00, 135.05it/s]Writing constraints.:  87%|[38;2;128;191;255m########7 [0m| 241/276 [01:42<00:00, 137.16it/s]Writing constraints.:  93%|[38;2;128;191;255m#########2[0m| 256/276 [01:42<00:00, 138.45it/s]Writing constraints.:  98%|[38;2;128;191;255m#########8[0m| 271/276 [01:43<00:00, 138.80it/s]Writing constraints.: 100%|[38;2;128;191;255m##########[0m| 276/276 [01:43<00:00,  2.68it/s] 
-Writing continuous variables.:   0%|[38;2;128;191;255m          [0m| 0/8 [00:00<?, ?it/s]Writing continuous variables.:  50%|[38;2;128;191;255m#####     [0m| 4/8 [00:02<00:02,  1.60it/s]Writing continuous variables.:  62%|[38;2;128;191;255m######2   [0m| 5/8 [00:02<00:01,  1.83it/s]Writing continuous variables.:  75%|[38;2;128;191;255m#######5  [0m| 6/8 [00:03<00:00,  2.02it/s]Writing continuous variables.:  88%|[38;2;128;191;255m########7 [0m| 7/8 [00:03<00:00,  2.19it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:03<00:00,  2.35it/s]Writing continuous variables.: 100%|[38;2;128;191;255m##########[0m| 8/8 [00:03<00:00,  2.06it/s]
-Set parameter TokenServer to value "license2-d61-cdc.it.csiro.au"
-Read LP format model from file C:\Users\van538\AppData\Local\Temp\41\linopy-problem-w6mmqxbz.lp
-Reading time = 124.96 seconds
-obj: 38123031 rows, 17963800 columns, 76069533 nonzeros
-Gurobi Optimizer version 11.0.3 build v11.0.3rc0 (win64 - Windows Server 2019.0 (17763.2))
-
-CPU model: Intel(R) Xeon(R) Platinum 8260 CPU @ 2.40GHz, instruction set [SSE2|AVX|AVX2|AVX512]
-Thread count: 48 physical cores, 96 logical processors, using up to 32 threads
-
-Optimize a model with 38123031 rows, 17963800 columns and 76069533 nonzeros
-Model fingerprint: 0xc40f1ddf
-Coefficient statistics:
-  Matrix range     [5e-06, 8e+00]
-  Objective range  [7e+01, 1e+08]
-  Bounds range     [0e+00, 0e+00]
-  RHS range        [2e-04, 1e+05]
-Presolve removed 0 rows and 0 columns (presolve time = 9s) ...
-Presolve removed 24636945 rows and 3320424 columns (presolve time = 14s) ...
-Presolve removed 24954024 rows and 5468809 columns (presolve time = 16s) ...
-Presolve removed 25002444 rows and 5517767 columns (presolve time = 24s) ...
-Presolve removed 25002444 rows and 5517767 columns (presolve time = 26s) ...
-Presolve removed 25002444 rows and 5517767 columns (presolve time = 30s) ...
-Presolve removed 25002444 rows and 6467200 columns (presolve time = 39s) ...
-Presolve removed 25005244 rows and 6470000 columns (presolve time = 44s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 46s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 52s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 56s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 68s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 73s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 80s) ...
-Presolve removed 25146708 rows and 6580293 columns (presolve time = 86s) ...
-Presolve removed 25165445 rows and 6597272 columns (presolve time = 95s) ...
-Presolve removed 25165445 rows and 6597272 columns (presolve time = 100s) ...
-Presolve removed 25165445 rows and 6616258 columns (presolve time = 110s) ...
-Presolve removed 25165516 rows and 6616258 columns (presolve time = 119s) ...
-Presolve removed 25165516 rows and 6616258 columns
-Presolve time: 122.17s
-Presolved: 12957515 rows, 11347542 columns, 40626813 nonzeros
-
-Concurrent LP optimizer: primal simplex, dual simplex, and barrier
-Showing barrier log only...
-
-Elapsed ordering time = 68s
-Elapsed ordering time = 70s
-Elapsed ordering time = 75s
-Elapsed ordering time = 299s
-Elapsed ordering time = 301s
-Elapsed ordering time = 305s
-Elapsed ordering time = 310s
-Elapsed ordering time = 315s
-Elapsed ordering time = 320s
-Elapsed ordering time = 325s
-Elapsed ordering time = 330s
-Elapsed ordering time = 529s
-Elapsed ordering time = 542s
-Elapsed ordering time = 553s
-Elapsed ordering time = 557s
-Elapsed ordering time = 565s
-Elapsed ordering time = 568s
-Elapsed ordering time = 573s
-Elapsed ordering time = 575s
-Elapsed ordering time = 582s
-Elapsed ordering time = 585s
-Elapsed ordering time = 591s
-Elapsed ordering time = 595s
-Elapsed ordering time = 601s
-Elapsed ordering time = 605s
-Elapsed ordering time = 610s
-Elapsed ordering time = 616s
-Elapsed ordering time = 620s
-Elapsed ordering time = 625s
-Elapsed ordering time = 630s
-Elapsed ordering time = 635s
-Elapsed ordering time = 640s
-Elapsed ordering time = 645s
-Elapsed ordering time = 811s
-Elapsed ordering time = 823s
-Elapsed ordering time = 830s
-Elapsed ordering time = 836s
-Elapsed ordering time = 841s
-Elapsed ordering time = 849s
-Elapsed ordering time = 850s
-Elapsed ordering time = 857s
-Elapsed ordering time = 861s
-Elapsed ordering time = 865s
-Elapsed ordering time = 873s
-Elapsed ordering time = 875s
-Elapsed ordering time = 882s
-Elapsed ordering time = 886s
-Elapsed ordering time = 891s
-Elapsed ordering time = 895s
-Elapsed ordering time = 900s
-Elapsed ordering time = 905s
-Elapsed ordering time = 910s
-Elapsed ordering time = 915s
-Elapsed ordering time = 920s
-Elapsed ordering time = 925s
-Elapsed ordering time = 930s
-Elapsed ordering time = 935s
-Elapsed ordering time = 1106s
-Elapsed ordering time = 1130s
-Elapsed ordering time = 1142s
-Elapsed ordering time = 1154s
-Elapsed ordering time = 1156s
-Elapsed ordering time = 1163s
-Elapsed ordering time = 1167s
-Elapsed ordering time = 1177s
-Elapsed ordering time = 1181s
-Elapsed ordering time = 1187s
-Elapsed ordering time = 1191s
-Elapsed ordering time = 1197s
-Elapsed ordering time = 1200s
-Elapsed ordering time = 1206s
-Elapsed ordering time = 1210s
-Elapsed ordering time = 1217s
-Elapsed ordering time = 1220s
-Elapsed ordering time = 1225s
-Elapsed ordering time = 1230s
-Elapsed ordering time = 1235s
-Elapsed ordering time = 1397s
-Elapsed ordering time = 1422s
-Elapsed ordering time = 1432s
-Elapsed ordering time = 1435s
-Elapsed ordering time = 1445s
-Elapsed ordering time = 1446s
-Elapsed ordering time = 1450s
-Elapsed ordering time = 1457s
-Elapsed ordering time = 1461s
-Elapsed ordering time = 1465s
-Elapsed ordering time = 1471s
-Elapsed ordering time = 1477s
-Elapsed ordering time = 1483s
-Elapsed ordering time = 1485s
-Elapsed ordering time = 1490s
-Elapsed ordering time = 1495s
-Elapsed ordering time = 1500s
-Elapsed ordering time = 1505s
-Ordering time: 1541.31s
-
-Barrier statistics:
- Dense cols : 1602
- AA' NZ     : 4.153e+07
- Factor NZ  : 2.278e+09 (roughly 30.0 GB of memory)
- Factor Ops : 5.329e+13 (roughly 80 seconds per iteration)
- Threads    : 30
-
-                  Objective                Residual
-Iter       Primal          Dual         Primal    Dual     Compl     Time
-   0   3.12577178e+16 -2.36078451e+17  4.55e+07 7.10e+06  8.36e+12  2002s
-   1   3.10456941e+16 -2.28028504e+17  4.25e+07 6.16e+06  7.56e+12  2257s
-   2   3.07396121e+16 -2.07835668e+17  4.11e+07 4.25e+06  6.31e+12  2515s
-   3   2.94819770e+16 -1.95037981e+17  3.62e+07 3.17e+06  5.22e+12  2788s
-   4   2.76592005e+16 -1.76324415e+17  3.02e+07 1.66e+06  3.87e+12  3074s
-   5   2.47958465e+16 -1.53604918e+17  2.24e+07 4.73e+07  2.48e+12  3396s
-   6   2.25655311e+16 -1.44503421e+17  1.16e+07 6.79e+07  1.41e+12  3778s
-   7   2.40420957e+16 -1.19955196e+17  4.76e+06 1.30e+07  5.39e+11  4249s
-   8   2.51128640e+16 -7.08940288e+16  1.32e+06 1.66e+04  1.42e+11  4866s
-   9   2.35005635e+16 -4.05643101e+16  3.58e+05 6.29e+03  3.80e+10  5766s
-  10   1.53994202e+16 -2.13182652e+16  8.45e+04 6.40e+04  9.08e+09  7085s
-  11   7.24209361e+15 -1.36457178e+16  1.41e+04 3.92e+05  2.08e+09  8481s
-  12   3.71978586e+15 -7.44702608e+15  5.42e+03 1.30e+05  8.47e+08  9962s
-  13   1.03519531e+15 -2.83572046e+15  8.86e+02 5.28e+04  2.09e+08  11906s
